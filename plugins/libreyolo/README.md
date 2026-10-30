@@ -4,7 +4,7 @@ This service uses the native LibreYOLO 1.6.0 loader, not Ultralytics, and the ex
 
 ## Build and prepare
 
-Build a private Linux x86-64 glibc / CPython 3.11 candidate from an explicitly identified commit. Use an isolated builder environment containing `pip`, `build==1.3.0`, `setuptools==80.9.0`, `wheel==0.45.1` and `hatchling==1.27.0`, plus `git`, `uv` and GNU `tar`. The build downloads the locked dependencies from PyPI and the PyTorch cu132 index; it includes the existing CUDA-linked Torch and NVIDIA runtime wheels even when inference runs on CPU.
+Build a private Linux x86-64 glibc / CPython 3.11 candidate from a plugin-repository commit. Use an isolated builder environment containing `pip`, `build==1.3.0`, `setuptools==80.9.0`, `wheel==0.45.1` and `hatchling==1.27.0`, plus `git` and GNU `tar`. The build downloads hash-locked dependencies from PyPI and the PyTorch cu132 index; it includes CUDA-linked Torch and NVIDIA runtime wheels even when inference runs on CPU. Contract wheels and the canonical asset manifest are retrieved from the verified public release.
 
 ```sh
 python scripts/build-libreyolo-candidate.py --revision <commit> --output /private/candidate.tar
@@ -12,7 +12,7 @@ python scripts/build-libreyolo-candidate.py --revision <commit> --output /privat
 
 An optional `--dependency-cache /private/wheel-cache` reuses downloaded wheels across builds. The producer disables pip's shared cache and verifies the locked hashes again when selecting wheels for each candidate. The cache is not part of the candidate.
 
-The archive contains the versioned plugin, SDK and contract wheels, a complete hash-locked wheelhouse, `requirements.lock`, an inventory with the source revision and wheel digests, and the canonical controlled asset manifest. No weights or platform checkout are included. Reproducibility was exercised on CPython 3.11.13, glibc 2.35, pip 24.3.1 and uv 0.11.29 with the builder versions above. The producer normalizes wheel and archive timestamps; wheel compatibility depends on their platform tags, and other environments have not been qualified. This does not imply identical OCI images: base image, apt packages and image builder are separate inputs. Review licenses before redistribution; this private candidate is not a publication.
+The archive contains plugin and SDK wheels built from the named plugin commit, verified platform contract wheels, a complete hash-locked wheelhouse, `requirements.lock`, source revision and wheel digests, and the canonical controlled asset manifest. No weights or platform checkout are included. The producer normalizes wheel and archive timestamps, but wheel compatibility depends on platform tags. Identical OCI images are not implied: base image, apt packages and image builder are separate inputs. Review licenses before redistribution; this private candidate is not a publication.
 
 Transfer the expected archive SHA256 through a trusted independent channel. Verify that value before unpacking or running any artifact; the adjacent checksum alone is not an authenticity mechanism:
 
@@ -26,10 +26,11 @@ python -m pip check
 The wheel builder also accepts the canonical manifest explicitly when working directly from source:
 
 ```sh
-python plugins/libreyolo/build-wheel.py /absolute/path/to/wheelhouse --manifest apps/yolo-backend/scripts/controlled-model-assets.json
+python scripts/fetch-contracts.py /tmp/aap-contracts
+python plugins/libreyolo/build-wheel.py /absolute/path/to/wheelhouse --manifest /tmp/aap-contracts/controlled-model-assets.json
 ```
 
-The manifest is embedded into the plugin wheel and copied into the candidate for digest accounting; the checkout file remains its sole maintained source. Install from the resulting locked wheelhouse in a clean environment, then explicitly prepare a model:
+The manifest is embedded into the plugin wheel and copied into the candidate for digest accounting; the platform release remains its sole canonical source. Install from the resulting locked wheelhouse in a clean environment, then explicitly prepare a model:
 
 ```sh
 aap-libreyolo prepare-assets --size t --asset-dir /private/libreyolo/assets
@@ -68,7 +69,7 @@ The installed CLI requires the publisher and license declaration explicitly; rev
 
 ## Qualification
 
-Native CPU regression coverage lives in `tests/test_native.py`; `bash scripts/run-ml-cpu-tests.sh run yolo` runs it in a separate temporary environment from the old backend's stubbed tests. It constructs and reloads real t/s/m/c models without downloading weights.
+Native CPU regression coverage lives in `tests/test_native.py`; run it in a clean CPython 3.11 environment with the candidate wheelhouse and pytest installed. It constructs and reloads real t/s/m/c models without downloading weights.
 
 For a local-exclusive developer check, use known real images (one yielding multiple detections and one yielding none):
 

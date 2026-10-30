@@ -335,7 +335,7 @@ def test_new_terminal_generation_fences_abandoned_drain_without_releasing_work()
                     token=token(AdmissionScope.DRAIN, "terminal", "3"),
                 )
             )
-            with pytest.raises(TimeoutError):
+            with pytest.raises(asyncio.TimeoutError):
                 await asyncio.wait_for(asyncio.shield(stopping), timeout=0.02)
             with pytest.raises(LifecycleHTTPError):
                 await lifecycle.begin_workload(

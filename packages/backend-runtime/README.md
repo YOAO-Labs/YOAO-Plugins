@@ -2,8 +2,7 @@
 
 ML backend 运行时共享组件 (无状态叶子函数 + 取消安全的 LRU 池内核)。单一来源, 避免跨 backend 复制漂移。
 
-被 `apps/yolo-backend` / `apps/sam3-backend` / `apps/grounded-sam2-backend` /
-`apps/onnxtools-backend` / `apps/rapidocr-backend` 编辑安装复用。
+由平台 backend 通过固定的公开 Python 制品复用；契约包仍由平台拥有。
 
 ## 边界
 
@@ -59,7 +58,7 @@ terminal_cpu_enabled=False, allow_legacy_workloads=True)` — 签名控制、gen
 - `backend_auth.require_external_bearer(request, expected_token)` — 外部实例独立
   Bearer token 校验，不赋予任何第一方 provider 身份。
 
-**不包含** (见 `docs/plans/archive/2026-06-29-v0.20.3-ml-backend-shared-layer-extraction.md`):
+**不包含**:
 
 - 各 backend 的池包装 (`model_pool.py` / `video_pool.py` / `pool_domain.py`) / `observability.py` /
   FastAPI app 骨架 —— 各有 per-model / per-vendor 语义, 留作本地实现而非共享 import;
@@ -77,13 +76,9 @@ terminal_cpu_enabled=False, allow_legacy_workloads=True)` — 签名控制、gen
 - lifecycle evidence helper 只使用 Python 标准库，不读取或持久化签名私钥、admission token、
   原始业务图像、文件路径或 signed URL；证据应写入仓库外的受限目录。
 
-## 引用方式 (backend Dockerfile)
+## 安装与引用
 
-```dockerfile
-# build context = ./apps; setuptools>=68 已在装 protocol_v2 前 upgrade 过, 复用即可
-COPY _shared/backend_runtime/ /app/backend_runtime/
-RUN pip install --no-build-isolation -e /app/backend_runtime
-```
+参见仓库根 README：先获取并校验平台契约制品，再安装本包。Python 最低版本为 3.10。
 
 backend 代码:
 

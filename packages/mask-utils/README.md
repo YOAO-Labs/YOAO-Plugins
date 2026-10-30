@@ -2,13 +2,12 @@
 
 共享的 mask → polygon 工具包。被以下 backend 复用：
 
-- `apps/grounded-sam2-backend/`（v0.9.x）
-- `apps/sam3-backend/`（v0.10.x，规划中）
+- 平台的 grounded-sam2 和 sam3 backend。
 
 ## 安装（开发模式）
 
 ```bash
-cd apps/_shared/mask_utils
+cd packages/mask-utils
 pip install -e ".[test]"
 pytest -v
 ```
