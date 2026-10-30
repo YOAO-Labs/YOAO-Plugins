@@ -17,14 +17,11 @@ RUN python -m pip install --require-hashes --no-deps -r /tmp/requirements.lock \
     && python -m pip install --require-hashes --no-deps -r /tmp/first-party-requirements.lock
 RUN python -m pip install --no-deps --no-build-isolation \
     "git+https://github.com/ultralytics/CLIP.git@7ffa84b3bfa40c42ecc1c77147a855e69cb2dd40"
-COPY scripts/fetch-contracts.py /tmp/fetch-contracts.py
-RUN python /tmp/fetch-contracts.py /tmp/contracts \
-    && python -m pip install --no-deps /tmp/contracts/*.whl
 COPY plugins/inference/yolo/ /tmp/yolo/
 RUN python -m pip wheel --no-deps --no-build-isolation -w /tmp/wheels /tmp/yolo \
     && python -m pip install --no-deps /tmp/wheels/yolo_backend-*.whl \
     && python -c "import torch,torchvision,ultralytics,pynvml; assert torch.__version__ == '2.14.1+cu132'; assert torchvision.__version__ == '0.29.1+cu132'; assert ultralytics.__version__ == '8.4.183'" \
-    && rm -rf /tmp/yolo /tmp/wheels /tmp/contracts \
+    && rm -rf /tmp/yolo /tmp/wheels \
     && mkdir -p /app/checkpoints /app/.config/Ultralytics \
     && ln -sfn /app/checkpoints/weights /app/weights
 ENV CUDA_VERSION=13.2

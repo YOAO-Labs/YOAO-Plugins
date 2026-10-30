@@ -783,7 +783,7 @@ def _build_model_entry(
         "supported_inputs": ["full_image", "crop"],
         "supported_geometric_outputs": geometric_outputs,
         "output_attribute_types": ["class"],
-        # YOLO 各 task 均 GPU 批量推理。
+        # YOLO 各 task 均可批量推理。
         "resource_profile": {"device": "gpu", "batchable": True},
         "supported_variants": _supported_variants_for(task),
         "variant_combinations": _variant_combinations_for(task),
@@ -1058,6 +1058,15 @@ def setup() -> dict[str, Any]:
             _build_tracker_model_entry(),
         ],
     }
+    # Use the latched runtime device when known, without probing or allocating CUDA
+    # during discovery. Before the first probe, advertise the configured device.
+    if (effective_device_value() or DEVICE).strip().lower() == "cpu":
+        for model in payload["models"]:
+            model["resource_profile"]["device"] = "cpu"
+            for axis in model["supported_variants"]:
+                for variant in axis["variants"]:
+                    if "vram_gb" in variant:
+                        variant["vram_gb"] = 0
     if plugin_lifecycle_options():
         payload.update(plugin_setup_fields({"models": {"cap": MODEL_POOL_CAP}}, _plugin_runtime_versions()))
         if _plugin_gpu_facts:

@@ -29,6 +29,7 @@ def test_plugin_auth_managed_access_and_terminal_drain(tmp_path):
     script = textwrap.dedent('''
         from pathlib import Path
         from fastapi.testclient import TestClient
+        from aap_inference_contract.plugin import PluginManifest, PluginModelCapability
         import os
         from yolo_plugin.catalog import catalog_sha256
         os.environ["AAP_PLUGIN_ASSET_MANIFEST_SHA256"] = catalog_sha256()
@@ -45,6 +46,27 @@ def test_plugin_auth_managed_access_and_terminal_drain(tmp_path):
             assert setup.status_code == 200
             assert setup.json()["plugin_identity"] == {"plugin_id": "yolo", "version": "0.1.0"}
             assert setup.json()["terminal_lifecycle"] == {"terminal_drain_endpoint": "/lifecycle/terminal-drain"}
+            models = setup.json()["models"]
+            cpu_manifest = PluginManifest.model_validate({
+                "plugin_id": "yolo", "version": "0.1.0", "publisher": "test",
+                "license": "NOASSERTION", "artifact": "example/yolo@sha256:" + "0" * 64,
+                "sdk_compatibility": "0.1.0", "entrypoint": ["uvicorn"],
+                "capabilities": ["inference"],
+                "models": [{key: model[key] for key in PluginModelCapability.model_fields} for model in models],
+                "pools": {"models": {"cap": 2}},
+                "resource": {"device": "cpu", "memory_mb": 1024, "gpu_memory_mb": 0},
+                "asset_manifest_sha256": catalog_sha256(), "allowed_asset_sources": [],
+            })
+            assert {model["id"] for model in models} == {
+                "detect", "segment", "pose", "obb", "detect-world",
+                "detect-yoloe", "segment-yoloe", "exemplar-yoloe", "track",
+            }
+            for model in models:
+                assert model["resource_profile"]["device"] == cpu_manifest.resource.device
+                for axis in model["supported_variants"]:
+                    for variant in axis["variants"]:
+                        if "vram_gb" in variant:
+                            assert variant["vram_gb"] == cpu_manifest.resource.gpu_memory_mb
             assert health.json()["gpu_info"] is None
             assert health.json()["pool_topology"] == setup.json()["pool_topology"]
             assert set(health.json()["residency"]["pools"]) == set(setup.json()["pool_topology"])

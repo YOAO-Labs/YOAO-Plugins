@@ -39,17 +39,40 @@ requires-dist = [
 provides-extras = ["test"]
 
 [[package]]
+name = "aap-inference-contract"
+version = "0.1.0"
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_inference_contract-0.1.0-py3-none-any.whl" }
+dependencies = [
+    { name = "aap-task-contract" },
+    { name = "pydantic" },
+]
+wheels = [
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_inference_contract-0.1.0-py3-none-any.whl", hash = "sha256:1a99a7515a687f3fabed6906e7d6b49c2ed4adce9db25d81baa77dc4e3d100a2" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aap-task-contract" },
+    { name = "httpx", marker = "extra == 'client'", specifier = ">=0.28.0" },
+    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28.0" },
+    { name = "pydantic", specifier = ">=2.10.0" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24.0" },
+]
+provides-extras = ["client", "test"]
+
+[[package]]
 name = "aap-lifecycle-contract"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
 wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:08512210f4229dd1fb1f885ccfb3b7cb099981d351b2d870d712dc64fe631e94" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:8d0ac680cf3828889bb9598401b18086851bd257da51b474f0755adc35c2b0eb" },
 ]
 
 [[package]]
 name = "aap-protocol-v2"
 version = "0.2.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" }
 dependencies = [
     { name = "aap-task-contract" },
     { name = "cryptography" },
@@ -58,7 +81,7 @@ dependencies = [
     { name = "pyjwt" },
 ]
 wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:3863853646ea0d4934a7d7d55ca0e3c2b0e180c1cff93192b96fdc7a172ad561" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:8163ae3fb137395960b9111037f9939679943120870d02e87d16f4bc225699e5" },
 ]
 
 [package.metadata]
@@ -76,20 +99,20 @@ provides-extras = ["test"]
 [[package]]
 name = "aap-task-contract"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl" }
 wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:a1c953f1ad4c9fd212dce549058ec959c3d2778a673af648cfd386e8580f4b7a" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:7f71b56a3cf6e1cd17049d077739b34784216fd45b13a1280d01acce07224637" },
 ]
 
 [[package]]
 name = "aap-training-contract"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_training_contract-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_training_contract-0.1.0-py3-none-any.whl" }
 dependencies = [
     { name = "aap-task-contract" },
 ]
 wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_training_contract-0.1.0-py3-none-any.whl", hash = "sha256:1482bfbe79b0eddd56523a9e435d1d7a2dda0522ce2a8559f41cdbf1353b3340" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_training_contract-0.1.0-py3-none-any.whl", hash = "sha256:c88373ba91c99366741c9aa91662e24616f6c49c82cfd0b3f03ee3ece58720b1" },
 ]
 
 [package.metadata]
@@ -1959,6 +1982,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
+    { name = "aap-inference-contract" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
 ]
@@ -1966,10 +1990,11 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" },
-    { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
-    { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" },
-    { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" },
-    { name = "aap-training-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_training_contract-0.1.0-py3-none-any.whl" },
+    { name = "aap-inference-contract", marker = "extra == 'dev'", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_inference_contract-0.1.0-py3-none-any.whl" },
+    { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
+    { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" },
+    { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl" },
+    { name = "aap-training-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_training_contract-0.1.0-py3-none-any.whl" },
     { name = "clip", git = "https://github.com/ultralytics/CLIP.git?rev=7ffa84b3bfa40c42ecc1c77147a855e69cb2dd40" },
     { name = "cryptography", specifier = ">=43.0.0" },
     { name = "fastapi", specifier = ">=0.110" },
