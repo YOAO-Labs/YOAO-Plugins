@@ -2,7 +2,7 @@
 
 本仓库仅持有官方推理实现：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md) 和 [ONNX Tools](plugins/inference/onnxtools/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。第一方代码采用 [MIT](LICENSE)；第三方代码、模型权重与容器依赖继续适用各自的许可。模型权重、训练产物、数据集和凭据不提交到本仓库。
 
-插件开发 SDK、共享推理运行时和 mask 工具由 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK) 持有并发布；平台 API SDK、业务 owner、权限与持久化规则由平台持有。平台维护的任务、协议、生命周期、推理与训练契约通过固定版本和 SHA256 的公开制品消费，不依赖平台 checkout。契约镜像 `contracts-3d6393e64630` 的 manifest SHA256 为 `d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec`。
+插件开发 SDK、共享推理运行时和 mask 工具由 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK) 持有并发布；平台 API SDK、业务 owner、权限与持久化规则由平台持有。平台维护的任务、协议、生命周期、推理与训练契约通过固定版本和 SHA256 的公开制品消费，不依赖平台 checkout。YOLO 的哈希锁固定 [`contracts-906628f2619b`](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/contracts-906628f2619b)，其 manifest SHA256 为 `5c26a3829073324bf6f9cc29521457d296920424e5b1b3c34d672408aa956663`；ONNX Tools 与 RapidOCR 的既有锁及共享下载器仍固定 `contracts-3d6393e64630`，manifest SHA256 为 `d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec`。各插件按自身锁文件构建；更新开发文档不会替换已获资格镜像的依赖。
 
 各插件拥有其预训练模型目录（固定来源、摘要和许可信息）；平台独立管理审批、存储、缓存准备和用户 checkpoint。目录可见不代表允许下载、启用或重新分发。容器与真实业务资格独立于源码公开和 Python 包发布。
 
@@ -23,7 +23,7 @@ LibreYOLO、YOLO 和 ONNX Tools 分别使用 `--plugin libreyolo`、`--plugin yo
 
 ## 已安装环境下的插件开发
 
-使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-0.1.0) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。SDK 的通用入口为 `aap-inference-plugin`：
+使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-6b0f437333b3) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。开发环境的契约安装步骤见 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK#portable-contracts-and-local-development)；已安装插件继续使用自身哈希锁固定的发布制品。SDK 的通用入口为 `aap-inference-plugin`：
 
 ```sh
 aap-inference-plugin init my-plugin
