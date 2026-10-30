@@ -21,8 +21,8 @@ uv pip install --python .venv/bin/python \
   'https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_task_contract-0.1.0-py3-none-any.whl#sha256=55adf2c7c69e0c58c86774bbe14054e1e973564553716b64215e92ff37495b6a'
 .venv/bin/aap-plugin init my-plugin
 cd my-plugin
-uv lock
-uv sync --frozen
+uv lock --python 3.11
+uv sync --python 3.11 --frozen
 uv run aap-plugin prepare-assets --size t --asset-dir /private/libreyolo/assets
 uv run aap-plugin dev --entrypoint my-libreyolo-plugin --device cpu --asset-dir /private/libreyolo/assets --token-file /private/libreyolo/token
 ```
