@@ -306,6 +306,7 @@ async def _run() -> dict[str, Any]:
         load_controlled_fixture,
     )
     from scripts.open_vocabulary_validation import OpenVocabularyFixture  # noqa: PLC0415
+    from scripts.tracker_validation import TrackerFixture  # noqa: PLC0415
 
     selected_weights = main._plugin_qualification_weights(required=True)  # noqa: SLF001
 
@@ -363,6 +364,7 @@ async def _run() -> dict[str, Any]:
     try:
         controlled = load_controlled_fixture(validation_root)
         open_workload = OpenVocabularyFixture(validation_root, Path(main.CHECKPOINTS_DIR), Path(main.MODEL_ASSETS_DIR))
+        tracker_workload = TrackerFixture(validation_root, fixture_approval_ref)
         stock_files = [
             resolve_weight_filename(task, series, size)
             for task in ("detection", "segmentation", "keypoint", "obb")
@@ -388,6 +390,7 @@ async def _run() -> dict[str, Any]:
         memory: dict[str, Any] = {"gpu_total_mb": gpu["total_memory_mb"]}
         contract_checks = {name: False for name in REQUIRED_CONTRACT_CHECKS}
         contract_checks.update({"open_vocabulary_cycle_1": False, "open_vocabulary_cycle_2": False})
+        contract_checks.update({"positive_trackers_cycle_1": False, "positive_trackers_cycle_2": False})
         if controlled is not None:
             contract_checks.update(dict.fromkeys(controlled.checks, False))
         async with main.lifespan(main.app):
@@ -522,6 +525,15 @@ async def _run() -> dict[str, Any]:
                     },
                     headers(AdmissionScope.PREDICT, "1"),
                 )
+                await tracker_workload.run(
+                    lambda path, body, request_headers: checked_post(client, path, body, request_headers),
+                    lambda: headers(AdmissionScope.PREDICT, "1"),
+                    main._model_pool,
+                    series,
+                    size,
+                    1,
+                )
+                contract_checks["positive_trackers_cycle_1"] = True
                 if controlled is not None:
                     response = await checked_post(
                         client,
@@ -604,6 +616,15 @@ async def _run() -> dict[str, Any]:
                         },
                         headers(AdmissionScope.WARMUP, "3"),
                     )
+                await tracker_workload.run(
+                    lambda path, body, request_headers: checked_post(client, path, body, request_headers),
+                    lambda: headers(AdmissionScope.PREDICT, "3"),
+                    main._model_pool,
+                    series,
+                    size,
+                    2,
+                )
+                contract_checks["positive_trackers_cycle_2"] = True
                 if controlled is not None:
                     response = await checked_post(
                         client,
@@ -723,6 +744,9 @@ async def _run() -> dict[str, Any]:
             open_artifacts, open_details = open_workload.evidence()
             artifacts.extend(open_artifacts)
             workload_evidence["open_vocabulary"] = open_details
+            tracker_artifacts, tracker_details = tracker_workload.evidence()
+            artifacts.extend(tracker_artifacts)
+            workload_evidence["positive_trackers"] = tracker_details
             observed_weights = {(item["sha256"], item["size_bytes"]) for item in artifacts if item["kind"] == "weight"}
             expected_weights = {(item["sha256"], item["size_bytes"]) for item in main._plugin_qualification_weights(required=True)}
             if not expected_weights or observed_weights != expected_weights:
