@@ -43,6 +43,6 @@ pythonpath = ["."]
 
 [tool.uv.sources]
 aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" }
-aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
-aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_protocol_v2-0.2.0-py3-none-any.whl" }
-aap-task-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_task_contract-0.1.0-py3-none-any.whl" }
+aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
+aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" }
+aap-task-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" }
