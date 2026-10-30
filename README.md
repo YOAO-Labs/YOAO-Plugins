@@ -19,6 +19,12 @@ uv sync --python 3.11 --frozen
 
 通用 SDK 不准备 LibreYOLO 权重。需要官方 LibreYOLO 模型时，请先审查模型许可，然后使用 [LibreYOLO 文档](plugins/inference/libreyolo/README.md)中的 `aap-libreyolo prepare-assets`。本地开发 token 不是平台管理员凭据，本地预检不等于受管平台部署资格。
 
+## CPU 验证
+
+[Plugin Python acceptance](.github/workflows/plugin-python.yml) 分别运行四个插件的 CPU 测试，隔离各自的 Python 环境和依赖。YOLO 使用完整开发锁文件；RapidOCR 与 ONNX Tools 使用镜像的哈希锁定 headless 依赖及已校验契约 wheel，不引入平台 checkout。模型权重和私有 fixture 不进入 CI。
+
+CPU 测试不授予 CUDA 资格。真实模型推理、逐 session provider、显存回收及平台安装／退役，仍须在获授权的输入和独占设备上验证具体镜像摘要。
+
 ## 构建发布输入
 
 从干净克隆运行；隔离构建环境需安装 `build==1.3.0`、`setuptools==80.9.0` 和 `wheel==0.45.1`：

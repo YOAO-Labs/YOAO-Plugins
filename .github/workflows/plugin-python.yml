@@ -33,3 +33,95 @@ jobs:
           python -m pip install --no-index --find-links "$RUNNER_TEMP/candidate/wheelhouse" --only-binary=:all: --require-hashes -r "$RUNNER_TEMP/candidate/requirements.lock"
           python -m pip check
           python -m pytest -q plugins/inference/libreyolo/tests scripts/test_build_libreyolo_candidate.py
+
+  yolo-python312:
+    name: Plugin YOLO Python 3.12 CPU
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CUDA_VISIBLE_DEVICES: ''
+      NVIDIA_VISIBLE_DEVICES: void
+      YOLO_DEVICE: cpu
+      YOLO_STRICT_OFFLINE: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    defaults:
+      run:
+        working-directory: plugins/inference/yolo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.29'
+          enable-cache: true
+          cache-dependency-glob: plugins/inference/yolo/uv.lock
+      - name: Install locked development environment
+        run: uv sync --locked --extra dev
+      - name: Run complete YOLO CPU suite
+        run: uv run --no-sync python -m pytest -q -p no:cacheprovider
+
+  rapidocr-python310:
+    name: Plugin RapidOCR Python 3.10 CPU
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CUDA_VISIBLE_DEVICES: ''
+      NVIDIA_VISIBLE_DEVICES: void
+      RAPIDOCR_DEVICE: cpu
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.29'
+      - name: Prepare verified standalone inputs
+        run: python plugins/inference/rapidocr/build-inputs.py "$RUNNER_TEMP/rapidocr-inputs"
+      - name: Install locked headless CPU runtime and verified contracts
+        run: |
+          uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/rapidocr/requirements-cpu.txt
+          uv pip install --python "$(command -v python)" --no-deps \
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_backend_runtime-*.whl \
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_task_contract-*.whl \
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_protocol_v2-*.whl \
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_lifecycle_contract-*.whl
+          uv pip install --python "$(command -v python)" 'pytest>=8' 'pytest-asyncio>=0.23'
+      - name: Run complete RapidOCR CPU suite
+        run: python -m pytest -q -p no:cacheprovider plugins/inference/rapidocr/tests
+
+  onnxtools-python310:
+    name: Plugin ONNXTools Python 3.10 CPU
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CUDA_VISIBLE_DEVICES: ''
+      NVIDIA_VISIBLE_DEVICES: void
+      ONNXTOOLS_DEVICE: cpu
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.29'
+      - name: Fetch verified portable contracts
+        run: python scripts/fetch-contracts.py "$RUNNER_TEMP/onnxtools-contracts"
+      - name: Install locked headless runtime and verified contracts
+        run: |
+          uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/onnxtools/requirements-build.txt
+          uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/onnxtools/requirements-runtime.txt
+          uv pip install --python "$(command -v python)" --no-deps --no-build-isolation -r plugins/inference/onnxtools/requirements-vcs.txt
+          uv pip install --python "$(command -v python)" --no-deps \
+            "$RUNNER_TEMP/onnxtools-contracts"/aap_task_contract-*.whl \
+            "$RUNNER_TEMP/onnxtools-contracts"/aap_protocol_v2-*.whl \
+            "$RUNNER_TEMP/onnxtools-contracts"/aap_lifecycle_contract-*.whl
+          uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/onnxtools/requirements-firstparty.txt
+          uv pip install --python "$(command -v python)" 'pytest>=8' 'pytest-asyncio>=0.23'
+      - name: Run complete ONNXTools CPU suite
+        run: python -m pytest -q -p no:cacheprovider plugins/inference/onnxtools/tests
