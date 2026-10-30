@@ -41,6 +41,8 @@ Open-vocabulary qualification requires `VALIDATION_OPEN_IMAGE`, `VALIDATION_OPEN
 
 Positive tracking qualification requires `VALIDATION_TRACKER_VIDEO`, `VALIDATION_TRACKER_BYTETRACK_BASELINE`, `VALIDATION_TRACKER_BOTSORT_BASELINE`, and `VALIDATION_TRACKER_FIXTURE_SHA256_JSON` mapping `video`, `bytetrack`, and `botsort` to the approved frozen input digests. Both native baselines must identify the exact video and their algorithm. Both trackers execute in both measured cycles; positive frame continuity, box geometry, actual backend type and model device are checked. The stock BoT-SORT configuration has ReID disabled; do not silently acquire extra models.
 
+GPU outputs are compared with CPU-frozen expectations using minimum box and polygon IoU 0.9 and maximum confidence delta 0.1; tracker frame boxes require IoU 0.9. Classes, result counts and tracker frame indices must match exactly. The report records these comparator tolerances and actual outputs; it does not claim bit-exact CPU/CUDA equality.
+
 The validator emits canonical JSON and derives `passed` from measured checks. A coordinator-approved report and its digest must be mounted as `AAP_PLUGIN_QUALIFICATION_FILE` and `AAP_PLUGIN_QUALIFICATION_SHA256`; a report from a different image is never sufficient.
 
 Optional controlled-model fixture inputs and validation rules are in `scripts/controlled_segmentation_validation.py`. Actual GPU validation, model accuracy, storage publication and platform workflow acceptance are separate from a CPU setup smoke.

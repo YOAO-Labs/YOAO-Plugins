@@ -26,6 +26,8 @@ WEIGHTS = {
     "mobileclip_blt.ts": "mobileclip_blt.ts",
     "ViT-B-32.pt": "weights/clip/ViT-B-32.pt",
 }
+MIN_GEOMETRY_IOU = 0.9
+MAX_SCORE_DELTA = 0.1
 
 
 def _required(name):
@@ -43,6 +45,13 @@ def _mapping(name, keys):
     ):
         raise ValueError(f"{name} must contain the exact approved SHA-256 mapping")
     return value
+
+
+def _validate_baselines(baselines, image_sha256):
+    if baselines["world"].get("text") != "car" or baselines["yoloe"].get("text") != "car":
+        raise ValueError("Expected frozen positive car text baselines")
+    if any(baselines[role].get("image_sha256") != image_sha256 for role in ("world", "yoloe", "exemplar")):
+        raise ValueError("Open-vocabulary baseline image identity differs")
 
 
 def _iou_box(left, right):
@@ -84,12 +93,12 @@ def compare_output(result, baseline, *, output, normalized, dimensions):
     for item, expected in zip(boxes, expected_boxes, strict=True):
         value = item["value"]
         actual = [value["x"] * width / scale, value["y"] * height / scale, (value["x"] + value["width"]) * width / scale, (value["y"] + value["height"]) * height / scale]
-        if item.get("native_class_index") != expected["class_index"] or value.get("rectanglelabels") != [expected["class_name"]] or not math.isfinite(item["score"]) or abs(item["score"] - expected["score"]) > 0.1 or any(not math.isfinite(v) for v in actual) or not (0 <= actual[0] < actual[2] <= width and 0 <= actual[1] < actual[3] <= height) or _iou_box(actual, expected["box_xyxy"]) < 0.9:
+        if item.get("native_class_index") != expected["class_index"] or value.get("rectanglelabels") != [expected["class_name"]] or not math.isfinite(item["score"]) or abs(item["score"] - expected["score"]) > MAX_SCORE_DELTA or any(not math.isfinite(v) for v in actual) or not (0 <= actual[0] < actual[2] <= width and 0 <= actual[1] < actual[3] <= height) or _iou_box(actual, expected["box_xyxy"]) < MIN_GEOMETRY_IOU:
             raise AssertionError("Open-vocabulary box differs from native baseline")
     for item, expected in zip(polygons, expected_polygons, strict=True):
         value = item["value"]
         points = [[x * width / scale, y * height / scale] for x, y in value["points"]]
-        if value.get("polygonlabels") != [expected["class_name"]] or not math.isfinite(item["score"]) or abs(item["score"] - expected["score"]) > 0.1 or _polygon_iou(points, expected["polygon_xy"], width, height) < 0.9:
+        if value.get("polygonlabels") != [expected["class_name"]] or not math.isfinite(item["score"]) or abs(item["score"] - expected["score"]) > MAX_SCORE_DELTA or _polygon_iou(points, expected["polygon_xy"], width, height) < MIN_GEOMETRY_IOU:
             raise AssertionError("Open-vocabulary polygon differs from native baseline")
     return {"boxes": len(boxes), "polygons": len(polygons)}
 
@@ -141,10 +150,7 @@ class OpenVocabularyFixture:
             self.dimensions = image.size
             image.verify()
         self.baselines = {role: json.loads(self.inputs[role].read_bytes()) for role in ("world", "yoloe", "exemplar")}
-        if self.baselines["world"].get("text") != "car" or self.baselines["yoloe"].get("text") != "car":
-            raise ValueError("Expected frozen positive car text baselines")
-        if self.baselines["world"].get("image_sha256") != expected_inputs["image"] or self.baselines["yoloe"].get("image_sha256") != expected_inputs["image"]:
-            raise ValueError("Open-vocabulary baseline image identity differs")
+        _validate_baselines(self.baselines, expected_inputs["image"])
         from training_contract.assets import resolve_prepared_asset
         from ultralytics.utils import WEIGHTS_DIR
         from yolo_plugin.catalog import catalog_bytes
@@ -206,4 +212,4 @@ class OpenVocabularyFixture:
     def evidence(self):
         if [cycle["cycle"] for cycle in self.cycles] != [1, 2]:
             raise AssertionError("Open-vocabulary workloads require both measured cycles")
-        return self.weight_artifacts + self.artifacts, {"placement": self.placement, "cycles": self.cycles}
+        return self.weight_artifacts + self.artifacts, {"placement": self.placement, "tolerances": {"minimum_box_iou": MIN_GEOMETRY_IOU, "minimum_polygon_iou": MIN_GEOMETRY_IOU, "maximum_score_delta": MAX_SCORE_DELTA}, "cycles": self.cycles}

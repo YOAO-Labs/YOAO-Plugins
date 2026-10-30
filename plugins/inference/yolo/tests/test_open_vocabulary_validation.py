@@ -3,7 +3,7 @@ import copy
 
 import pytest
 
-from scripts.open_vocabulary_validation import compare_output
+from scripts.open_vocabulary_validation import _validate_baselines, compare_output
 
 
 @pytest.fixture
@@ -27,3 +27,16 @@ def test_native_box_and_polygon_geometry_must_match(native):
         compare_output(wrong_polygon, native, output="both", normalized=False, dimensions=(100, 100))
     with pytest.raises(AssertionError, match="counts"):
         compare_output(results[:1], native, output="both", normalized=False, dimensions=(100, 100))
+
+
+@pytest.mark.parametrize("role", ["world", "yoloe", "exemplar"])
+def test_every_native_baseline_is_bound_to_the_approved_image(role):
+    baselines = {
+        "world": {"text": "car", "image_sha256": "approved"},
+        "yoloe": {"text": "car", "image_sha256": "approved"},
+        "exemplar": {"image_sha256": "approved"},
+    }
+    _validate_baselines(baselines, "approved")
+    baselines[role]["image_sha256"] = "different"
+    with pytest.raises(ValueError, match="image identity"):
+        _validate_baselines(baselines, "approved")

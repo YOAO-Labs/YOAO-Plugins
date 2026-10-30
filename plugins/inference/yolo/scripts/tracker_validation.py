@@ -10,7 +10,7 @@ from pathlib import Path
 import cv2
 
 from aap_backend_runtime import artifact_evidence
-from scripts.open_vocabulary_validation import _iou_box
+from scripts.open_vocabulary_validation import MIN_GEOMETRY_IOU, _iou_box
 
 INPUTS = {
     "video": "VALIDATION_TRACKER_VIDEO",
@@ -38,7 +38,7 @@ def compare_tracks(actual, baseline, dimensions):
         for frame, native in zip(frames, expected_frames, strict=True):
             box = frame["bbox"]
             coords = [box["x"] * width, box["y"] * height, (box["x"] + box["w"]) * width, (box["y"] + box["h"]) * height]
-            if any(not math.isfinite(value) for value in coords) or not (0 <= coords[0] < coords[2] <= width and 0 <= coords[1] < coords[3] <= height) or not math.isfinite(frame["score"]) or not 0 <= frame["score"] <= 1 or _iou_box(coords, native["xyxy"]) < 0.9:
+            if any(not math.isfinite(value) for value in coords) or not (0 <= coords[0] < coords[2] <= width and 0 <= coords[1] < coords[3] <= height) or not math.isfinite(frame["score"]) or not 0 <= frame["score"] <= 1 or _iou_box(coords, native["xyxy"]) < MIN_GEOMETRY_IOU:
                 raise AssertionError("Tracker frame geometry differs from native baseline")
     return {"tracks": len(observed), "frames": sum(len(item["keyframes"]) for item in observed)}
 
@@ -97,4 +97,4 @@ class TrackerFixture:
     def evidence(self):
         if [cycle["cycle"] for cycle in self.cycles] != [1, 2]:
             raise AssertionError("Both tracker variants require two measured cycles")
-        return self.artifacts, {"cycles": self.cycles}
+        return self.artifacts, {"tolerances": {"minimum_frame_box_iou": MIN_GEOMETRY_IOU}, "cycles": self.cycles}
