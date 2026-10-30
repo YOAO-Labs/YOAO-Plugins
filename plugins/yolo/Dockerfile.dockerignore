@@ -1,0 +1,16 @@
+*
+!plugins/
+plugins/*
+!plugins/yolo/
+!scripts/
+scripts/*
+!scripts/fetch-contracts.py
+plugins/yolo/.venv/
+plugins/yolo/build/
+plugins/yolo/dist/
+plugins/yolo/*.egg-info/
+plugins/yolo/**/__pycache__/
+plugins/yolo/.pytest_cache/
+plugins/yolo/**/*.pyc
+plugins/yolo/**/*.pt
+plugins/yolo/**/*.onnx

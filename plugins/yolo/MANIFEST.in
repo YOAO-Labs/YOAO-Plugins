@@ -1,0 +1,2 @@
+include Dockerfile Dockerfile.dockerignore requirements.lock uv.lock first-party-requirements.lock export_requirements.py
+include tests/__init__.py tests/conftest.py
