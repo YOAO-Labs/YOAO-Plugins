@@ -41,9 +41,9 @@ CUDA/cuBLAS 由 GPU 基础镜像提供。共享 runtime 还依赖 `aap-lifecycle
 
 `uv.lock` 固定完整依赖图，`requirements-cpu.txt` 和
 `requirements-runtime.txt` 分别固定第三方 registry artifact 哈希。
-开发锁文件与镜像输入使用 `Plugin-SDK` 的不可变公开 runtime 发布
-`python-sdk-0.1.0`。开发锁文件的契约仍引用历史不可变发布 `contracts-0a21bc402432`；
-`build-inputs.py` 使用仓库的 `scripts/fetch-contracts.py` 校验新版契约镜像 manifest 与 wheel 摘要，并校验 runtime wheel 摘要。
+开发锁文件与镜像输入均使用 `Plugin-SDK` 的不可变公开 runtime 发布
+`python-sdk-0.1.0` 和契约发布 `contracts-3d6393e64630`；
+`build-inputs.py` 使用仓库的 `scripts/fetch-contracts.py` 校验契约 manifest 与 wheel 摘要，并校验 runtime wheel 摘要。
 
 镜像以 `--no-deps --require-hashes` 安装第三方锁文件，之后安装已校验第一方 wheel
 和独立构建的 backend wheel。RapidOCR metadata 要求 `opencv-python`，运行时有意只装
@@ -118,11 +118,23 @@ session 全部以 CUDA 为首 provider。仅在获授权、独占目标设备及
 在新 GPU 镜像中运行 `/app/scripts/validate_managed_lifecycle.py`，记录实际镜像、
 设备、输入和输出证据。验收脚本不得以旧镜像的证据替代。
 
-`VALIDATION_WEIGHT_SHA256_JSON` 的 key 是验收器选中权重相对 `RAPIDOCR_MODEL_DIR` 的路径，必须与该次
+`VALIDATION_WEIGHT_SHA256_JSON` 的 key 是验收器选中权重相对 `AAP_PLUGIN_DATA_DIR/models` 的路径，必须与该次
 v5 mobile、v5 server 和 v6 medium 三引擎所需权重精确相等。验收会在真实推理后重新读取
 9 条 session 的 provider chain，因此 ORT 运行期整 session CPU fallback 也会阻断声明。正式两轮
 计量前会先加载并卸载一次三引擎全池，以成熟 ORT/CUDA/cuDNN context 作为稳定回收基线。
 验收失败时不能开启声明。
+
+严格验收必须在启动前提供实际平台分配的 `VALIDATION_BACKEND_REGISTRY_ID`、
+`VALIDATION_GPU_RESOURCE_ID`、`VALIDATION_GPU_UUID`、`VALIDATION_IMAGE_ID` 和
+`VALIDATION_GIT_COMMIT`，以及 `VALIDATION_MODEL_APPROVAL_REF`、
+`VALIDATION_FIXTURE_APPROVAL_REF`、生成输入的 `VALIDATION_FIXTURE_SHA256` 和完整 `VALIDATION_WEIGHT_SHA256_JSON`。
+原生插件的 `AAP_PLUGIN_REGISTRY_ID`、`AAP_ROUTE_REGISTRY_ID`、
+`AAP_PLUGIN_GPU_RESOURCE_ID`、`AAP_PLUGIN_GPU_UUID`、`AAP_PLUGIN_IMAGE_ID` 必须分别
+与上述身份匹配；还须提供已登记的 `AAP_PLUGIN_ID`、`AAP_PLUGIN_VERSION`、
+`AAP_PLUGIN_OCI_ARTIFACT`、`AAP_PLUGIN_ASSET_MANIFEST_SHA256`、私有
+`AAP_PLUGIN_TOKEN_FILE`、`AAP_PLUGIN_DATA_DIR` 和 `AAP_PLUGIN_DEVICE=cuda:0`。
+验收器通过仅用于本进程的临时签名密钥及 loopback 路由权限执行真实原生插件路径；
+该临时权限不修改部署门禁，也不能替代经审批的验收报告。
 
 ## 接入平台
 

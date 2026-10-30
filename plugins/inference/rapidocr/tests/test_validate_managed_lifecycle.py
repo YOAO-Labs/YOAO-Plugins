@@ -96,3 +96,84 @@ def test_failure_path_emits_strict_nonpassing_evidence() -> None:
     assert evidence["schema_version"] == "1"
     assert evidence["passed"] is False
     assert "local path" not in str(evidence)
+
+
+@pytest.fixture
+def qualification_identity(monkeypatch, tmp_path):
+    values = {
+        "VALIDATION_BACKEND_REGISTRY_ID": "12345678-1234-4234-8234-123456789abc",
+        "VALIDATION_GPU_RESOURCE_ID": "resource-1",
+        "VALIDATION_GPU_UUID": "GPU-test",
+        "VALIDATION_IMAGE_ID": "sha256:" + "a" * 64,
+        "AAP_PLUGIN_OCI_ARTIFACT": "local/rapidocr@sha256:" + "b" * 64,
+        "AAP_PLUGIN_ASSET_MANIFEST_SHA256": "c" * 64,
+        "AAP_PLUGIN_REGISTRY_ID": "12345678-1234-4234-8234-123456789abc",
+        "AAP_ROUTE_REGISTRY_ID": "12345678-1234-4234-8234-123456789abc",
+        "AAP_PLUGIN_GPU_RESOURCE_ID": "resource-1",
+        "AAP_PLUGIN_GPU_UUID": "GPU-test",
+        "AAP_PLUGIN_DEVICE": "cuda:0",
+        "AAP_PLUGIN_IMAGE_ID": "sha256:" + "a" * 64,
+        "AAP_PLUGIN_ID": "rapidocr",
+        "AAP_PLUGIN_VERSION": "0.1.0",
+        "AAP_PLUGIN_TOKEN_FILE": str(tmp_path / "token"),
+        "AAP_PLUGIN_DATA_DIR": str(tmp_path),
+    }
+    for key, value in values.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.delenv("AAP_PLUGIN_QUALIFICATION_FILE", raising=False)
+    monkeypatch.delenv("AAP_PLUGIN_QUALIFICATION_SHA256", raising=False)
+    return values
+
+
+@pytest.mark.parametrize("name", ["VALIDATION_BACKEND_REGISTRY_ID", "VALIDATION_GPU_RESOURCE_ID"])
+def test_qualification_rejects_missing_registered_identity(qualification_identity, monkeypatch, name):
+    monkeypatch.delenv(name)
+    with pytest.raises(RuntimeError, match=name):
+        validator._deployment_identity()
+
+
+@pytest.mark.parametrize("name", [
+    "AAP_PLUGIN_REGISTRY_ID", "AAP_ROUTE_REGISTRY_ID", "AAP_PLUGIN_GPU_RESOURCE_ID",
+    "AAP_PLUGIN_GPU_UUID", "AAP_PLUGIN_DEVICE", "AAP_PLUGIN_IMAGE_ID",
+])
+def test_qualification_rejects_mismatched_deployment_identity(qualification_identity, monkeypatch, name):
+    monkeypatch.setenv(name, "different")
+    with pytest.raises(RuntimeError, match="identities differ"):
+        validator._deployment_identity()
+
+
+@pytest.mark.asyncio
+async def test_operator_route_binding_enforces_real_admission(monkeypatch):
+    import httpx
+    from fastapi import FastAPI
+    from aap_protocol_v2.routing_runtime import install_backend_routing_controller
+
+    registry = "12345678-1234-4234-8234-123456789abc"
+    secret = "route-test-secret-" + "x" * 32
+    monkeypatch.setenv("AAP_ROUTE_REGISTRY_ID", registry)
+    monkeypatch.setenv("AAP_ROUTE_CONTROL_TOKEN", secret)
+    monkeypatch.delenv("AAP_ROUTE_CONTROL_TOKEN_FILE", raising=False)
+    app = FastAPI()
+    install_backend_routing_controller(app)
+
+    @app.post("/predict")
+    async def predict():
+        return {"accepted": True}
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.post("/predict")).status_code == 503
+        await validator._bind_operator_routes(client, registry_id=registry, route_secret=secret)
+        assert (await client.post("/predict")).json() == {"accepted": True}
+        client.event_hooks["request"].clear()
+        assert (await client.post("/predict")).status_code == 401
+
+
+def test_generated_fixture_must_match_approved_digest(tmp_path):
+    with pytest.raises(RuntimeError, match="generated fixture does not match"):
+        validator._approved_fixture(tmp_path, "0" * 64, "fixture:approved")
+
+    expected = "2a8d693bbe24506ee718a13b2e6ac72b3fa8e20583634ac65317293e9d44bd07"
+    path, record = validator._approved_fixture(tmp_path, expected, "fixture:approved")
+    assert path.is_file()
+    assert record["sha256"] == expected
+    assert record["approval_ref"] == "fixture:approved"
