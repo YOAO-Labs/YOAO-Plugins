@@ -27,6 +27,8 @@ if hashlib.sha256(runtime).hexdigest() != RUNTIME_SHA256:
     raise ValueError("backend runtime artifact hash mismatch")
 (wheels / RUNTIME_URL.rsplit("/", 1)[-1]).write_bytes(runtime)
 subprocess.run(["uv", "build", "--wheel", "--out-dir", str(wheels), str(PLUGIN)], check=True)
+descriptor = subprocess.check_output([sys.executable, str(PLUGIN / "pretrained_manifest.py")])
+(out / "pretrained-models.json").write_bytes(descriptor)
 for name in ("Dockerfile", "Dockerfile.cpu", "requirements-build.txt", "requirements-cpu.txt", "requirements-runtime.txt"):
     shutil.copyfile(PLUGIN / name, out / name)
 shutil.copyfile(PLUGIN / "scripts/validate_managed_lifecycle.py", out / "validate_managed_lifecycle.py")

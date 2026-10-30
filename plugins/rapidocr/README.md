@@ -27,6 +27,11 @@ cls（文本行方向 0/180）语言/版本无关，内化进 rec 与 e2e、不�
 `python -m download_models --models-dir /path/to/models`，并在下载、使用或再分发前
 逐项核验来源、摘要、许可和授权。
 
+安装 wheel 后运行 `python -m pretrained_manifest` 可生成版本化发布者描述符：
+13 个文件的路径、大小、摘要、上游来源、许可核验状态、使用该文件的模型变体
+及运行时兼容性。目录和下载器是变体、路径及摘要的唯一来源；描述符不包含
+管理员批准、项目授权或存储位置。`unverified` 不代表可分发或已获许可。
+
 ## Python 依赖与镜像构建
 
 `pyproject.toml` 将 CPU 与 CUDA 声明为互斥的运行时 extra：`cpu` 使用

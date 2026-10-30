@@ -36,7 +36,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["main", "predictor", "schemas", "catalog", "engine_pool", "gpu_lifecycle", "download_models", "plugin_assets"]
+py-modules = ["main", "predictor", "schemas", "catalog", "engine_pool", "gpu_lifecycle", "download_models", "plugin_assets", "pretrained_manifest"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
