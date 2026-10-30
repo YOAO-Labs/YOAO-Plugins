@@ -118,11 +118,23 @@ session 全部以 CUDA 为首 provider。仅在获授权、独占目标设备及
 在新 GPU 镜像中运行 `/app/scripts/validate_managed_lifecycle.py`，记录实际镜像、
 设备、输入和输出证据。验收脚本不得以旧镜像的证据替代。
 
-`VALIDATION_WEIGHT_SHA256_JSON` 的 key 是验收器选中权重相对 `RAPIDOCR_MODEL_DIR` 的路径，必须与该次
+`VALIDATION_WEIGHT_SHA256_JSON` 的 key 是验收器选中权重相对 `AAP_PLUGIN_DATA_DIR/models` 的路径，必须与该次
 v5 mobile、v5 server 和 v6 medium 三引擎所需权重精确相等。验收会在真实推理后重新读取
 9 条 session 的 provider chain，因此 ORT 运行期整 session CPU fallback 也会阻断声明。正式两轮
 计量前会先加载并卸载一次三引擎全池，以成熟 ORT/CUDA/cuDNN context 作为稳定回收基线。
 验收失败时不能开启声明。
+
+严格验收必须在启动前提供实际平台分配的 `VALIDATION_BACKEND_REGISTRY_ID`、
+`VALIDATION_GPU_RESOURCE_ID`、`VALIDATION_GPU_UUID`、`VALIDATION_IMAGE_ID` 和
+`VALIDATION_GIT_COMMIT`，以及 `VALIDATION_MODEL_APPROVAL_REF`、
+`VALIDATION_FIXTURE_APPROVAL_REF`、生成输入的 `VALIDATION_FIXTURE_SHA256` 和完整 `VALIDATION_WEIGHT_SHA256_JSON`。
+原生插件的 `AAP_PLUGIN_REGISTRY_ID`、`AAP_ROUTE_REGISTRY_ID`、
+`AAP_PLUGIN_GPU_RESOURCE_ID`、`AAP_PLUGIN_GPU_UUID`、`AAP_PLUGIN_IMAGE_ID` 必须分别
+与上述身份匹配；还须提供已登记的 `AAP_PLUGIN_ID`、`AAP_PLUGIN_VERSION`、
+`AAP_PLUGIN_OCI_ARTIFACT`、`AAP_PLUGIN_ASSET_MANIFEST_SHA256`、私有
+`AAP_PLUGIN_TOKEN_FILE`、`AAP_PLUGIN_DATA_DIR` 和 `AAP_PLUGIN_DEVICE=cuda:0`。
+验收器通过仅用于本进程的临时签名密钥及 loopback 路由权限执行真实原生插件路径；
+该临时权限不修改部署门禁，也不能替代经审批的验收报告。
 
 ## 接入平台
 
