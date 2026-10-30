@@ -272,7 +272,6 @@ async def _run() -> dict[str, Any]:
     ):
         raise RuntimeError("qualification and plugin deployment identities differ")
     _required_env("AAP_PLUGIN_TOKEN_FILE")
-    _required_env("AAP_PLUGIN_QUALIFICATION_WEIGHTS_JSON")
     if os.environ.get("AAP_PLUGIN_QUALIFICATION_FILE") or os.environ.get("AAP_PLUGIN_QUALIFICATION_SHA256"):
         raise RuntimeError("qualification cannot reuse an existing report")
     git_commit = _required_env("VALIDATION_GIT_COMMIT")
@@ -306,9 +305,14 @@ async def _run() -> dict[str, Any]:
     from scripts.controlled_segmentation_validation import (  # noqa: PLC0415
         load_controlled_fixture,
     )
+    from scripts.open_vocabulary_validation import OpenVocabularyFixture  # noqa: PLC0415
+    from scripts.tracker_validation import TrackerFixture  # noqa: PLC0415
+
+    selected_weights = main._plugin_qualification_weights(required=True)  # noqa: SLF001
 
     validation_root = Path(tempfile.mkdtemp(prefix="yolo_lifecycle_validation_"))
     original_managed_store = main._managed_models  # noqa: SLF001
+    open_workload = None
 
     def token(
         scope: AdmissionScope,
@@ -359,6 +363,24 @@ async def _run() -> dict[str, Any]:
 
     try:
         controlled = load_controlled_fixture(validation_root)
+        open_workload = OpenVocabularyFixture(validation_root, Path(main.CHECKPOINTS_DIR), Path(main.MODEL_ASSETS_DIR))
+        tracker_workload = TrackerFixture(validation_root, fixture_approval_ref)
+        stock_files = [
+            resolve_weight_filename(task, series, size)
+            for task in ("detection", "segmentation", "keypoint", "obb")
+        ]
+        preflight = _approved_weights(
+            checkpoint_dir=Path(main.CHECKPOINTS_DIR),
+            model_assets_dir=Path(main.MODEL_ASSETS_DIR),
+            filenames=stock_files,
+            approval_ref=model_approval_ref,
+        ) + open_workload.weight_artifacts
+        if controlled is not None:
+            preflight.append(artifact_evidence(controlled.weights, kind="weight", approval_ref=model_approval_ref))
+        if {(item["sha256"], item["size_bytes"]) for item in preflight} != {
+            (item["sha256"], item["size_bytes"]) for item in selected_weights
+        }:
+            raise RuntimeError("Qualification weights do not match the installation inventory")
         if controlled is not None:
             # Qualification must never install into the deployment's real cache.
             main._managed_models = ManagedModelStore(validation_root / "managed")  # noqa: SLF001
@@ -367,6 +389,8 @@ async def _run() -> dict[str, Any]:
         target_uuid = gpu["uuid"]
         memory: dict[str, Any] = {"gpu_total_mb": gpu["total_memory_mb"]}
         contract_checks = {name: False for name in REQUIRED_CONTRACT_CHECKS}
+        contract_checks.update({"open_vocabulary_cycle_1": False, "open_vocabulary_cycle_2": False})
+        contract_checks.update({"positive_trackers_cycle_1": False, "positive_trackers_cycle_2": False})
         if controlled is not None:
             contract_checks.update(dict.fromkeys(controlled.checks, False))
         async with main.lifespan(main.app):
@@ -501,6 +525,15 @@ async def _run() -> dict[str, Any]:
                     },
                     headers(AdmissionScope.PREDICT, "1"),
                 )
+                await tracker_workload.run(
+                    lambda path, body, request_headers: checked_post(client, path, body, request_headers),
+                    lambda: headers(AdmissionScope.PREDICT, "1"),
+                    main._model_pool,
+                    series,
+                    size,
+                    1,
+                )
+                contract_checks["positive_trackers_cycle_1"] = True
                 if controlled is not None:
                     response = await checked_post(
                         client,
@@ -513,6 +546,13 @@ async def _run() -> dict[str, Any]:
                         cycle=1,
                         snapshot=await main._model_pool.snapshot(),  # noqa: SLF001
                     )
+                await open_workload.run(
+                    lambda path, body, request_headers: checked_post(client, path, body, request_headers),
+                    lambda: headers(AdmissionScope.PREDICT, "1"),
+                    main._model_pool.snapshot,
+                    1,
+                )
+                contract_checks["open_vocabulary_cycle_1"] = True
                 contract_checks["real_inference"] = True
                 health = (await client.get("/health")).json()
                 effective = health["compute"]["effective_device"]
@@ -576,6 +616,15 @@ async def _run() -> dict[str, Any]:
                         },
                         headers(AdmissionScope.WARMUP, "3"),
                     )
+                await tracker_workload.run(
+                    lambda path, body, request_headers: checked_post(client, path, body, request_headers),
+                    lambda: headers(AdmissionScope.PREDICT, "3"),
+                    main._model_pool,
+                    series,
+                    size,
+                    2,
+                )
+                contract_checks["positive_trackers_cycle_2"] = True
                 if controlled is not None:
                     response = await checked_post(
                         client,
@@ -590,6 +639,13 @@ async def _run() -> dict[str, Any]:
                     )
                     contract_checks[controlled.output_check] = True
                     contract_checks[f"{controlled.check_prefix}_cold_reload"] = True
+                await open_workload.run(
+                    lambda path, body, request_headers: checked_post(client, path, body, request_headers),
+                    lambda: headers(AdmissionScope.PREDICT, "3"),
+                    main._model_pool.snapshot,
+                    2,
+                )
+                contract_checks["open_vocabulary_cycle_2"] = True
                 memory["cycle_2_loaded_mb"] = _gpu_memory_samples(target_uuid, count=3)
                 workload_scope = (
                     AdmissionScope.PREDICT if controlled else AdmissionScope.WARMUP
@@ -685,6 +741,12 @@ async def _run() -> dict[str, Any]:
                 )
                 artifacts.extend(controlled_artifacts)
                 workload_evidence[controlled.check_prefix] = controlled_details
+            open_artifacts, open_details = open_workload.evidence()
+            artifacts.extend(open_artifacts)
+            workload_evidence["open_vocabulary"] = open_details
+            tracker_artifacts, tracker_details = tracker_workload.evidence()
+            artifacts.extend(tracker_artifacts)
+            workload_evidence["positive_trackers"] = tracker_details
             observed_weights = {(item["sha256"], item["size_bytes"]) for item in artifacts if item["kind"] == "weight"}
             expected_weights = {(item["sha256"], item["size_bytes"]) for item in main._plugin_qualification_weights(required=True)}
             if not expected_weights or observed_weights != expected_weights:
@@ -733,6 +795,8 @@ async def _run() -> dict[str, Any]:
                 runtime_ephemera_clean=True,
             )
     finally:
+        if open_workload is not None:
+            open_workload.probe.close()
         main._managed_models = original_managed_store  # noqa: SLF001
         shutil.rmtree(validation_root)
         private_root.cleanup()
