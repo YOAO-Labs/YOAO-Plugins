@@ -1,0 +1,3 @@
+include Dockerfile Dockerfile.cpu build-inputs.py uv.lock
+include requirements-build.txt requirements-cpu.txt requirements-runtime.txt
+include scripts/validate_managed_lifecycle.py tests/conftest.py
