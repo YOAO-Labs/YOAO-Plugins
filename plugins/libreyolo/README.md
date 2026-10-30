@@ -23,14 +23,13 @@ python -m pip install --no-index --find-links candidate/wheelhouse --only-binary
 python -m pip check
 ```
 
-The wheel builder also accepts the canonical manifest explicitly when working directly from source:
+The plugin owns its pretrained catalog and packages it directly in the wheel:
 
 ```sh
-python scripts/fetch-contracts.py /tmp/aap-contracts
-python plugins/libreyolo/build-wheel.py /absolute/path/to/wheelhouse --manifest /tmp/aap-contracts/controlled-model-assets.json
+python -m build --wheel --sdist --outdir /absolute/path/to/wheelhouse plugins/libreyolo
 ```
 
-清单嵌入插件 wheel，并复制到候选包中用于摘要核对；平台发布制品仍是唯一权威来源。在干净环境中从锁定 wheelhouse 安装后，显式准备模型：
+`aap_libreyolo_plugin/controlled-model-assets.json` 随插件版本发布，只描述 LibreYOLO 的四个预训练变体、固定来源、字节数、摘要、许可状态及兼容要求。平台契约制品不再提供模型清单；平台读取插件清单并独立记录审批、可用状态、项目授权和存储位置。目录可见不代表获准下载、启用或公开分发。用户训练的 checkpoint 仍由平台 Learning／Assets 管理。在干净环境中从锁定 wheelhouse 安装后，由获准的操作者显式准备模型：
 
 ```sh
 aap-libreyolo prepare-assets --size t --asset-dir /private/libreyolo/assets

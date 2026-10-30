@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ("packages/backend-runtime", "packages/libreyolo-native", "packages/inference-plugin-sdk")
 PLUGIN = "plugins/libreyolo"
 LOCK = "plugins/libreyolo/third-party-requirements.lock"
-ASSETS = "controlled-model-assets.json"
+ASSETS = "plugins/libreyolo/aap_libreyolo_plugin/controlled-model-assets.json"
 
 
 def run(*args: str, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
@@ -189,13 +189,16 @@ def main() -> None:
             )
         run(
             sys.executable,
-            str(source / PLUGIN / "build-wheel.py"),
+            "-m",
+            "build",
+            "--wheel",
+            "--no-isolation",
+            "--outdir",
             str(wheelhouse),
-            "--manifest",
-            str(contracts / ASSETS),
+            str(source / PLUGIN),
             env=env,
         )
-        shutil.copyfile(contracts / ASSETS, candidate / "controlled-model-assets.json")
+        shutil.copyfile(source / ASSETS, candidate / "controlled-model-assets.json")
         inventory = []
         seen = set()
         for wheel in sorted(wheelhouse.glob("*.whl")):

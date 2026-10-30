@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Fetch the immutable platform contract wheels and controlled asset manifest."""
+"""Fetch immutable platform contract wheels; pretrained catalogs belong to plugins."""
 import argparse
 import hashlib
 import json
 from pathlib import Path
 from urllib.request import urlopen
 
-BASE = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/"
-MANIFEST_SHA256 = "b38851f5e736a760021c226039562c2afc9efd21c8ab229f0bb403bab7eca292"
-ASSETS_SHA256 = "2a173e4b606321dda236e6615296c1632f495d1edb3f975cd79bfba9529e075f"
-REVISION = "0a21bc402432aa93a80fcb9f12d2f532e7109635"
+BASE = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-3d6393e64630/"
+MANIFEST_SHA256 = "d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec"
+REVISION = "3d6393e64630fdeb6ff699b13c2d1f9e198a1a06"
 
 
 def get(name, expected):
@@ -27,8 +26,8 @@ def fetch(output):
     if manifest["source_revision"] != REVISION:
         raise ValueError("contract source revision mismatch")
     output.mkdir(parents=True, exist_ok=True)
-    files = [item for item in manifest["files"] if item["file"].endswith(".whl") or item["file"] == "controlled-model-assets.json"]
-    if len(files) != 6 or next(item for item in files if item["file"] == "controlled-model-assets.json")["sha256"] != ASSETS_SHA256:
+    files = [item for item in manifest["files"] if item["file"].endswith(".whl")]
+    if len(files) != 5:
         raise ValueError("unexpected contract artifact inventory")
     for item in files:
         (output / item["file"]).write_bytes(get(item["file"], item["sha256"]))

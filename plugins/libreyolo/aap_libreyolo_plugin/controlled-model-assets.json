@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "plugin": {
+    "id": "libreyolo",
+    "version": "0.1.0"
+  },
+  "assets": [
+    {
+      "framework": "libreyolo",
+      "base_model": "libreyolo9t",
+      "filename": "LibreYOLO9t.pt",
+      "sha256": "b4d7e93f9e0393830fb42e6135c0e3464b2673b05e5ecf4b7f2374ec18e39eb2",
+      "size_bytes": 8645036,
+      "source_url": "https://huggingface.co/LibreYOLO/LibreYOLO9t/resolve/66ac39d1ac9b880076b96ad4674ef9235ca1a15e/LibreYOLO9t.pt",
+      "task": "detect",
+      "family": "yolo9",
+      "size": "t",
+      "compatibility": {
+        "framework": "libreyolo",
+        "framework_versions": [
+          "1.6.0"
+        ],
+        "python": ">=3.11"
+      },
+      "license": {
+        "status": "unverified",
+        "publisher_declared": "MIT",
+        "evidence_url": "https://www.libreyolo.com/docs/licensing",
+        "note": "The publisher describes YOLO9 COCO weights as MIT; the license of this exact repository revision still requires administrator review."
+      }
+    },
+    {
+      "framework": "libreyolo",
+      "base_model": "libreyolo9s",
+      "filename": "LibreYOLO9s.pt",
+      "sha256": "4ea4a3591c27c66769702bdba5703920d2eb03bbb427e37ed461fcd65e083fb2",
+      "size_bytes": 29471532,
+      "source_url": "https://huggingface.co/LibreYOLO/LibreYOLO9s/resolve/9a1ad60956eacc43c366e33c79fa363f7aaaa68b/LibreYOLO9s.pt",
+      "task": "detect",
+      "family": "yolo9",
+      "size": "s",
+      "compatibility": {
+        "framework": "libreyolo",
+        "framework_versions": [
+          "1.6.0"
+        ],
+        "python": ">=3.11"
+      },
+      "license": {
+        "status": "unverified",
+        "publisher_declared": "MIT",
+        "evidence_url": "https://www.libreyolo.com/docs/licensing",
+        "note": "The publisher describes YOLO9 COCO weights as MIT; the license of this exact repository revision still requires administrator review."
+      }
+    },
+    {
+      "framework": "libreyolo",
+      "base_model": "libreyolo9m",
+      "filename": "LibreYOLO9m.pt",
+      "sha256": "efa83041e2aeed114a2fcd5364d19359781c225079fa8f470399380eb96961cc",
+      "size_bytes": 80955641,
+      "source_url": "https://huggingface.co/LibreYOLO/LibreYOLO9m/resolve/795f08c163220a9fba6438a5b74f0ff07c3dfbc7/LibreYOLO9m.pt",
+      "task": "detect",
+      "family": "yolo9",
+      "size": "m",
+      "compatibility": {
+        "framework": "libreyolo",
+        "framework_versions": [
+          "1.6.0"
+        ],
+        "python": ">=3.11"
+      },
+      "license": {
+        "status": "unverified",
+        "publisher_declared": "MIT",
+        "evidence_url": "https://www.libreyolo.com/docs/licensing",
+        "note": "The publisher describes YOLO9 COCO weights as MIT; the license of this exact repository revision still requires administrator review."
+      }
+    },
+    {
+      "framework": "libreyolo",
+      "base_model": "libreyolo9c",
+      "filename": "LibreYOLO9c.pt",
+      "sha256": "567197cb51e967a09aab8efc9955f937bec693135896c321d373c93c751a4552",
+      "size_bytes": 51410269,
+      "source_url": "https://huggingface.co/LibreYOLO/LibreYOLO9c/resolve/bfaa3e338b31b3077c93d65f6e2e14122d352589/LibreYOLO9c.pt",
+      "task": "detect",
+      "family": "yolo9",
+      "size": "c",
+      "compatibility": {
+        "framework": "libreyolo",
+        "framework_versions": [
+          "1.6.0"
+        ],
+        "python": ">=3.11"
+      },
+      "license": {
+        "status": "unverified",
+        "publisher_declared": "MIT",
+        "evidence_url": "https://www.libreyolo.com/docs/licensing",
+        "note": "The publisher describes YOLO9 COCO weights as MIT; the license of this exact repository revision still requires administrator review."
+      }
+    }
+  ]
+}
