@@ -731,7 +731,6 @@ async def _run() -> dict[str, Any]:
                 "registry_id": REGISTRY_ID,
                 "gpu_resource_id": RESOURCE_ID,
                 "pools": {"models": {"cap": int(final_snapshot["cap"])}},
-                "session_counts": {},
             }
             workload_evidence = {}
             if controlled is not None:

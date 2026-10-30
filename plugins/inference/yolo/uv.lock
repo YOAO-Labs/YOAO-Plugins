@@ -13,7 +13,7 @@ resolution-markers = [
 [[package]]
 name = "aap-backend-runtime"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" }
 dependencies = [
     { name = "aap-lifecycle-contract" },
     { name = "aap-protocol-v2" },
@@ -23,7 +23,7 @@ dependencies = [
     { name = "pillow" },
 ]
 wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:96556de7d2cc56b3ddbd8f2b83178058a9cc4743d3a58f884f3b3a837e0478c4" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:863e633ab8a55d1ff29936d379e5eeaaa68fbe59b6f0489ea71dcbdb8b042e03" },
 ]
 
 [package.metadata]
@@ -1965,7 +1965,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" },
+    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" },
     { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
     { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" },
     { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" },

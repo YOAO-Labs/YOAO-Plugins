@@ -47,6 +47,8 @@ GPU outputs are compared with CPU-frozen expectations using minimum box and poly
 
 The validator emits canonical JSON and derives `passed` from measured checks. A coordinator-approved report and its digest must be mounted as `AAP_PLUGIN_QUALIFICATION_FILE` and `AAP_PLUGIN_QUALIFICATION_SHA256`; a report from a different image is never sufficient.
 
+Torch qualification topology contains the exact Registry, GPU resource and native model pools, without an empty ONNX Runtime `session_counts` field. The pinned shared runtime validates this same shape during normal SDK activation. Changing the runtime image requires a fresh bound report; never edit an earlier report to make installation accept it.
+
 Optional controlled-model fixture inputs and validation rules are in `scripts/controlled_segmentation_validation.py`. Actual GPU validation, model accuracy, storage publication and platform workflow acceptance are separate from a CPU setup smoke.
 
 ## Licenses
