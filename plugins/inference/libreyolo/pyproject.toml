@@ -1,0 +1,30 @@
+[project]
+name = "aap-libreyolo-plugin"
+version = "0.1.0"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+  "aap-libreyolo-native==0.1.0",
+  "aap-inference-plugin-sdk==0.1.0",
+  "aap-backend-runtime==0.1.0",
+  "aap-lifecycle-contract==0.1.0",
+  "aap-training-contract==0.1.0",
+  "aap-protocol-v2==0.2.0",
+  "httpx>=0.27,<1",
+  "uvicorn>=0.30,<1",
+]
+
+[project.scripts]
+aap-libreyolo = "aap_libreyolo_plugin.cli:main"
+aap-libreyolo-evidence = "aap_libreyolo_plugin.evidence:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["aap_libreyolo_plugin", "aap_libreyolo_plugin.*"]
+
+[tool.setuptools.package-data]
+aap_libreyolo_plugin = ["controlled-model-assets.json"]
+

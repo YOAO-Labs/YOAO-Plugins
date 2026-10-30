@@ -13,7 +13,7 @@ import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGES = ("packages/backend-runtime", "packages/mask-utils", "packages/libreyolo-native", "packages/inference-plugin-sdk")
+PACKAGES = ("plugins/inference/libreyolo/native",)
 PLUGINS = ("libreyolo", "yolo", "rapidocr", "onnxtools")
 CATALOGS = {
     "libreyolo": ("aap_libreyolo_plugin", "aap_libreyolo_plugin/controlled-model-assets.json"),
@@ -39,10 +39,10 @@ def main():
         "--plugin",
         action="append",
         choices=PLUGINS,
-        help="plugin to build alongside shared packages; repeat to select several (default: libreyolo)",
+        help="plugin to build (repeat to select several; default: libreyolo)",
     )
     args = parser.parse_args()
-    plugins = tuple(f"plugins/{name}" for name in dict.fromkeys(args.plugin or ["libreyolo"]))
+    plugins = tuple(f"plugins/inference/{name}" for name in dict.fromkeys(args.plugin or ["libreyolo"]))
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     revision = subprocess.check_output(["git", "rev-parse", "--verify", args.revision + "^{commit}"], cwd=ROOT, text=True).strip()

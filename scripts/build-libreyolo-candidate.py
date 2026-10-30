@@ -23,12 +23,18 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGES = ("packages/backend-runtime", "packages/libreyolo-native", "packages/inference-plugin-sdk")
-PLUGIN = "plugins/libreyolo"
-LOCK = "plugins/libreyolo/third-party-requirements.lock"
-ASSETS = "plugins/libreyolo/aap_libreyolo_plugin/controlled-model-assets.json"
+PACKAGES = ("plugins/inference/libreyolo/native",)
+PLUGIN = "plugins/inference/libreyolo"
+LOCK = "plugins/inference/libreyolo/third-party-requirements.lock"
+ASSETS = "plugins/inference/libreyolo/aap_libreyolo_plugin/controlled-model-assets.json"
+SDK_BASE = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/python-6118885dd686/"
+SDK_WHEELS = {
+    "aap_backend_runtime-0.1.0-py3-none-any.whl": "13d25849cafdb53d8a0b0feffa8b3505e9d8393db9e3ee093e7cbb5f4f9896e8",
+    "aap_inference_plugin_sdk-0.1.0-py3-none-any.whl": "707a1d623ad858f383aa55c411bc898621378e633dbf52a6f4e8f74512e86e78",
+}
 
 
 def run(*args: str, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
@@ -134,6 +140,12 @@ def main() -> None:
         run(sys.executable, str(source / "scripts/fetch-contracts.py"), str(contracts))
         for wheel in contracts.glob("*.whl"):
             shutil.copyfile(wheel, wheelhouse / wheel.name)
+        for name, expected in SDK_WHEELS.items():
+            with urlopen(SDK_BASE + name, timeout=120) as response:
+                data = response.read()
+            if hashlib.sha256(data).hexdigest() != expected:
+                raise ValueError(f"SDK artifact hash mismatch: {name}")
+            (wheelhouse / name).write_bytes(data)
         run(
             sys.executable,
             "-m",

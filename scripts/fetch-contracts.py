@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from urllib.request import urlopen
 
-BASE = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-3d6393e64630/"
+BASE = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/"
 MANIFEST_SHA256 = "d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec"
 REVISION = "3d6393e64630fdeb6ff699b13c2d1f9e198a1a06"
 
