@@ -54,11 +54,11 @@ aap-libreyolo-plugin = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releas
 aap-libreyolo-native = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/python-6118885dd686/aap_libreyolo_native-0.1.0-py3-none-any.whl" }
 aap-inference-plugin-sdk = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/python-6118885dd686/aap_inference_plugin_sdk-0.1.0-py3-none-any.whl" }
 aap-backend-runtime = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/python-6118885dd686/aap_backend_runtime-0.1.0-py3-none-any.whl" }
-aap-inference-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_inference_contract-0.1.0-py3-none-any.whl#sha256=737e5d3346526e7982f8c1cff786aab8fcbacbd0c0a2a76d17a89e8fbb272b39" }
-aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_lifecycle_contract-0.1.0-py3-none-any.whl#sha256=1655c1db5b7729928e1f056f21c100120f4279fe8ab19808e1322133d3ea7087" }
-aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_protocol_v2-0.2.0-py3-none-any.whl#sha256=cc4db808a1bfddd1b97675745212d33f4fd090be0693308ec96b609f34e518e7" }
-aap-task-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_task_contract-0.1.0-py3-none-any.whl#sha256=55adf2c7c69e0c58c86774bbe14054e1e973564553716b64215e92ff37495b6a" }
-aap-training-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_training_contract-0.1.0-py3-none-any.whl#sha256=2b570ae0b907b51c7ced67e262eb69a7df0a36f99bdc286633385b61901a1481" }
+aap-inference-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_inference_contract-0.1.0-py3-none-any.whl" }
+aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
+aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_protocol_v2-0.2.0-py3-none-any.whl" }
+aap-task-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_task_contract-0.1.0-py3-none-any.whl" }
+aap-training-contract = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_training_contract-0.1.0-py3-none-any.whl" }
 torch = { index = "pytorch-cu132" }
 torchvision = { index = "pytorch-cu132" }
 
