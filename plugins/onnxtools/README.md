@@ -10,14 +10,15 @@
 此描述不是下载、使用或重新分发许可。管理员必须独立核查权利并批准资产、项目授权和
 存储位置，用户训练的 checkpoint 仍由平台管理。仓库及镜像均不包含这些权重。
 
-管理员可在 Python 3.11+ 环境用 `scripts/create_plugin_manifest.py` 和公开 `aap-inference-contract` wheel
-为已检查且具有唯一 repository digest 的实际镜像生成原生安装意图；该工具计算上述描述的
+管理员可在 Python 3.11+ 环境用 wheel 安装的 `share/onnxtools-backend/create_plugin_manifest.py`
+和公开 `aap-inference-contract` wheel 为已检查且具有唯一 repository digest 的实际镜像生成原生安装意图；
+工具默认读取同目录安装的资产描述（在源码树运行时通过 `--asset-manifest` 指定路径），计算其
 SHA-256，拒绝不同的镜像入口，且不添加未验证的资产下载来源。它不创建权重审批或 CUDA
 验收，必须使用平台独立核验的镜像摘要、许可声明和资源预算。例如：
 
 ```bash
-python scripts/create_plugin_manifest.py <inspected-digest-image> \
-  --asset-manifest pretrained-model-assets.json --publisher <publisher> \
+python <venv>/share/onnxtools-backend/create_plugin_manifest.py <inspected-digest-image> \
+  --publisher <publisher> \
   --license <plugin-license> --device cpu --memory-mb <budget> --output <private-manifest.json>
 ```
 

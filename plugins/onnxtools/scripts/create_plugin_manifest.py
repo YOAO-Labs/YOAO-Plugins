@@ -17,7 +17,7 @@ ENTRYPOINT = ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--po
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", help="locally inspected image with one repository digest")
-    parser.add_argument("--asset-manifest", type=Path, required=True)
+    parser.add_argument("--asset-manifest", type=Path, default=Path(__file__).resolve().with_name("pretrained-model-assets.json"))
     parser.add_argument("--publisher", required=True)
     parser.add_argument("--license", required=True, help="publisher's license declaration for the plugin artifact")
     parser.add_argument("--device", choices=("cpu", "cuda"), required=True)
