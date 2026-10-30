@@ -42,15 +42,15 @@ provides-extras = ["test"]
 [[package]]
 name = "aap-lifecycle-contract"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
 wheels = [
-    { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:1655c1db5b7729928e1f056f21c100120f4279fe8ab19808e1322133d3ea7087" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:08512210f4229dd1fb1f885ccfb3b7cb099981d351b2d870d712dc64fe631e94" },
 ]
 
 [[package]]
 name = "aap-protocol-v2"
 version = "0.2.0"
-source = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_protocol_v2-0.2.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" }
 dependencies = [
     { name = "aap-task-contract" },
     { name = "cryptography" },
@@ -59,7 +59,7 @@ dependencies = [
     { name = "pyjwt" },
 ]
 wheels = [
-    { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:cc4db808a1bfddd1b97675745212d33f4fd090be0693308ec96b609f34e518e7" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:3863853646ea0d4934a7d7d55ca0e3c2b0e180c1cff93192b96fdc7a172ad561" },
 ]
 
 [package.metadata]
@@ -77,9 +77,9 @@ provides-extras = ["test"]
 [[package]]
 name = "aap-task-contract"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_task_contract-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" }
 wheels = [
-    { url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:55adf2c7c69e0c58c86774bbe14054e1e973564553716b64215e92ff37495b6a" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:a1c953f1ad4c9fd212dce549058ec959c3d2778a673af648cfd386e8580f4b7a" },
 ]
 
 [[package]]
@@ -1617,9 +1617,9 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" },
-    { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
-    { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_protocol_v2-0.2.0-py3-none-any.whl" },
-    { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/contracts-0a21bc402432/aap_task_contract-0.1.0-py3-none-any.whl" },
+    { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
+    { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" },
+    { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" },
     { name = "cryptography", specifier = ">=43.0.0" },
     { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
