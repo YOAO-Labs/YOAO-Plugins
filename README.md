@@ -6,9 +6,9 @@ YOAO 推理插件与开发工具。第一方代码采用 [MIT](LICENSE)；第三
 
 GitHub Releases 中的契约制品以其 manifest 记录的来源仓库、源码提交与逐文件摘要为准；发布标签所在仓库不改变源码所有权。容器与真实业务资格独立于源码公开和 Python 包发布。
 
-## Installed author workflow
+## 已安装环境下的插件开发
 
-The public contract release `contracts-0a21bc402432` is platform-owned; its manifest SHA256 is `b38851f5e736a760021c226039562c2afc9efd21c8ab229f0bb403bab7eca292`. First-party wheels are published under `python-6118885dd686`. After that release is published, use CPython 3.11 and uv:
+公开契约制品 `contracts-0a21bc402432` 归平台维护，其 manifest SHA256 为 `b38851f5e736a760021c226039562c2afc9efd21c8ab229f0bb403bab7eca292`。第一方 wheel 的发布标签为 `python-6118885dd686`。该制品发布后，使用 CPython 3.11 和 uv：
 
 ```sh
 uv venv --python 3.11 .venv
@@ -24,17 +24,17 @@ cd my-plugin
 uv lock
 uv sync --frozen
 uv run aap-plugin prepare-assets --size t --asset-dir /private/libreyolo/assets
-uv run aap-plugin dev --device cpu --asset-dir /private/libreyolo/assets --token-file /private/libreyolo/token
+uv run aap-plugin dev --entrypoint my-libreyolo-plugin --device cpu --asset-dir /private/libreyolo/assets --token-file /private/libreyolo/token
 ```
 
-Review the first-party release manifest and use the lockfile's hashes to pin all consumer inputs. `prepare-assets` downloads separately licensed weights; inspect the exact license before use. The token is a local developer token, not a platform administrator credential. To check a running endpoint, set `AAP_PLUGIN_TOKEN` to that token and run `uv run aap-plugin check --url http://127.0.0.1:8000 --fixtures /private/fixtures.json`; fixtures must provide real `multi` and `empty` images and reviewed expected detections, boxes and tolerances as specified by `load_fixtures` in the SDK. Local preflight does not qualify a managed platform deployment. See [LibreYOLO](plugins/libreyolo/README.md) for independent OCI build, publishing and qualification.
+核对第一方发布 manifest，并用 lockfile 中的哈希固定全部消费方输入。`prepare-assets` 下载单独许可的模型权重，使用前须审查对应许可。token 是本地开发 token，不是平台管理员凭据。检查运行中的服务时，设置 `AAP_PLUGIN_TOKEN` 为该 token，执行 `uv run aap-plugin check --url http://127.0.0.1:8000 --fixtures /private/fixtures.json`；fixture 必须包含真实的 `multi` 和 `empty` 图像，以及经审查的预期检测、坐标和容差，具体格式见 SDK 的 `load_fixtures`。本地预检不等于受管平台部署资格。独立 OCI 构建、发布和验收见 [LibreYOLO](plugins/libreyolo/README.md)。
 
-## Building release inputs
+## 构建发布输入
 
-From a clean clone, in an isolated Python 3.11 builder with `build==1.3.0`, `setuptools==80.9.0`, and `wheel==0.45.1`:
+从干净克隆运行；隔离的 Python 3.11 构建环境需安装 `build==1.3.0`、`setuptools==80.9.0` 和 `wheel==0.45.1`：
 
 ```sh
 python scripts/build-plugin-artifacts.py --revision HEAD --output /private/plugin-release
 ```
 
-The builder archives the named commit, verifies the public contract manifest and controlled asset bytes, and emits five first-party wheels, source distributions, source archive, `manifest.json` and `SHA256SUMS`. It does not upload, include weights, or bundle third-party wheels. For the separate, private hash-locked candidate and OCI workflow see [LibreYOLO](plugins/libreyolo/README.md). Runtime and mask packages support Python 3.10; LibreYOLO and the author SDK target Python 3.11.
+构建器从指定提交创建源码归档，校验公开契约 manifest 和受控资产清单，并生成五个第一方 wheel、源码分发包、源码归档、`manifest.json` 和 `SHA256SUMS`。它不会上传制品，也不包含模型权重或第三方 wheel。独立的私有哈希锁定候选包与 OCI 流程见 [LibreYOLO](plugins/libreyolo/README.md)。运行时和 mask 包支持 Python 3.10；LibreYOLO 与开发 SDK 的目标版本为 Python 3.11。

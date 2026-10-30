@@ -4,7 +4,7 @@ This service uses the native LibreYOLO 1.6.0 loader, not Ultralytics, and the ex
 
 ## Build and prepare
 
-Build a private Linux x86-64 glibc / CPython 3.11 candidate from a plugin-repository commit. Use an isolated builder environment containing `pip`, `build==1.3.0`, `setuptools==80.9.0`, `wheel==0.45.1` and `hatchling==1.27.0`, plus `git` and GNU `tar`. The build downloads hash-locked dependencies from PyPI and the PyTorch cu132 index; it includes CUDA-linked Torch and NVIDIA runtime wheels even when inference runs on CPU. Contract wheels and the canonical asset manifest are retrieved from the verified public release.
+从插件仓库的指定提交构建私有 Linux x86-64 glibc / CPython 3.11 候选包。隔离构建环境需包含 `pip`、`build==1.3.0`、`setuptools==80.9.0`、`wheel==0.45.1`、`hatchling==1.27.0`、`git` 和 GNU `tar`。构建从 PyPI 和 PyTorch cu132 索引下载哈希锁定依赖；即使在 CPU 上推理，也包含 CUDA 链接的 Torch 和 NVIDIA 运行时 wheel。契约 wheel 和权威资产清单从经过校验的公开发布制品获取。
 
 ```sh
 python scripts/build-libreyolo-candidate.py --revision <commit> --output /private/candidate.tar
@@ -12,7 +12,7 @@ python scripts/build-libreyolo-candidate.py --revision <commit> --output /privat
 
 An optional `--dependency-cache /private/wheel-cache` reuses downloaded wheels across builds. The producer disables pip's shared cache and verifies the locked hashes again when selecting wheels for each candidate. The cache is not part of the candidate.
 
-The archive contains plugin and SDK wheels built from the named plugin commit, verified platform contract wheels, a complete hash-locked wheelhouse, `requirements.lock`, source revision and wheel digests, and the canonical controlled asset manifest. No weights or platform checkout are included. The producer normalizes wheel and archive timestamps, but wheel compatibility depends on platform tags. Identical OCI images are not implied: base image, apt packages and image builder are separate inputs. Review licenses before redistribution; this private candidate is not a publication.
+归档包含由指定插件提交构建的 plugin 和 SDK wheel、经过校验的平台契约 wheel、完整哈希锁定 wheelhouse、`requirements.lock`、源码提交与 wheel 摘要，以及权威受控资产清单；不包含权重或平台 checkout。构建器规范化 wheel 和归档时间戳，但 wheel 兼容性取决于平台标签。这不意味着 OCI 镜像摘要可复现：基础镜像、apt 包和镜像构建器是独立输入。重新分发前须审查许可；私有候选包不是公开发布制品。
 
 Transfer the expected archive SHA256 through a trusted independent channel. Verify that value before unpacking or running any artifact; the adjacent checksum alone is not an authenticity mechanism:
 
@@ -30,7 +30,7 @@ python scripts/fetch-contracts.py /tmp/aap-contracts
 python plugins/libreyolo/build-wheel.py /absolute/path/to/wheelhouse --manifest /tmp/aap-contracts/controlled-model-assets.json
 ```
 
-The manifest is embedded into the plugin wheel and copied into the candidate for digest accounting; the platform release remains its sole canonical source. Install from the resulting locked wheelhouse in a clean environment, then explicitly prepare a model:
+清单嵌入插件 wheel，并复制到候选包中用于摘要核对；平台发布制品仍是唯一权威来源。在干净环境中从锁定 wheelhouse 安装后，显式准备模型：
 
 ```sh
 aap-libreyolo prepare-assets --size t --asset-dir /private/libreyolo/assets
@@ -69,7 +69,7 @@ The installed CLI requires the publisher and license declaration explicitly; rev
 
 ## Qualification
 
-Native CPU regression coverage lives in `tests/test_native.py`; run it in a clean CPython 3.11 environment with the candidate wheelhouse and pytest installed. It constructs and reloads real t/s/m/c models without downloading weights.
+原生 CPU 回归用例位于 `tests/test_native.py`；在安装了候选 wheelhouse 和 pytest 的干净 CPython 3.11 环境中运行。测试无需下载权重，会构造并重新加载真实的 t/s/m/c 模型。
 
 For a local-exclusive developer check, use known real images (one yielding multiple detections and one yielding none):
 

@@ -12,6 +12,8 @@ pip install -e ".[test]"
 pytest -v
 ```
 
+RLE 黄金用例 `tests/fixtures/rasterMaskRle.json` 是平台源码 `apps/web/src/__fixtures__/rasterMaskRle.json` 在提交 `0a21bc402432aa93a80fcb9f12d2f532e7109635` 的冻结一致性快照，SHA256 为 `f1dbba03cfb982dd0d747ceb424da267f63fc0132109c4025508cbfe99453f0b`。平台源码仍是唯一权威来源；不得在本仓库静默修改或独立维护这些用例。
+
 ## 私有真实 mask 评测
 
 公开仓库只含合成测试数据和 RLE 黄金用例。原平台快照中的 84 张真实 SAM mask 来自数据集，不获公开再分发授权；维护者应从受控私有位置提供原始 fixture 目录并在仓库外保存报告：
