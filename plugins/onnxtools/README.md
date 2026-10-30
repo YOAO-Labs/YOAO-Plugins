@@ -5,6 +5,21 @@
 `102fcfeb08fc00f865c334a181bfd0bb518e5ed8`，其代码和全部第三方依赖遵循各自许可证。
 模型、验收图、第三方 wheel 和 OCI 镜像未获授权公开再分发；镜像不包含权重。
 此目录不与其他 flat-module 服务共装到同一 Python 环境。
+`pretrained-model-assets.json` 是本插件版本化、随 wheel 和镜像分发的预训练资产描述，
+列出两个现有 ONNX 文件的大小、SHA-256、用途和兼容模型。权重的来源及许可均未核实；
+此描述不是下载、使用或重新分发许可。管理员必须独立核查权利并批准资产、项目授权和
+存储位置，用户训练的 checkpoint 仍由平台管理。仓库及镜像均不包含这些权重。
+
+管理员可在 Python 3.11+ 环境用 `scripts/create_plugin_manifest.py` 和公开 `aap-inference-contract` wheel
+为已检查且具有唯一 repository digest 的实际镜像生成原生安装意图；该工具计算上述描述的
+SHA-256，拒绝不同的镜像入口，且不添加未验证的资产下载来源。它不创建权重审批或 CUDA
+验收，必须使用平台独立核验的镜像摘要、许可声明和资源预算。例如：
+
+```bash
+python scripts/create_plugin_manifest.py <inspected-digest-image> \
+  --asset-manifest pretrained-model-assets.json --publisher <publisher> \
+  --license <plugin-license> --device cpu --memory-mb <budget> --output <private-manifest.json>
+```
 
 
 服务暴露三个按需加载的固定句柄：

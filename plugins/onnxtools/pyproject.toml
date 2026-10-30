@@ -34,7 +34,7 @@ build-backend = "setuptools.build_meta"
 py-modules = ["main", "predictor", "schemas", "attribute_schema", "handle_pool", "gpu_lifecycle"]
 
 [tool.setuptools.data-files]
-"share/onnxtools-backend" = ["scripts/validate_managed_lifecycle.py"]
+"share/onnxtools-backend" = ["pretrained-model-assets.json", "scripts/validate_managed_lifecycle.py", "scripts/create_plugin_manifest.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

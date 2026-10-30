@@ -35,6 +35,8 @@ RUN python3 /build/fetch-contracts.py /build/contracts \
 COPY plugins/onnxtools/pyproject.toml plugins/onnxtools/LICENSE plugins/onnxtools/main.py \
      plugins/onnxtools/predictor.py plugins/onnxtools/schemas.py plugins/onnxtools/attribute_schema.py \
      plugins/onnxtools/handle_pool.py plugins/onnxtools/gpu_lifecycle.py /build/onnxtools-backend/
+COPY plugins/onnxtools/pretrained-model-assets.json /build/onnxtools-backend/
+COPY plugins/onnxtools/scripts/create_plugin_manifest.py /build/onnxtools-backend/scripts/
 COPY plugins/onnxtools/scripts/validate_managed_lifecycle.py /build/onnxtools-backend/scripts/
 RUN python3 -m pip install --no-build-isolation --no-deps /build/onnxtools-backend \
     && rm -rf /build

@@ -1,4 +1,5 @@
 include Dockerfile
+include pretrained-model-assets.json
 include requirements-*.txt
 include uv.lock
 recursive-include scripts *.py

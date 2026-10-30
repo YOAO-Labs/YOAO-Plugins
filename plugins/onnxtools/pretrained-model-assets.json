@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "plugin": "onnxtools",
+  "notice": "Description only. Source and redistribution rights for these weight files are unverified. Platform administrator approval is required before acquisition, use, or distribution; this document grants no rights.",
+  "assets": [
+    {
+      "framework": "onnxtools",
+      "base_model": "rtdetr-2024080100",
+      "filename": "rtdetr-2024080100.onnx",
+      "sha256": "3773790750308d24824bbb4a22cd1601bceb90a61bf6939216dc9f3c44ca43d2",
+      "size_bytes": 169083098,
+      "source_url": null,
+      "provenance": "Origin of the existing weight file is unverified; associated inference code is pinned to https://github.com/yyq19990828/onnxtools/tree/102fcfeb08fc00f865c334a181bfd0bb518e5ed8. This code reference does not establish weight provenance.",
+      "license": "unverified",
+      "compatible_model_ids": ["vehicle-detect", "vehicle-attr"],
+      "format": "onnx",
+      "runtime": "onnxruntime 1.22.0"
+    },
+    {
+      "framework": "onnxtools",
+      "base_model": "va_260612",
+      "filename": "va_260612.onnx",
+      "sha256": "b8d188ffc6f1bbdb49d91f8f29ad99dca08e4fbf0a0e4cb5d21c7acca41197ee",
+      "size_bytes": 6889953,
+      "source_url": null,
+      "provenance": "Origin of the existing weight file is unverified; associated inference code is pinned to https://github.com/yyq19990828/onnxtools/tree/102fcfeb08fc00f865c334a181bfd0bb518e5ed8. This code reference does not establish weight provenance.",
+      "license": "unverified",
+      "compatible_model_ids": ["vehicle-attr-classify", "vehicle-attr"],
+      "format": "onnx",
+      "runtime": "onnxruntime 1.22.0"
+    }
+  ]
+}
