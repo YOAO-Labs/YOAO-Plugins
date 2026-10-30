@@ -41,4 +41,6 @@ jobs:
           tar -xf "$RUNNER_TEMP/candidate.tar" -C "$RUNNER_TEMP/candidate"
           python -m pip install --no-index --find-links "$RUNNER_TEMP/candidate/wheelhouse" --only-binary=:all: --require-hashes -r "$RUNNER_TEMP/candidate/requirements.lock"
           python -m pip check
-          python -m pytest -q packages/backend-runtime/tests packages/inference-plugin-sdk/tests plugins/libreyolo/tests scripts/test_build_libreyolo_candidate.py
+          python -m pytest -q packages/backend-runtime/tests
+          python -m pytest -q packages/inference-plugin-sdk/tests
+          python -m pytest -q plugins/libreyolo/tests scripts/test_build_libreyolo_candidate.py

@@ -29,7 +29,19 @@ build-backend = "setuptools.build_meta"
 name = "my-libreyolo-plugin"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["aap-libreyolo-plugin==0.1.0"]
+dependencies = [
+    "aap-libreyolo-plugin==0.1.0",
+    "aap-libreyolo-native==0.1.0",
+    "aap-inference-plugin-sdk==0.1.0",
+    "aap-backend-runtime==0.1.0",
+    "aap-inference-contract==0.1.0",
+    "aap-lifecycle-contract==0.1.0",
+    "aap-protocol-v2==0.2.0",
+    "aap-task-contract==0.1.0",
+    "aap-training-contract==0.1.0",
+    "torch==2.14.1+cu132",
+    "torchvision==0.29.1+cu132",
+]
 
 [project.scripts]
 my-libreyolo-plugin = "my_libreyolo_plugin:main"
