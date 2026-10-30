@@ -8,7 +8,7 @@ GitHub Releases 中的契约制品以其 manifest 记录的来源仓库、源码
 
 ## 已安装环境下的插件开发
 
-公开契约制品 `contracts-0a21bc402432` 归平台维护，其 manifest SHA256 为 `b38851f5e736a760021c226039562c2afc9efd21c8ab229f0bb403bab7eca292`。第一方 wheel 的发布标签为 `python-6118885dd686`。该制品发布后，使用 CPython 3.11 和 uv：
+公开契约制品 `contracts-0a21bc402432` 归平台维护，其 manifest SHA256 为 `b38851f5e736a760021c226039562c2afc9efd21c8ab229f0bb403bab7eca292`。第一方 wheel 的发布标签为 `python-6118885dd686`。使用 CPython 3.11 和 uv：
 
 ```sh
 uv venv --python 3.11 .venv
