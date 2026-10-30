@@ -41,9 +41,9 @@ CUDA/cuBLAS 由 GPU 基础镜像提供。共享 runtime 还依赖 `aap-lifecycle
 
 `uv.lock` 固定完整依赖图，`requirements-cpu.txt` 和
 `requirements-runtime.txt` 分别固定第三方 registry artifact 哈希。
-开发锁文件仍引用历史不可变发布 `python-6118885dd686` 与
-`contracts-0a21bc402432`；镜像输入的 `build-inputs.py` 使用仓库的
-`scripts/fetch-contracts.py` 校验新版契约镜像 manifest 与 wheel 摘要，并校验 runtime wheel 摘要。
+开发锁文件与镜像输入使用 `Plugin-SDK` 的不可变公开 runtime 发布
+`python-sdk-0.1.0`。开发锁文件的契约仍引用历史不可变发布 `contracts-0a21bc402432`；
+`build-inputs.py` 使用仓库的 `scripts/fetch-contracts.py` 校验新版契约镜像 manifest 与 wheel 摘要，并校验 runtime wheel 摘要。
 
 镜像以 `--no-deps --require-hashes` 安装第三方锁文件，之后安装已校验第一方 wheel
 和独立构建的 backend wheel。RapidOCR metadata 要求 `opencv-python`，运行时有意只装

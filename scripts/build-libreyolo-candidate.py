@@ -30,10 +30,10 @@ PACKAGES = ("plugins/inference/libreyolo/native",)
 PLUGIN = "plugins/inference/libreyolo"
 LOCK = "plugins/inference/libreyolo/third-party-requirements.lock"
 ASSETS = "plugins/inference/libreyolo/aap_libreyolo_plugin/controlled-model-assets.json"
-SDK_BASE = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/python-6118885dd686/"
+SDK_BASE = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/"
 SDK_WHEELS = {
-    "aap_backend_runtime-0.1.0-py3-none-any.whl": "13d25849cafdb53d8a0b0feffa8b3505e9d8393db9e3ee093e7cbb5f4f9896e8",
-    "aap_inference_plugin_sdk-0.1.0-py3-none-any.whl": "707a1d623ad858f383aa55c411bc898621378e633dbf52a6f4e8f74512e86e78",
+    "aap_backend_runtime-0.1.0-py3-none-any.whl": "96556de7d2cc56b3ddbd8f2b83178058a9cc4743d3a58f884f3b3a837e0478c4",
+    "aap_inference_plugin_sdk-0.1.0-py3-none-any.whl": "39e870ac3efc2c08cd39068bb266f05bd5aefdea1c58336878fcabfc63e95f5f",
 }
 
 

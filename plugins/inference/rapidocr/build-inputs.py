@@ -10,8 +10,8 @@ from urllib.request import urlopen
 
 PLUGIN = Path(__file__).resolve().parent
 ROOT = PLUGIN.parents[2]
-RUNTIME_URL = "https://github.com/YOAO-Labs/YOAO-Plugins/releases/download/python-6118885dd686/aap_backend_runtime-0.1.0-py3-none-any.whl"
-RUNTIME_SHA256 = "13d25849cafdb53d8a0b0feffa8b3505e9d8393db9e3ee093e7cbb5f4f9896e8"
+RUNTIME_URL = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl"
+RUNTIME_SHA256 = "96556de7d2cc56b3ddbd8f2b83178058a9cc4743d3a58f884f3b3a837e0478c4"
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("output", type=Path, help="new directory for independent image inputs")
