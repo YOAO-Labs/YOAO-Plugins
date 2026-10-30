@@ -113,7 +113,12 @@ def main() -> None:
             revision,
             cwd=ROOT,
         )
-        run("tar", "-xf", str(source_tar), "-C", str(source))
+        # Match publisher extraction permissions regardless of the caller's umask.
+        old_umask = os.umask(0o022)
+        try:
+            run("tar", "-xf", str(source_tar), "-C", str(source))
+        finally:
+            os.umask(old_umask)
         source_tar.unlink()
         candidate = temporary / "candidate"
         wheelhouse = candidate / "wheelhouse"
