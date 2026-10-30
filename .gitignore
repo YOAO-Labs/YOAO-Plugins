@@ -1,0 +1,17 @@
+.venv/
+.worktree/
+.omp/
+.artifacts/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.env
+.env.*
+*.pt
+*.pth
+*.onnx
+*.safetensors
