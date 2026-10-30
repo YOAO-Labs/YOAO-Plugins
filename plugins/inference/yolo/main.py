@@ -75,7 +75,6 @@ from aap_backend_runtime.plugin_service import (
     plugin_setup_fields,
     plugin_verified_lifecycle,
 )
-from aap_backend_runtime import artifact_evidence
 from yolo_plugin.catalog import catalog_sha256
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import Response
@@ -322,18 +321,12 @@ def _plugin_runtime_versions() -> dict[str, str]:
 def _plugin_qualification_weights(*, required: bool = False) -> list[dict[str, Any]]:
     if not required and not os.environ.get("AAP_PLUGIN_QUALIFICATION_FILE"):
         return []
-    paths = json.loads(os.environ["AAP_PLUGIN_QUALIFICATION_WEIGHTS_JSON"])
-    if not isinstance(paths, list) or not paths or not all(isinstance(path, str) for path in paths):
-        raise ValueError("Qualification requires an explicit list of weight paths")
-    root = Path(os.environ["AAP_PLUGIN_DATA_DIR"]).resolve()
-    result = []
-    for name in paths:
-        path = Path(name).resolve(strict=True)
-        if not path.is_relative_to(root):
-            raise ValueError("Qualification weights must be inside the plugin data directory")
-        item = artifact_evidence(path, kind="weight")
-        result.append({"sha256": item["sha256"], "size_bytes": item["size_bytes"]})
-    return result
+    from yolo_plugin.qualification_inventory import read_inventory
+
+    return [
+        {"sha256": item["sha256"], "size_bytes": item["size_bytes"]}
+        for item in read_inventory(Path(os.environ["AAP_PLUGIN_DATA_DIR"]))
+    ]
 
 
 async def _idle_watcher() -> None:

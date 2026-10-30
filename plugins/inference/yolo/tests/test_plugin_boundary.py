@@ -67,20 +67,32 @@ def test_plugin_auth_managed_access_and_terminal_drain(tmp_path):
 
 def test_qualification_weight_inventory_uses_actual_contained_bytes(tmp_path, monkeypatch):
     import main
+    from yolo_plugin.qualification_inventory import prepare_inventory
 
     root = tmp_path / "plugin"
     root.mkdir()
     weight = root / "weights.pt"
     weight.write_bytes(b"actual weight")
     monkeypatch.setenv("AAP_PLUGIN_DATA_DIR", str(root))
-    monkeypatch.setenv("AAP_PLUGIN_QUALIFICATION_WEIGHTS_JSON", json.dumps([str(weight)]))
+    monkeypatch.delenv("AAP_PLUGIN_QUALIFICATION_WEIGHTS_JSON", raising=False)
+    prepare_inventory(root, ["weights.pt"])
     assert main._plugin_qualification_weights(required=True) == [
         {"sha256": hashlib.sha256(b"actual weight").hexdigest(), "size_bytes": len(b"actual weight")}
     ]
+    weight.write_bytes(b"modified")
+    with pytest.raises(ValueError, match="differ from selected inventory"):
+        main._plugin_qualification_weights(required=True)
+
+
+def test_qualification_inventory_rejects_paths_outside_data(tmp_path):
+    from yolo_plugin.qualification_inventory import prepare_inventory
+
+    root = tmp_path / "plugin"
+    root.mkdir()
     outside = tmp_path / "outside.pt"
     outside.write_bytes(b"outside")
-    link = root / "link.pt"
-    link.symlink_to(outside)
-    monkeypatch.setenv("AAP_PLUGIN_QUALIFICATION_WEIGHTS_JSON", json.dumps([str(link)]))
+    (root / "link.pt").symlink_to(outside)
     with pytest.raises(ValueError, match="inside the plugin data directory"):
-        main._plugin_qualification_weights(required=True)
+        prepare_inventory(root, ["link.pt"])
+    with pytest.raises(ValueError, match="canonical relative"):
+        prepare_inventory(root, ["../outside.pt"])

@@ -547,5 +547,75 @@
         ]
       }
     }
+  ],
+  "inference_assets": [
+    {
+      "framework": "ultralytics",
+      "role": "stock_model",
+      "filename": "yolo11s-pose.pt",
+      "sha256": "1060bda4a27012060eca246f9b2adeea22eabb045a1e58f8d229be29b7ebc2ba",
+      "size_bytes": 20373161,
+      "source_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo11s-pose.pt",
+      "capabilities": ["pose"],
+      "license": "unverified",
+      "compatibility": {"framework": "ultralytics", "versions": ["8.4.183"]}
+    },
+    {
+      "framework": "ultralytics",
+      "role": "stock_model",
+      "filename": "yolo11s-obb.pt",
+      "sha256": "43fa63102922e0701501241b307420d24fc55e080816888b18bf8c6f96b1a45a",
+      "size_bytes": 19934534,
+      "source_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo11s-obb.pt",
+      "capabilities": ["obb"],
+      "license": "unverified",
+      "compatibility": {"framework": "ultralytics", "versions": ["8.4.183"]}
+    },
+    {
+      "framework": "ultralytics",
+      "role": "open_vocabulary_model",
+      "filename": "yolov8s-worldv2.pt",
+      "sha256": "9b2c17ab6124a913e9b3a5c170617920d91b0f01111a8479da69f00e2cf27792",
+      "size_bytes": 25923032,
+      "source_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-worldv2.pt",
+      "capabilities": ["detect-world"],
+      "dependencies": ["ViT-B-32.pt"],
+      "license": "unverified",
+      "compatibility": {"framework": "ultralytics", "versions": ["8.4.183"]}
+    },
+    {
+      "framework": "ultralytics",
+      "role": "open_vocabulary_model",
+      "filename": "yoloe-11s-seg.pt",
+      "sha256": "8e439445c87338b79d9ce21dec109f4621e26df67e94d26ea1a98c1e64dce3e3",
+      "size_bytes": 27803986,
+      "source_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yoloe-11s-seg.pt",
+      "capabilities": ["detect-yoloe", "segment-yoloe", "exemplar-yoloe"],
+      "dependencies": ["mobileclip_blt.ts"],
+      "license": "unverified",
+      "compatibility": {"framework": "ultralytics", "versions": ["8.4.183"]}
+    },
+    {
+      "framework": "openai-clip",
+      "role": "text_encoder",
+      "filename": "ViT-B-32.pt",
+      "sha256": "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af",
+      "size_bytes": 353976522,
+      "source_url": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
+      "used_by": ["detect-world"],
+      "license": "unverified",
+      "compatibility": {"framework": "ultralytics", "versions": ["8.4.183"]}
+    },
+    {
+      "framework": "mobileclip",
+      "role": "text_encoder",
+      "filename": "mobileclip_blt.ts",
+      "sha256": "a67804d1b0f07b8b9a20c1761ec0847f34660f5fa338ec70e8f3fce68ed95e54",
+      "size_bytes": 599764649,
+      "source_url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/mobileclip_blt.ts",
+      "used_by": ["detect-yoloe", "segment-yoloe"],
+      "license": "unverified",
+      "compatibility": {"framework": "ultralytics", "versions": ["8.4.183"]}
+    }
   ]
 }
