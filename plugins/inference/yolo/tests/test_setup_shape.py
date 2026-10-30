@@ -83,7 +83,7 @@ def test_setup_exemplar_model_shape(setup_dict: dict) -> None:
     """exemplar-yoloe: 交互 / 非批量 / box+polygon 双输出 / 仅 yoloe series."""
     ex = next(m for m in setup_dict["models"] if m["id"] == "exemplar-yoloe")
     assert ex["is_interactive"] is True
-    assert ex["resource_profile"] == {"device": "gpu", "batchable": False}
+    assert ex["resource_profile"]["batchable"] is False
     assert ex["supported_inputs"] == ["full_image"]
     assert ex["supported_geometric_outputs"] == ["bbox", "polygon"]
     series = {
@@ -102,7 +102,7 @@ def test_setup_tracker_model_shape(setup_dict: dict) -> None:
     trk = next(m for m in setup_dict["models"] if m["id"] == "track")
     assert trk["task"] == "tracker"
     assert trk["is_interactive"] is False
-    assert trk["resource_profile"] == {"device": "gpu", "batchable": True}
+    assert trk["resource_profile"]["batchable"] is True
     assert trk["supported_inputs"] == ["video"]
     assert trk["supported_prompts"] == ["none"]
     assert trk["supported_geometric_outputs"] == ["bbox"]
@@ -182,13 +182,24 @@ def test_setup_models_declare_output_attribute_types(setup_dict: dict) -> None:
         assert m["output_attribute_types"] == ["class"]
 
 
-def test_setup_models_declare_resource_profile(setup_dict: dict) -> None:
-    """批量 task GPU 可批量; 交互 exemplar GPU 单次不可批量。"""
-    for m in setup_dict["models"]:
-        if m["id"] in EXEMPLAR_IDS:
-            assert m["resource_profile"] == {"device": "gpu", "batchable": False}
-        else:
-            assert m["resource_profile"] == {"device": "gpu", "batchable": True}
+@pytest.mark.parametrize(
+    ("configured", "latched", "expected"),
+    [("cpu", None, "cpu"), ("cuda:0", None, "gpu"), ("cuda:0", "cpu", "cpu")],
+)
+def test_setup_models_declare_resource_profile(monkeypatch, configured, latched, expected) -> None:
+    import main
+
+    monkeypatch.setattr(main, "DEVICE", configured)
+    monkeypatch.setattr(main, "effective_device_value", lambda: latched)
+    for model in main.setup()["models"]:
+        assert model["resource_profile"] == {
+            "device": expected,
+            "batchable": model["id"] not in EXEMPLAR_IDS,
+        }
+        if expected == "cpu":
+            for axis in model["supported_variants"]:
+                for variant in axis["variants"]:
+                    assert variant.get("vram_gb", 0) == 0
 
 
 def test_setup_models_carry_protocol_task(setup_dict: dict) -> None:
