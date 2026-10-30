@@ -6,6 +6,21 @@
 
 各插件拥有其预训练模型目录（固定来源、摘要和许可信息）；平台独立管理审批、存储、缓存准备和用户 checkpoint。目录可见不代表允许下载、启用或重新分发。容器与真实业务资格独立于源码公开和 Python 包发布。
 
+## 部署资产选择描述
+
+`scripts/generate-selection-descriptor.py` 为固定摘要的原生部署生成独立的规范 JSON 文件，描述每个模型／变体预期使用的资产。它不替换安装的 `asset_manifest_sha256`，也不读取权重内容、下载、批准或启用模型。使用与镜像匹配的源码和插件发布清单；YOLO 的源码侧工具环境还需安装插件锁文件固定的 `aap-task-contract` 和 `aap-training-contract` wheel，LibreYOLO 使用其锁定的 `httpx` 依赖读取现有资产描述模块。
+
+```sh
+python scripts/generate-selection-descriptor.py --plugin rapidocr --version 0.1.0 \
+  --artifact 'registry.example/rapidocr@sha256:<64-hex-digest>' \
+  --asset-manifest-sha256 '<64-hex-installation-manifest-digest>' \
+  --data-dir /private/plugin-data --output /private/rapidocr-selections.json
+```
+
+LibreYOLO、YOLO 和 ONNX Tools 分别使用 `--plugin libreyolo`、`--plugin yolo`、`--plugin onnxtools`，并传入各自的版本、镜像及安装清单摘要。输出必须是数据目录外的新文件，标准输出会打印 SHA256。JSON 使用键排序、紧凑分隔符、ASCII 转义且无末尾换行；数组确定性排序。资产路径相对于原生插件数据目录，禁止路径穿越、逃逸符号链接及冲突的 YOLO 预备资产身份。YOLO 复用训练契约读取预备清单，并遵循原生的摘要文件优先、旧文件名次之的查找顺序；预期身份始终来自插件发布清单。预备映射或存放位置改变后须重新生成。
+
+工具只描述具有完整发布身份的组合；本地缺少权重不等于无资产需求。LibreYOLO 声明原生 `yolov9` 系列四种尺寸与 `assets/` 路径，已有安装也须显式批准；RapidOCR 每个引擎都声明全部三个 session 的资产，包含尚未安装的组合；ONNX Tools 区分检测、分类和组合流水线；YOLO 两种跟踪算法共享检测器权重，World 与 YOLOE 文本任务分别需要对应编码器，视觉示例任务不需要文本编码器。目录描述不授予使用权。平台继续管理审批、可用性、本地文件核验、项目授权及存储；未确认许可的权重不得公开分发。
+
 ## 已安装环境下的插件开发
 
 使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-0.1.0) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。SDK 的通用入口为 `aap-inference-plugin`：
