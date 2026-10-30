@@ -20,8 +20,12 @@ ML backend 运行时共享组件 (无状态叶子函数 + 取消安全的 LRU �
   `AAP_GPU_PHYSICAL_DEVICE_TOKEN` 解析宿主物理卡 token；它未设置时才回落
   runtime 可见设备配置，避免把重映射后的逻辑 `cuda:0` 误当宿主卡 0。
 - `validate_single_gpu_device_set()` — backend 启动门禁，拒绝逗号多卡列表和已暴露 GPU 的无界 `all` 可见集合。
+- `observed_cuda_runtime_version(library_name="libcudart.so.12")` — 读取配置的 CUDA
+  ABI 实际版本；CUDA 13 消费方显式传入 `libcudart.so.13`，不探测或回退至其他 ABI。
 - `build_managed_lifecycle_evidence()` — 从部署级采集结果生成受管生命周期验收报告，
-  从 blockers 自动推导 `passed` 并调用共享契约验证。
+  从 blockers 自动推导 `passed` 并调用共享契约验证。可选 `workload_evidence`
+  保留受控模型收据、运行时摘要、fixture 尺寸及逐轮结果等结构化证据；
+  仍执行递归敏感字段检查，不替代检查项，也不改变严格的运行时池拓扑绑定。
 - `artifact_evidence()` — 生成不含本地路径的权重/fixture 摘要。
 - `aap-lifecycle-contract` 提供独立于模型运行时的严格报告验证、必做检查常量与
   `memory_cycle_evidence()`；稳定窗口为 64 MiB，工作集回收率至少 90%。

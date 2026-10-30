@@ -169,3 +169,21 @@ def test_missing_or_changed_approved_report_never_qualifies(qualification, monke
     monkeypatch.setenv("AAP_PLUGIN_QUALIFICATION_SHA256", "0" * 64)
     with pytest.raises(ValueError, match="digest"):
         plugin_verified_lifecycle(**args)
+
+
+def test_workload_evidence_cannot_override_native_topology(qualification):
+    report, save, args = qualification
+    report["workload_evidence"] = {
+        "controlled_detect": {
+            "receipt_sha256": "1" * 64,
+            "dimensions": [640, 480],
+            "instance_counts": [2, 2],
+        }
+    }
+    save(report)
+    assert plugin_verified_lifecycle(**args) is True
+    report["deployment"]["pool_topology"]["pools"]["engines"]["cap"] = 2
+    args["pool_topology"] = {"engines": {"cap": 1}}
+    save(report)
+    with pytest.raises(ValueError, match="measured"):
+        plugin_verified_lifecycle(**args)

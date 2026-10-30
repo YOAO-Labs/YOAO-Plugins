@@ -211,7 +211,7 @@ def test_observed_gpu_rejects_missing_or_ambiguous_facts(monkeypatch, output) ->
 
 @pytest.mark.parametrize(
     ("status", "version", "expected"),
-    [(0, 12080, "12.8.0"), (0, 12090, "12.9.0"), (1, 12080, None), (0, 0, None)],
+    [(0, 12080, "12.8.0"), (0, 12090, "12.9.0"), (0, 13020, "13.2.0"), (1, 12080, None), (0, 0, None)],
 )
 def test_observed_cuda_runtime_uses_library_result(
     monkeypatch, status, version, expected
@@ -238,3 +238,14 @@ def test_observed_cuda_runtime_requires_library(monkeypatch):
     monkeypatch.setattr("aap_backend_runtime.gpu.ctypes.CDLL", missing)
     with pytest.raises(RuntimeError, match="Cannot inspect"):
         observed_cuda_runtime_version()
+
+
+def test_observed_cuda_runtime_rejects_missing_requested_abi(monkeypatch):
+    def load(name):
+        if name == "libcudart.so.12":
+            return types.SimpleNamespace(cudaRuntimeGetVersion=lambda pointer: 0)
+        raise OSError("CUDA 13 is not installed")
+
+    monkeypatch.setattr("aap_backend_runtime.gpu.ctypes.CDLL", load)
+    with pytest.raises(RuntimeError, match="Cannot inspect"):
+        observed_cuda_runtime_version("libcudart.so.13")

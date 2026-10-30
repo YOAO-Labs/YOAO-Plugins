@@ -176,10 +176,10 @@ def observed_single_nvidia_gpu(expected_uuid: str) -> dict[str, str | int]:
     }
 
 
-def observed_cuda_runtime_version() -> str:
-    """Read the CUDA runtime library version actually loaded by this process."""
+def observed_cuda_runtime_version(library_name: str = "libcudart.so.12") -> str:
+    """Read the configured CUDA ABI's runtime version without probing other ABIs."""
     try:
-        library = ctypes.CDLL("libcudart.so.12")
+        library = ctypes.CDLL(library_name)
         get_version = library.cudaRuntimeGetVersion
     except (OSError, AttributeError) as exc:
         raise RuntimeError("Cannot inspect the CUDA runtime library") from exc

@@ -55,6 +55,7 @@ def build_managed_lifecycle_evidence(
     runtime_ephemera_clean: bool,
     blockers: Sequence[Mapping[str, str]] = (),
     generated_at: str | None = None,
+    workload_evidence: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build and strictly validate one qualification document.
 
@@ -155,6 +156,8 @@ def build_managed_lifecycle_evidence(
         "final_residency": dict(final_residency) if final_residency else None,
         "runtime_ephemera_clean": runtime_ephemera_clean,
     }
+    if workload_evidence is not None:
+        payload["workload_evidence"] = dict(workload_evidence)
     return _validate_managed_lifecycle_evidence(payload)
 
 
