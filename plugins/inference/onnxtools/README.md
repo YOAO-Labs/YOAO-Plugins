@@ -168,8 +168,8 @@ CPU 健康检查或推理不构成 CUDA 验收。
 
 ## Python 依赖与镜像构建
 
-`pyproject.toml` 声明平台 contracts release `contracts-0a21bc402432` 和
-runtime release `python-6118885dd686`，以及固定提交的 `onnxtools[inference]`、
+`pyproject.toml` 声明 Plugin-SDK contracts release `contracts-3d6393e64630` 和
+runtime release `python-sdk-0.1.0`，以及固定提交的 `onnxtools[inference]`、
 ONNX Runtime GPU 1.22.0、NumPy 2.2.6 和 headless contrib OpenCV。
 ORT GPU wheel 也可在 CPU 上运行。镜像通过仓库 `scripts/fetch-contracts.py`
 验证 manifest、源码修订和每个 contract wheel 的 SHA-256；runtime wheel 的
