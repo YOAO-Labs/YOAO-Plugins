@@ -508,7 +508,7 @@ async def health() -> dict[str, Any]:
             "last_evict": None,
         }
         residency_payload = None
-    return {
+    payload = {
         "status": "ok",
         "service": "yolo-backend",
         "version": BACKEND_VERSION,
@@ -534,6 +534,12 @@ async def health() -> dict[str, Any]:
         "gpu_info": gpu_info,
         "host": host,
     }
+    if plugin_lifecycle_options():
+        payload["pool_topology"] = {"models": {"cap": pool_snapshot["cap"]}}
+        payload["gpu_info"] = (
+            {**gpu_info, **_plugin_gpu_facts} if _plugin_gpu_facts else None
+        )
+    return payload
 
 
 def _build_size_variants_for(task: str, series: str) -> list[dict[str, Any]]:
@@ -1058,7 +1064,7 @@ def setup() -> dict[str, Any]:
             payload["runtime_info"].update(
                 driver_version=_plugin_gpu_facts["driver_version"],
                 total_memory_mb=_plugin_gpu_facts["total_memory_mb"],
-                cuda_build=str(torch.version.cuda),
+                cuda_build=_plugin_cuda_runtime,
             )
     if _plugin_lifecycle_verified or (MANAGED_LIFECYCLE_VERIFIED and not plugin_lifecycle_options()):
         payload["managed_lifecycle"] = ManagedLifecycleCapabilities().model_dump(

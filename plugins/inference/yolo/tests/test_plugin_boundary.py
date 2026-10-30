@@ -45,6 +45,9 @@ def test_plugin_auth_managed_access_and_terminal_drain(tmp_path):
             assert setup.status_code == 200
             assert setup.json()["plugin_identity"] == {"plugin_id": "yolo", "version": "0.1.0"}
             assert setup.json()["terminal_lifecycle"] == {"terminal_drain_endpoint": "/lifecycle/terminal-drain"}
+            assert health.json()["gpu_info"] is None
+            assert health.json()["pool_topology"] == setup.json()["pool_topology"]
+            assert set(health.json()["residency"]["pools"]) == set(setup.json()["pool_topology"])
             assert "managed_lifecycle" not in setup.json()
             profile = client.get("/managed-evaluation/profile", headers=auth)
             assert profile.status_code == 200, profile.text

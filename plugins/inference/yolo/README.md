@@ -49,6 +49,8 @@ The validator emits canonical JSON and derives `passed` from measured checks. A 
 
 Torch qualification topology contains the exact Registry, GPU resource and native model pools, without an empty ONNX Runtime `session_counts` field. The pinned shared runtime validates this same shape during normal SDK activation. Changing the runtime image requires a fresh bound report; never edit an earlier report to make installation accept it.
 
+Plugin health reports the actual model-pool capacity and measured GPU UUID, driver and total memory alongside performance counters; CPU installations report no GPU identity. Setup and qualification use the measured CUDA runtime, not the framework's compile-time CUDA label. The strict validator checks these activation facts before accepting inference cycles, and normal SDK activation remains a separate required check.
+
 Optional controlled-model fixture inputs and validation rules are in `scripts/controlled_segmentation_validation.py`. Actual GPU validation, model accuracy, storage publication and platform workflow acceptance are separate from a CPU setup smoke.
 
 ## Licenses

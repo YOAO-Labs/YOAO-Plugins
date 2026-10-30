@@ -484,6 +484,25 @@ async def _run() -> dict[str, Any]:
                         "managed lifecycle capability was not advertised"
                     )
                 contract_checks["managed_lifecycle_advertised"] = True
+                activation_health = (await client.get("/health")).json()
+                expected_gpu = {
+                    "device_uuid": gpu["uuid"],
+                    "driver_version": gpu["driver_version"],
+                    "total_memory_mb": gpu["total_memory_mb"],
+                }
+                if (
+                    activation_health.get("pool_topology") != setup.get("pool_topology")
+                    or setup.get("pool_topology") != {"models": {"cap": main.MODEL_POOL_CAP}}
+                    or any(
+                        (activation_health.get("gpu_info") or {}).get(key) != value
+                        for key, value in expected_gpu.items()
+                    )
+                    or setup["runtime_info"].get("cuda_build") != main._plugin_cuda_runtime
+                ):
+                    raise AssertionError(
+                        "Plugin activation health or CUDA runtime identity differs from the measured endpoint"
+                    )
+                contract_checks["plugin_activation_identity"] = True
                 if controlled is not None:
                     await controlled.install(client)
                     contract_checks[f"{controlled.check_prefix}_install"] = True
