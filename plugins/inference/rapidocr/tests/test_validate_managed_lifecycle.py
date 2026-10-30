@@ -177,3 +177,64 @@ def test_generated_fixture_must_match_approved_digest(tmp_path):
     assert path.is_file()
     assert record["sha256"] == expected
     assert record["approval_ref"] == "fixture:approved"
+
+
+def test_produced_runtime_evidence_binds_observed_driver_to_native_plugin(qualification_identity, monkeypatch, tmp_path):
+    from aap_backend_runtime.plugin_service import plugin_verified_lifecycle
+    from aap_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
+
+    registry = qualification_identity["VALIDATION_BACKEND_REGISTRY_ID"]
+    resource = qualification_identity["VALIDATION_GPU_RESOURCE_ID"]
+    gpu_uuid = qualification_identity["VALIDATION_GPU_UUID"]
+    runtime = {"python": "3.10.12", "onnxruntime": "1.23.2", "cuda": "12.8.0"}
+    gpu = {"device_uuid": gpu_uuid, "driver_version": "595.99.02", "total_memory_mb": 24576}
+    weights = [{"sha256": "d" * 64, "size_bytes": 31}]
+    topology = {"engines": {"cap": 3}}
+    counts = {"engines": 9}
+    cycles = []
+    for index in (1, 2):
+        cycle = memory_cycle_evidence(
+            cycle=index, generation=str(index),
+            context_samples_mb=[100] * 5, loaded_samples_mb=[1100] * 3,
+            unloaded_samples_mb=[100] * 5,
+        )
+        cycle["session_observations"] = {"engines": [["CUDAExecutionProvider"]] * 9}
+        cycles.append(cycle)
+    report = {
+        "schema_version": "1", "backend_name": "rapidocr",
+        "generated_at": "2026-10-30T12:00:00Z", "passed": True, "blockers": [],
+        "deployment": {
+            "git_commit": "e" * 40,
+            "image_id": qualification_identity["VALIDATION_IMAGE_ID"],
+            "runtime_versions": validator._deployment_runtime_versions(runtime, gpu, registry_id=registry, resource_id=resource),
+            "pool_topology": {"registry_id": registry, "gpu_resource_id": resource, "pools": topology, "session_counts": counts},
+        },
+        "artifacts": [
+            {"kind": "weight", "name": "model.onnx", **weights[0], "approval_ref": "internal"},
+            {"kind": "fixture", "name": "fixture.png", "sha256": "f" * 64, "size_bytes": 10, "approval_ref": "internal"},
+        ],
+        "gpu": {"uuid": gpu_uuid, "total_memory_mb": gpu["total_memory_mb"], "driver_version": gpu["driver_version"], "runtime_version": runtime["cuda"], "visible_device_count": 1},
+        "cycles": cycles,
+        "contract_checks": {name: True for name in REQUIRED_CONTRACT_CHECKS},
+        "final_residency": {
+            "state": "unloaded", "gpu_loaded": False, "evictable": False,
+            "active_requests": 0, "builders": 0, "borrowers": 0,
+            "pools": {"engines": {"resident": False}},
+            "identity": {"backend_registry_id": registry, "gpu_resource_id": resource},
+        },
+        "runtime_ephemera_clean": True,
+    }
+
+    def save():
+        raw = json.dumps(report, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
+        path = tmp_path / "qualification.json"
+        path.write_bytes(raw)
+        monkeypatch.setenv("AAP_PLUGIN_QUALIFICATION_FILE", str(path))
+        monkeypatch.setenv("AAP_PLUGIN_QUALIFICATION_SHA256", hashlib.sha256(raw).hexdigest())
+
+    save()
+    args = {"pool_topology": topology, "runtime_versions": runtime, "gpu_facts": gpu, "expected_weights": weights, "session_counts": counts}
+    assert plugin_verified_lifecycle(**args) is True
+    gpu["driver_version"] = "different"
+    with pytest.raises(ValueError, match="measured"):
+        plugin_verified_lifecycle(**args)
