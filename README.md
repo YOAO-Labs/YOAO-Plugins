@@ -6,6 +6,21 @@
 
 各插件拥有其预训练模型目录（固定来源、摘要和许可信息）；平台独立管理审批、存储、缓存准备和用户 checkpoint。目录可见不代表允许下载、启用或重新分发。容器与真实业务资格独立于源码公开和 Python 包发布。
 
+## Operator selection descriptors
+
+`scripts/generate-selection-descriptor.py` produces a separate canonical JSON sidecar describing the expected asset identities for a specific immutable native deployment. It does not replace the installation's `asset_manifest_sha256`, hash weight files, download, approve, or enable models. Use the exact source revision and published catalogs matching the artifact; for YOLO the source-only operator environment also needs the pinned `aap-task-contract` wheel from the plugin's lockfile.
+
+```sh
+python scripts/generate-selection-descriptor.py --plugin rapidocr --version 0.1.0 \
+  --artifact 'registry.example/rapidocr@sha256:<64-hex-digest>' \
+  --asset-manifest-sha256 '<64-hex-installation-manifest-digest>' \
+  --data-dir /private/plugin-data --output /private/rapidocr-selections.json
+```
+
+Use `--plugin yolo` or `--plugin onnxtools` with their own version, artifact and installation digest. Output must be a new file outside the data directory; stdout prints its SHA256. JSON keys use sorted order, compact separators, ASCII escaping, and no trailing newline. Arrays are deterministically sorted. Paths are relative to the native plugin data directory; the generator rejects traversal, escaping symlinks and conflicting prepared YOLO identities. For YOLO it reads the prepared cache's filename mappings to follow the native digest/legacy precedence, but identities come from the published catalog. Regenerate if the prepared mapping or placement changes.
+
+Only combinations with complete published identities are described; missing local weights remain expected, not asset-free. RapidOCR describes all three sessions per engine, including currently uninstalled combinations; ONNX distinguishes detector, classifier and pipeline; YOLO tracker algorithms share detector weights, World and YOLOE text require their respective encoders, and visual exemplars do not require a text encoder. Catalog descriptions grant no rights. Platform policy, approval, availability, local-byte verification, project permissions and storage remain platform responsibilities; unverified weight redistribution is not authorized.
+
 ## 已安装环境下的插件开发
 
 使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-0.1.0) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。SDK 的通用入口为 `aap-inference-plugin`：
