@@ -22,6 +22,7 @@ from statistics import median
 from typing import Any
 
 import cv2
+import httpx
 import numpy as np
 from PIL import Image, ImageDraw
 from aap_backend_runtime import (
