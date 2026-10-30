@@ -27,5 +27,6 @@ RUN python -m pip wheel --no-deps --no-build-isolation -w /tmp/wheels /tmp/yolo 
     && rm -rf /tmp/yolo /tmp/wheels /tmp/contracts \
     && mkdir -p /app/checkpoints /app/.config/Ultralytics \
     && ln -sfn /app/checkpoints/weights /app/weights
+ENV CUDA_VERSION=13.2
 EXPOSE 8003
 ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--workers", "1"]
