@@ -83,6 +83,20 @@ def _workload_headers(token: Any, scope: AdmissionScope, generation: str, *, con
     }
 
 
+def _deployment_runtime_versions(runtime: dict[str, str], gpu: dict[str, Any], *, registry_id: str, resource_id: str) -> dict[str, str]:
+    return {
+        **runtime,
+        "plugin_id": os.environ["AAP_PLUGIN_ID"],
+        "plugin_version": os.environ["AAP_PLUGIN_VERSION"],
+        "artifact": os.environ["AAP_PLUGIN_OCI_ARTIFACT"],
+        "asset_manifest_sha256": os.environ["AAP_PLUGIN_ASSET_MANIFEST_SHA256"],
+        "registry_id": registry_id,
+        "gpu_resource_id": resource_id,
+        "driver_version": gpu["driver_version"],
+        "qualification_authority": "operator-ephemeral",
+    }
+
+
 def _deployment_identity() -> tuple[str, str, str]:
     registry = _required_env("VALIDATION_BACKEND_REGISTRY_ID")
     resource = _required_env("VALIDATION_GPU_RESOURCE_ID")
@@ -728,16 +742,10 @@ async def _run() -> dict[str, Any]:
                 deployment={
                     "git_commit": git_commit,
                     "image_id": image_id,
-                    "runtime_versions": {
-                        **main._plugin_runtime_versions(),  # noqa: SLF001
-                        "plugin_id": os.environ["AAP_PLUGIN_ID"],
-                        "plugin_version": os.environ["AAP_PLUGIN_VERSION"],
-                        "artifact": os.environ["AAP_PLUGIN_OCI_ARTIFACT"],
-                        "asset_manifest_sha256": os.environ["AAP_PLUGIN_ASSET_MANIFEST_SHA256"],
-                        "registry_id": registry_id,
-                        "gpu_resource_id": resource_id,
-                        "qualification_authority": "operator-ephemeral",
-                    },
+                    "runtime_versions": _deployment_runtime_versions(
+                        main._plugin_runtime_versions(), gpu,  # noqa: SLF001
+                        registry_id=registry_id, resource_id=resource_id,
+                    ),
                     "pool_topology": {
                         "registry_id": registry_id,
                         "gpu_resource_id": resource_id,

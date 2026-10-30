@@ -137,6 +137,8 @@ v5 mobile、v5 server 和 v6 medium 三引擎所需权重精确相等。验收�
 该临时权限不修改部署门禁，也不能替代经审批的验收报告。
 上下文预热的签名 workload 使用预部门禁的 control epoch，正式两轮使用重置后的
 control epoch；两者不匹配时必须拒绝请求。
+报告必须同时绑定实测 GPU 驱动版本、安装身份、资产摘要和九条 session 的 provider
+chain；仅通过显存回收不代表报告能被原生插件接受。
 
 ## 接入平台
 
