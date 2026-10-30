@@ -69,7 +69,6 @@ jobs:
     env:
       CUDA_VISIBLE_DEVICES: ''
       NVIDIA_VISIBLE_DEVICES: void
-      RAPIDOCR_DEVICE: cpu
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@v4
