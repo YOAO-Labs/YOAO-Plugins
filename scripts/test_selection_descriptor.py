@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("selection_descriptor", Path(__file__).with_name("generate-selection-descriptor.py"))
 generator = importlib.util.module_from_spec(spec)
@@ -58,6 +59,14 @@ class SelectionDescriptorTests(unittest.TestCase):
         (cache / "assets.json").write_text(json.dumps({"version": 1, "assets": [{"filename": "yolo11s.pt", "sha256": "0" * 64, "size_bytes": item["size_bytes"]}]}))
         with self.assertRaisesRegex(ValueError, "differs"):
             self.build("yolo")
+
+    def test_rejects_duplicate_selections_and_paths(self):
+        groups = generator.selections_onnx(self.root)
+        model, variants, assets = groups[0]
+        for malformed in (groups + [groups[0]], [(model, variants, assets + assets)]):
+            with self.subTest(malformed=malformed), patch.object(generator, "selections_onnx", return_value=malformed):
+                with self.assertRaises(ValueError):
+                    self.build("onnxtools")
 
     def test_rejects_noncanonical_and_symlink_escape(self):
         for path in ("../outside", "/absolute", "models//x", "models/./x", "models\\x"):
