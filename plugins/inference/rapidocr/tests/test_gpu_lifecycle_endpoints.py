@@ -177,6 +177,32 @@ def _workload_headers(
     }
 
 
+def test_qualifier_priming_workload_uses_active_control_epoch(managed_client) -> None:
+    from scripts.validate_managed_lifecycle import _workload_headers
+
+    _main, client, private_key = managed_client
+    boot_id = _promote(client, private_key)
+
+    def token(scope, *, generation, control_epoch):
+        return _token(
+            private_key, boot_id, scope, generation=generation,
+            control_epoch=control_epoch, jti=f"priming-epoch-{control_epoch}",
+        )
+
+    rejected = client.post(
+        "/warmup",
+        headers=_workload_headers(token, AdmissionScope.WARMUP, "1", control_epoch="5"),
+        json={"model_id": "ocr-det"},
+    )
+    assert rejected.status_code == 403
+    accepted = client.post(
+        "/warmup",
+        headers=_workload_headers(token, AdmissionScope.WARMUP, "1", control_epoch="1"),
+        json={"model_id": "ocr-det"},
+    )
+    assert accepted.status_code == 200, accepted.text
+
+
 def test_setup_and_health_publish_verified_managed_lifecycle(managed_client) -> None:
     _main, client, _private_key = managed_client
 

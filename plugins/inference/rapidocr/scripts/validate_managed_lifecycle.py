@@ -76,6 +76,13 @@ def _required_env(name: str) -> str:
     return value
 
 
+def _workload_headers(token: Any, scope: AdmissionScope, generation: str, *, control_epoch: str) -> dict[str, str]:
+    return {
+        GPU_GENERATION_HEADER: generation,
+        GPU_ADMISSION_TOKEN_HEADER: token(scope, generation=generation, control_epoch=control_epoch),
+    }
+
+
 def _deployment_identity() -> tuple[str, str, str]:
     registry = _required_env("VALIDATION_BACKEND_REGISTRY_ID")
     resource = _required_env("VALIDATION_GPU_RESOURCE_ID")
@@ -442,11 +449,8 @@ async def _run() -> dict[str, Any]:
         )
         return sign_admission_token(claims, private_key=private_key, kid="validation")
 
-    def headers(scope: AdmissionScope, generation: str) -> dict[str, str]:
-        return {
-            GPU_GENERATION_HEADER: generation,
-            GPU_ADMISSION_TOKEN_HEADER: token(scope, generation=generation),
-        }
+    def headers(scope: AdmissionScope, generation: str, *, control_epoch: str = "5") -> dict[str, str]:
+        return _workload_headers(token, scope, generation, control_epoch=control_epoch)
 
     async def checked_post(
         client: httpx.AsyncClient,
@@ -513,7 +517,7 @@ async def _run() -> dict[str, Any]:
                                 "model_variants": variants,
                             },
                         },
-                        headers(AdmissionScope.PREDICT, "1"),
+                        headers(AdmissionScope.PREDICT, "1", control_epoch="2"),
                     )
                 await main._engine_pool.unload_all(  # noqa: SLF001
                     reason="manual",

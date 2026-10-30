@@ -135,6 +135,8 @@ v5 mobile、v5 server 和 v6 medium 三引擎所需权重精确相等。验收�
 `AAP_PLUGIN_TOKEN_FILE`、`AAP_PLUGIN_DATA_DIR` 和 `AAP_PLUGIN_DEVICE=cuda:0`。
 验收器通过仅用于本进程的临时签名密钥及 loopback 路由权限执行真实原生插件路径；
 该临时权限不修改部署门禁，也不能替代经审批的验收报告。
+上下文预热的签名 workload 使用预部门禁的 control epoch，正式两轮使用重置后的
+control epoch；两者不匹配时必须拒绝请求。
 
 ## 接入平台
 
