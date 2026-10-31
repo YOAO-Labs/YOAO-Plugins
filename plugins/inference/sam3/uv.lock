@@ -11,7 +11,7 @@ resolution-markers = [
 [[package]]
 name = "aap-backend-runtime"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-8b7ecb5247cc/aap_backend_runtime-0.1.0-py3-none-any.whl" }
 dependencies = [
     { name = "aap-lifecycle-contract" },
     { name = "aap-protocol-v2" },
@@ -21,7 +21,7 @@ dependencies = [
     { name = "pillow" },
 ]
 wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:863e633ab8a55d1ff29936d379e5eeaaa68fbe59b6f0489ea71dcbdb8b042e03" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-8b7ecb5247cc/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:5eeeca010187da19fe59c1c61342e1dc894c0f810e96ea06e1e0437664370c61" },
 ]
 
 [package.metadata]
@@ -32,9 +32,14 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pillow", specifier = ">=10.0" },
+    { name = "pyjwt", marker = "extra == 'qualification'", specifier = ">=2.8,<3" },
+    { name = "pyjwt", marker = "extra == 'test'", specifier = ">=2.8,<3" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24" },
+    { name = "uvicorn", marker = "extra == 'qualification'", specifier = ">=0.29" },
+    { name = "uvicorn", marker = "extra == 'test'", specifier = ">=0.29" },
 ]
-provides-extras = ["test"]
+provides-extras = ["qualification", "test"]
 
 [[package]]
 name = "aap-lifecycle-contract"
@@ -300,18 +305,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a9/95/a3dbbb5028f35eafb79008e7522a75244477d2838f38cbb722248dabc2a8/cycler-0.12.1.tar.gz", hash = "sha256:88bb128f02ba341da8ef447245a9e138fae777f6a23943da4540077d3601eb1c", size = 7615, upload-time = "2023-10-07T05:32:18.335Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e7/05/c19819d5e3d95294a6f5947fb9b9629efb316b96de511b418c53d245aae6/cycler-0.12.1-py3-none-any.whl", hash = "sha256:85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30", size = 8321, upload-time = "2023-10-07T05:32:16.783Z" },
-]
-
-[[package]]
-name = "decord"
-version = "0.6.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/79/936af42edf90a7bd4e41a6cac89c913d4b47fa48a26b042d5129a9242ee3/decord-0.6.0-py3-none-manylinux2010_x86_64.whl", hash = "sha256:51997f20be8958e23b7c4061ba45d0efcd86bffd5fe81c695d0befee0d442976", size = 13602299, upload-time = "2021-06-14T21:30:55.486Z" },
-    { url = "https://files.pythonhosted.org/packages/6c/be/e15b5b866da452e62635a7b27513f31cb581fa2ea9cc9b768b535d62a955/decord-0.6.0-py3-none-win_amd64.whl", hash = "sha256:02665d7c4f1193a330205a791bc128f7e108eb6ae5b67144437a02f700943bad", size = 24733380, upload-time = "2021-06-14T21:30:57.766Z" },
 ]
 
 [[package]]
@@ -1434,7 +1427,6 @@ dependencies = [
     { name = "aap-task-contract" },
     { name = "anno-mask-utils" },
     { name = "cryptography" },
-    { name = "decord" },
     { name = "einops" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -1470,13 +1462,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" },
+    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-8b7ecb5247cc/aap_backend_runtime-0.1.0-py3-none-any.whl" },
     { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
     { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" },
     { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl" },
     { name = "anno-mask-utils", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/anno_mask_utils-0.1.0-py3-none-any.whl" },
     { name = "cryptography", specifier = ">=43.0.0" },
-    { name = "decord", specifier = ">=0.6" },
     { name = "einops", specifier = ">=0.7" },
     { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },

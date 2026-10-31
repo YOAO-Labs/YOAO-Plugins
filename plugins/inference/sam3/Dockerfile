@@ -22,12 +22,14 @@ COPY --from=uv /uv /usr/local/bin/uv
 RUN uv python install --install-dir /opt/python --no-bin 3.12.11 \
     && python3.12 -m venv /opt/sam3-venv
 ENV VIRTUAL_ENV=/opt/sam3-venv PATH=/opt/sam3-venv/bin:${PATH}
-COPY plugins/inference/sam3/*requirements.lock /tmp/
+COPY plugins/inference/sam3/build-requirements.lock plugins/inference/sam3/cuda-requirements.lock \
+     plugins/inference/sam3/requirements.lock plugins/inference/sam3/fairscale-requirements.lock /tmp/
 RUN python3.12 -m pip install --no-deps --require-hashes -r /tmp/build-requirements.lock \
     && python3.12 -m pip install --no-deps --require-hashes -r /tmp/cuda-requirements.lock \
     && python3.12 -m pip install --no-build-isolation --no-deps --require-hashes -r /tmp/requirements.lock \
-    && python3.12 -m pip install --no-build-isolation --no-deps --require-hashes -r /tmp/fairscale-requirements.lock \
-    && python3.12 -m pip install --no-deps --require-hashes -r /tmp/first-party-requirements.lock
+    && python3.12 -m pip install --no-build-isolation --no-deps --require-hashes -r /tmp/fairscale-requirements.lock
+COPY plugins/inference/sam3/first-party-requirements.lock /tmp/
+RUN python3.12 -m pip install --no-deps --require-hashes -r /tmp/first-party-requirements.lock
 COPY plugins/inference/sam3/ /tmp/sam3-plugin/
 RUN test -f /tmp/sam3-plugin/vendor/sam3/pyproject.toml \
     && patch --batch --forward --fuzz=0 -d /tmp/sam3-plugin/vendor/sam3 -p1 < /tmp/sam3-plugin/patches/0001-request-scoped-autocast.patch \

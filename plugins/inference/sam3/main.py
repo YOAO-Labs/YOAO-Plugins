@@ -254,8 +254,8 @@ def _plugin_runtime_versions() -> dict[str, str]:
     return result
 
 
-def _qualification_weights() -> list[dict[str, Any]]:
-    if not os.environ.get("AAP_PLUGIN_QUALIFICATION_FILE"):
+def _qualification_weights(*, required: bool = False) -> list[dict[str, Any]]:
+    if not required and not os.environ.get("AAP_PLUGIN_QUALIFICATION_FILE"):
         return []
     from aap_backend_runtime import artifact_evidence
     from sam3_plugin.catalog import descriptor

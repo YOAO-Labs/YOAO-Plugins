@@ -18,7 +18,7 @@ dependencies = [
     "opencv-python-headless>=4.9", "shapely>=2.0", "huggingface_hub>=0.23",
     "transformers>=4.45", "supervision>=0.21", "prometheus-client>=0.20",
     "pynvml>=11.5", "psutil>=5.9", "cryptography>=43.0.0", "PyJWT>=2.10,<3",
-    "einops>=0.7", "pycocotools>=2.0", "open_clip_torch>=2.24", "decord>=0.6",
+    "einops>=0.7", "pycocotools>=2.0", "open_clip_torch>=2.24",
     "setuptools>=77,<81", "wheel", "pyOpenSSL>=24.2.1",
 ]
 
@@ -42,7 +42,7 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.uv.sources]
-aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" }
+aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-8b7ecb5247cc/aap_backend_runtime-0.1.0-py3-none-any.whl" }
 aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
 aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" }
 aap-task-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl" }

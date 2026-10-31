@@ -1,9 +1,8 @@
 """Run the SAM3 managed-lifecycle deployment gate on a real GPU.
 
-The script is intentionally self-contained: it creates an ephemeral signing key,
-drives the ASGI app in-process, generates synthetic image/video inputs under /tmp,
-and removes them before exit. Run it only in the deployment image with checkpoint
-and GPU mounts equivalent to the target service.
+The script creates ephemeral validation authority and drives the real loopback
+HTTP routing boundary. Run only in an isolated deployment image with approved
+checkpoints and a separately authorized GPU.
 """
 
 from __future__ import annotations
@@ -13,6 +12,8 @@ import gc
 import json
 import os
 import platform
+import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -28,12 +29,12 @@ import cv2
 import httpx
 import numpy as np
 from PIL import Image, ImageDraw
-from aap_backend_runtime.backend_auth import backend_auth_headers
 from aap_backend_runtime import (
     artifact_evidence,
     build_managed_lifecycle_evidence,
     exercise_lifecycle_fault_matrix,
 )
+from aap_backend_runtime.qualification_http import bind_operator_routes, http_client
 from aap_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
 from aap_protocol_v2.lifecycle import (
     AdmissionScope,
@@ -325,27 +326,56 @@ def _make_inputs(root: Path) -> tuple[Path, Path]:
     return image_path, video_path
 
 
+def _native_binding() -> tuple[str, str, str, str]:
+    registry = _required_env("VALIDATION_REGISTRY_ID")
+    resource = _required_env("VALIDATION_GPU_RESOURCE_ID")
+    plugin_id = _required_env("AAP_PLUGIN_ID")
+    plugin_version = _required_env("AAP_PLUGIN_VERSION")
+    artifact = _required_env("AAP_PLUGIN_OCI_ARTIFACT")
+    manifest = _required_env("AAP_PLUGIN_ASSET_MANIFEST_SHA256")
+    image_id = _required_env("VALIDATION_IMAGE_ID")
+    if (
+        re.fullmatch(r"[^\s@]+@sha256:[0-9a-f]{64}", artifact) is None
+        or re.fullmatch(r"[0-9a-f]{64}", manifest) is None
+        or re.fullmatch(r"sha256:[0-9a-f]{64}", image_id) is None
+    ):
+        raise RuntimeError("qualification requires immutable image and manifest identities")
+    if (
+        _required_env("AAP_PLUGIN_REGISTRY_ID") != registry
+        or _required_env("AAP_ROUTE_REGISTRY_ID") != registry
+        or _required_env("AAP_PLUGIN_GPU_RESOURCE_ID") != resource
+        or _required_env("AAP_PLUGIN_DEVICE") != "cuda:0"
+        or _required_env("AAP_PLUGIN_GPU_UUID") != _required_env("VALIDATION_GPU_UUID")
+        or _required_env("AAP_PLUGIN_IMAGE_ID") != image_id
+    ):
+        raise RuntimeError("qualification and plugin deployment identities differ")
+    _required_env("AAP_PLUGIN_TOKEN_FILE")
+    _required_env("AAP_PLUGIN_DATA_DIR")
+    _required_env("CUDA_VERSION")
+    if os.environ.get("AAP_PLUGIN_QUALIFICATION_FILE") or os.environ.get("AAP_PLUGIN_QUALIFICATION_SHA256"):
+        raise RuntimeError("qualification cannot reuse an existing report")
+    return registry, resource, plugin_id, plugin_version
+
+
 async def _run() -> dict[str, Any]:
+    global REGISTRY_ID, RESOURCE_ID
+    REGISTRY_ID, RESOURCE_ID, native_plugin_id, plugin_version = _native_binding()
     git_commit = _required_env("VALIDATION_GIT_COMMIT")
     image_id = _required_env("VALIDATION_IMAGE_ID")
     model_approval_ref = _required_env("VALIDATION_MODEL_APPROVAL_REF")
     fixture_approval_ref = _required_env("VALIDATION_FIXTURE_APPROVAL_REF")
-    native_plugin_id = os.environ.get("VALIDATION_PLUGIN_ID")
-    if native_plugin_id:
-        if os.environ.get("AAP_PLUGIN_TOKEN_FILE"):
-            raise RuntimeError("Run qualification in an isolated validation process, not the native service")
-        _required_env("VALIDATION_REGISTRY_ID")
-        _required_env("VALIDATION_GPU_RESOURCE_ID")
-        _required_env("VALIDATION_GPU_UUID")
-        _required_env("VALIDATION_PLUGIN_VERSION")
-        _required_env("VALIDATION_OCI_ARTIFACT")
-        _required_env("VALIDATION_ASSET_MANIFEST_SHA256")
-        _required_env("CUDA_VERSION")
+    private_root = tempfile.TemporaryDirectory(prefix="sam3-qualification-authority-")
+    private_path = Path(private_root.name)
     private_key = Ed25519PrivateKey.generate()
-    os.environ["GPU_LIFECYCLE_VERIFY_KEYS_JSON"] = json.dumps(
-        {"validation": encode_ed25519_public_key(private_key.public_key())}
-    )
-    os.environ["SAM3_MANAGED_LIFECYCLE_VERIFIED"] = "1"
+    keyring_file = private_path / "gpu-keyring.json"
+    keyring_file.write_text(json.dumps({"validation": encode_ed25519_public_key(private_key.public_key())}))
+    keyring_file.chmod(0o600)
+    route_secret = secrets.token_urlsafe(48)
+    route_file = private_path / "route-token"
+    route_file.write_text(route_secret)
+    route_file.chmod(0o600)
+    os.environ["AAP_PLUGIN_GPU_KEYRING_FILE"] = str(keyring_file)
+    os.environ["AAP_ROUTE_CONTROL_TOKEN_FILE"] = str(route_file)
     os.environ["SAM3_IDLE_UNLOAD_SECONDS"] = "0"
     os.environ["SAM3_MODEL_POOL_BUILD_TIMEOUT"] = "300"
 
@@ -353,21 +383,35 @@ async def _run() -> dict[str, Any]:
     import main  # noqa: PLC0415
 
     validation_root = Path(tempfile.mkdtemp(prefix="sam3_lifecycle_validation_"))
-    image_path, video_path = _make_inputs(validation_root)
-    gpu = _gpu_metadata(os.getenv("VALIDATION_GPU_UUID") or None)
-    target_uuid = gpu["uuid"]
-    memory: dict[str, Any] = {}
-    contract_checks = {name: False for name in REQUIRED_CONTRACT_CHECKS}
 
     try:
+        image_path, video_path = _make_inputs(validation_root)
+        gpu = _gpu_metadata(_required_env("VALIDATION_GPU_UUID"))
+        target_uuid = gpu["uuid"]
+        memory: dict[str, Any] = {}
+        contract_checks = {name: False for name in REQUIRED_CONTRACT_CHECKS}
         await main._load_models()  # noqa: SLF001
         assert main._gpu_lifecycle is not None  # noqa: SLF001
         boot_id = main._gpu_lifecycle.boot_id  # noqa: SLF001
+        selected_weights = main._qualification_weights(required=True)  # noqa: SLF001
+        checkpoint_dir = Path(main.checkpoint_dir())
+        approved_weights = [
+            _approved_artifact(checkpoint_dir / "sam3.pt", kind="weight", approval_ref=model_approval_ref, expected_sha_env="VALIDATION_SAM3_SHA256"),
+            _approved_artifact(checkpoint_dir / "sam3.1_multiplex.pt", kind="weight", approval_ref=model_approval_ref, expected_sha_env="VALIDATION_MULTIPLEX_SHA256"),
+        ]
+        if {(item["sha256"], item["size_bytes"]) for item in approved_weights} != {
+            (item["sha256"], item["size_bytes"]) for item in selected_weights
+        }:
+            raise RuntimeError("Qualification weights do not match the native installation")
+        # Temporary authority exists only in this isolated qualification process.
+        main._gpu_lifecycle._evictable_verified = True  # noqa: SLF001
+        main._plugin_lifecycle_verified = True  # noqa: SLF001
     except BaseException:
         try:
             await main._shutdown()  # noqa: SLF001
         finally:
             shutil.rmtree(validation_root, ignore_errors=True)
+            private_root.cleanup()
         raise
 
     def token(
@@ -418,14 +462,9 @@ async def _run() -> dict[str, Any]:
             )
         return response.json()
 
-    transport = httpx.ASGITransport(app=main.app)
     try:
-        async with httpx.AsyncClient(
-            transport=transport,
-            headers=backend_auth_headers("sam3"),
-            base_url="http://sam3-validation",
-            timeout=600,
-        ) as client:
+        async with http_client(main.app) as client:
+            await bind_operator_routes(client, registry_id=REGISTRY_ID, route_secret=route_secret)
             reset = await checked_post(
                 client,
                 "/lifecycle/reset",
@@ -686,33 +725,26 @@ async def _run() -> dict[str, Any]:
                 approval_ref=fixture_approval_ref,
             ),
         ]
-        gpu["runtime_version"] = str(main.torch.version.cuda)
+        gpu["runtime_version"] = main._plugin_cuda_runtime  # noqa: SLF001
         pool_topology = {
             pool_id: {"cap": int(snapshot["cap"])}
             for pool_id, snapshot in cycle_2_pool["pools"].items()
         }
         runtime_versions = {
-            "python": platform.python_version(),
-            "torch": str(main.torch.__version__),
-            "cuda": str(main.torch.version.cuda),
-            "backend": str(main.BACKEND_VERSION),
+            **main._plugin_runtime_versions(),  # noqa: SLF001
+            "plugin_id": native_plugin_id,
+            "plugin_version": plugin_version,
+            "artifact": _required_env("AAP_PLUGIN_OCI_ARTIFACT"),
+            "asset_manifest_sha256": _required_env("AAP_PLUGIN_ASSET_MANIFEST_SHA256"),
+            "registry_id": REGISTRY_ID,
+            "gpu_resource_id": RESOURCE_ID,
+            "driver_version": gpu["driver_version"],
         }
-        if native_plugin_id:
-            runtime_versions.update(
-                plugin_id=native_plugin_id,
-                plugin_version=_required_env("VALIDATION_PLUGIN_VERSION"),
-                artifact=_required_env("VALIDATION_OCI_ARTIFACT"),
-                asset_manifest_sha256=_required_env("VALIDATION_ASSET_MANIFEST_SHA256"),
-                registry_id=REGISTRY_ID,
-                gpu_resource_id=RESOURCE_ID,
-                driver_version=gpu["driver_version"],
-                cuda_image=_required_env("CUDA_VERSION"),
-            )
-            pool_topology = {
-                "registry_id": REGISTRY_ID,
-                "gpu_resource_id": RESOURCE_ID,
-                "pools": pool_topology,
-            }
+        pool_topology = {
+            "registry_id": REGISTRY_ID,
+            "gpu_resource_id": RESOURCE_ID,
+            "pools": pool_topology,
+        }
         cycles = [
             memory_cycle_evidence(
                 cycle=1,
@@ -730,7 +762,7 @@ async def _run() -> dict[str, Any]:
             ),
         ]
         return build_managed_lifecycle_evidence(
-            backend_name=native_plugin_id or "sam3-backend",
+            backend_name=native_plugin_id,
             deployment={
                 "git_commit": git_commit,
                 "image_id": image_id,
@@ -748,7 +780,8 @@ async def _run() -> dict[str, Any]:
         try:
             await main._shutdown()  # noqa: SLF001
         finally:
-            shutil.rmtree(validation_root, ignore_errors=True)
+            shutil.rmtree(validation_root)
+            private_root.cleanup()
 
 
 def _failed_evidence(exc: Exception) -> dict[str, Any]:
