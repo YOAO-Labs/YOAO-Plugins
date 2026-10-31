@@ -326,7 +326,7 @@ async def _run() -> dict[str, Any]:
         scope: AdmissionScope,
         *,
         generation: str | None = None,
-        control_epoch: str = "3",
+        control_epoch: str = "2",
         owner: str = "validation",
         operation: str = "validation",
         jti: str | None = None,
@@ -412,14 +412,43 @@ async def _run() -> dict[str, Any]:
             )
             if len(_gpu_compute_processes(target_uuid)) != 1:
                 raise RuntimeError("validator is not the sole GPU compute process")
-            # Prime both real inference roots once so the measured baseline includes
-            # process-level CUDA/cuDNN state that survives a complete pool unload.
-            await checked_post(client, "/predict", image_predict_body, {})
-            await checked_post(client, "/predict", video_predict_body, {})
-            await main._pool_domain.unload_all(  # noqa: SLF001
-                reason="manual",
-                force_cleanup=True,
+            await checked_post(
+                client,
+                "/lifecycle/mode",
+                {"gate": "enforce", "control_epoch": "2"},
+                {
+                    GPU_ADMISSION_TOKEN_HEADER: token(
+                        AdmissionScope.MODE,
+                        control_epoch="2",
+                        operation="mode-2",
+                    )
+                },
             )
+            # Prime both inference roots through native admission before measuring
+            # process-level CUDA/cuDNN state that survives a managed unload.
+            await checked_post(
+                client, "/predict", image_predict_body,
+                headers(AdmissionScope.PREDICT, "1"),
+            )
+            await checked_post(
+                client, "/predict", video_predict_body,
+                headers(AdmissionScope.PREDICT, "1"),
+            )
+            for scope, path in (
+                (AdmissionScope.DRAIN, "/drain"),
+                (AdmissionScope.UNLOAD, "/unload"),
+            ):
+                await checked_post(
+                    client,
+                    path,
+                    {"generation": "2"},
+                    {
+                        GPU_GENERATION_HEADER: "2",
+                        GPU_ADMISSION_TOKEN_HEADER: token(
+                            scope, generation="2", operation="context-prime",
+                        ),
+                    },
+                )
             primed_snapshot = await main._pool_domain.snapshot()  # noqa: SLF001
             if primed_snapshot["current_size"] != 0:
                 raise AssertionError(
@@ -432,34 +461,6 @@ async def _run() -> dict[str, Any]:
                     f"{primed_torch_memory}"
                 )
             memory["context_baseline_mb"] = _gpu_memory_samples(target_uuid)
-            # Legacy priming intentionally exercised both public inference roots,
-            # which makes the lifecycle controller distrust its earlier empty
-            # observation. Re-establish that trust with a fresh signed reset only
-            # after both pools and PyTorch allocations have been proven empty.
-            await checked_post(
-                client,
-                "/lifecycle/reset",
-                {"control_epoch": "2"},
-                {
-                    GPU_ADMISSION_TOKEN_HEADER: token(
-                        AdmissionScope.RESET,
-                        control_epoch="2",
-                        operation="reset-2",
-                    )
-                },
-            )
-            await checked_post(
-                client,
-                "/lifecycle/mode",
-                {"gate": "enforce", "control_epoch": "3"},
-                {
-                    GPU_ADMISSION_TOKEN_HEADER: token(
-                        AdmissionScope.MODE,
-                        control_epoch="3",
-                        operation="mode-3",
-                    )
-                },
-            )
             setup = (await client.get("/setup")).json()
             if "managed_lifecycle" not in setup:
                 raise AssertionError("managed lifecycle capability was not advertised")
@@ -469,13 +470,13 @@ async def _run() -> dict[str, Any]:
                 client,
                 "/predict",
                 image_predict_body,
-                headers(AdmissionScope.PREDICT, "1"),
+                headers(AdmissionScope.PREDICT, "3"),
             )
             await checked_post(
                 client,
                 "/predict",
                 video_predict_body,
-                headers(AdmissionScope.PREDICT, "1"),
+                headers(AdmissionScope.PREDICT, "3"),
             )
             contract_checks["real_inference"] = True
             health = (await client.get("/health")).json()
@@ -497,12 +498,12 @@ async def _run() -> dict[str, Any]:
             await checked_post(
                 client,
                 "/drain",
-                {"generation": "2"},
+                {"generation": "4"},
                 {
-                    GPU_GENERATION_HEADER: "2",
+                    GPU_GENERATION_HEADER: "4",
                     GPU_ADMISSION_TOKEN_HEADER: token(
                         AdmissionScope.DRAIN,
-                        generation="2",
+                        generation="4",
                         operation="cycle-1",
                     ),
                 },
@@ -510,12 +511,12 @@ async def _run() -> dict[str, Any]:
             first_unload = await checked_post(
                 client,
                 "/unload",
-                {"generation": "2"},
+                {"generation": "4"},
                 {
-                    GPU_GENERATION_HEADER: "2",
+                    GPU_GENERATION_HEADER: "4",
                     GPU_ADMISSION_TOKEN_HEADER: token(
                         AdmissionScope.UNLOAD,
-                        generation="2",
+                        generation="4",
                         operation="cycle-1",
                     ),
                 },
@@ -537,7 +538,7 @@ async def _run() -> dict[str, Any]:
                 client,
                 "/warmup",
                 image_warmup,
-                headers(AdmissionScope.WARMUP, "3"),
+                headers(AdmissionScope.WARMUP, "5"),
             )
             await checked_post(
                 client,
@@ -546,7 +547,7 @@ async def _run() -> dict[str, Any]:
                     "task": "tracker",
                     "variants": {"sam_variant": main.SAM_VARIANT},
                 },
-                headers(AdmissionScope.WARMUP, "3"),
+                headers(AdmissionScope.WARMUP, "5"),
             )
             memory["cycle_2_loaded_mb"] = _gpu_memory_samples(target_uuid, count=3)
             contract_checks.update(
@@ -559,21 +560,21 @@ async def _run() -> dict[str, Any]:
                     unload_scope=AdmissionScope.UNLOAD,
                     workload_path="/warmup",
                     workload_body=image_warmup,
-                    current_generation="3",
+                    current_generation="5",
                     stale_generation="1",
-                    next_generation="4",
+                    next_generation="6",
                     drain_owner="cycle-2",
                 )
             )
             second_unload = await checked_post(
                 client,
                 "/unload",
-                {"generation": "4"},
+                {"generation": "6"},
                 {
-                    GPU_GENERATION_HEADER: "4",
+                    GPU_GENERATION_HEADER: "6",
                     GPU_ADMISSION_TOKEN_HEADER: token(
                         AdmissionScope.UNLOAD,
-                        generation="4",
+                        generation="6",
                         operation="cycle-2",
                     ),
                 },
@@ -614,14 +615,14 @@ async def _run() -> dict[str, Any]:
         cycles = [
             memory_cycle_evidence(
                 cycle=1,
-                generation="2",
+                generation="4",
                 context_samples_mb=memory["context_baseline_mb"],
                 loaded_samples_mb=memory["cycle_1_loaded_mb"],
                 unloaded_samples_mb=memory["cycle_1_unloaded_mb"],
             ),
             memory_cycle_evidence(
                 cycle=2,
-                generation="4",
+                generation="6",
                 context_samples_mb=memory["context_baseline_mb"],
                 loaded_samples_mb=memory["cycle_2_loaded_mb"],
                 unloaded_samples_mb=memory["cycle_2_unloaded_mb"],
