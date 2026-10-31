@@ -41,7 +41,7 @@ from aap_protocol_v2.lifecycle import (
 )
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from training_contract.assets import resolve_prepared_asset
-from scripts.qualification_http import http_client, bind_operator_routes
+from aap_backend_runtime.qualification_http import http_client, bind_operator_routes
 
 
 CONTROL_SCOPES = {

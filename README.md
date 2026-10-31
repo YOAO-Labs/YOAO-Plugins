@@ -1,6 +1,6 @@
 # YOAO Plugins
 
-本仓库仅持有官方推理实现：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md) 和 [ONNX Tools](plugins/inference/onnxtools/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。第一方代码采用 [MIT](LICENSE)；第三方代码、模型权重与容器依赖继续适用各自的许可。模型权重、训练产物、数据集和凭据不提交到本仓库。
+本仓库仅持有官方推理实现：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md)、[ONNX Tools](plugins/inference/onnxtools/README.md)、[Grounded-SAM2](plugins/inference/grounded-sam2/README.md) 和 [SAM3](plugins/inference/sam3/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。第一方代码采用 [MIT](LICENSE)；第三方代码、模型权重与容器依赖继续适用各自的许可。模型权重、训练产物、数据集和凭据不提交到本仓库。
 
 插件开发 SDK、共享推理运行时和 mask 工具由 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK) 持有并发布；平台 API SDK、业务 owner、权限与持久化规则由平台持有。平台维护的任务、协议、生命周期、推理与训练契约通过固定版本和 SHA256 的公开制品消费，不依赖平台 checkout。YOLO 的哈希锁固定 [`contracts-906628f2619b`](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/contracts-906628f2619b)，其 manifest SHA256 为 `5c26a3829073324bf6f9cc29521457d296920424e5b1b3c34d672408aa956663`；ONNX Tools 与 RapidOCR 的既有锁及共享下载器仍固定 `contracts-3d6393e64630`，manifest SHA256 为 `d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec`。各插件按自身锁文件构建；更新开发文档不会替换已获资格镜像的依赖。
 
@@ -17,13 +17,15 @@ python scripts/generate-selection-descriptor.py --plugin rapidocr --version 0.1.
   --data-dir /private/plugin-data --output /private/rapidocr-selections.json
 ```
 
-LibreYOLO、YOLO 和 ONNX Tools 分别使用 `--plugin libreyolo`、`--plugin yolo`、`--plugin onnxtools`，并传入各自的版本、镜像及安装清单摘要。输出必须是数据目录外的新文件，标准输出会打印 SHA256。JSON 使用键排序、紧凑分隔符、ASCII 转义且无末尾换行；数组确定性排序。资产路径相对于原生插件数据目录，禁止路径穿越、逃逸符号链接及冲突的 YOLO 预备资产身份。YOLO 复用训练契约读取预备清单，并遵循原生的摘要文件优先、旧文件名次之的查找顺序；预期身份始终来自插件发布清单。预备映射或存放位置改变后须重新生成。
+其他插件使用各自的 `--plugin libreyolo`、`--plugin yolo`、`--plugin onnxtools`、`--plugin grounded-sam2` 或 `--plugin sam3`，并传入其版本、镜像及安装清单摘要。输出必须是数据目录外的新文件，标准输出会打印 SHA256。JSON 使用键排序、紧凑分隔符、ASCII 转义且无末尾换行；数组确定性排序。资产路径相对于原生插件数据目录，禁止路径穿越、逃逸符号链接及冲突的 YOLO 预备资产身份。YOLO 复用训练契约读取预备清单，并遵循原生的摘要文件优先、旧文件名次之的查找顺序；预期身份始终来自插件发布清单。预备映射或存放位置改变后须重新生成。
 
 工具只描述具有完整发布身份的组合；本地缺少权重不等于无资产需求。LibreYOLO 声明原生 `yolov9` 系列四种尺寸与 `assets/` 路径，已有安装也须显式批准；RapidOCR 每个引擎都声明全部三个 session 的资产，包含尚未安装的组合；ONNX Tools 区分检测、分类和组合流水线；YOLO 两种跟踪算法共享检测器权重，World 与 YOLOE 文本任务分别需要对应编码器，视觉示例任务不需要文本编码器。目录描述不授予使用权。平台继续管理审批、可用性、本地文件核验、项目授权及存储；未确认许可的权重不得公开分发。
 
+Grounded-SAM2 的图像池同时构造 SAM、GroundingDINO 和 BERT，因此图像选择必须包含两个变体轴及全部依赖；视频 tracker 只选择 SAM。SAM3 区分图像／PVS 的 `sam3.pt` 与 multiplex 的 `sam3.1_multiplex.pt`，两者的访问和许可分别审批。两个目录模块均只依赖标准库。安装清单摘要必须取已发布 wheel 内 `pretrained-assets.json` 的原始字节，不对 JSON 重新序列化后计算。
+
 ## 已安装环境下的插件开发
 
-使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-6b0f437333b3) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。开发环境的契约安装步骤见 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK#portable-contracts-and-local-development)；已安装插件继续使用自身哈希锁固定的发布制品。SDK 的通用入口为 `aap-inference-plugin`：
+使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-1380d8a79814) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。开发环境的契约安装步骤见 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK#portable-contracts-and-local-development)；已安装插件继续使用自身哈希锁固定的发布制品。SDK 的通用入口为 `aap-inference-plugin`：
 
 ```sh
 aap-inference-plugin init my-plugin
@@ -34,9 +36,11 @@ uv sync --python 3.11 --frozen
 
 通用 SDK 不准备 LibreYOLO 权重。需要官方 LibreYOLO 模型时，请先审查模型许可，然后使用 [LibreYOLO 文档](plugins/inference/libreyolo/README.md)中的 `aap-libreyolo prepare-assets`。本地开发 token 不是平台管理员凭据，本地预检不等于受管平台部署资格。
 
+有状态官方插件实现完整推理 HTTP 契约并复用 SDK 运行时，不缩减为仅提供检测的简化作者接口。独立模型资格检查复用 `aap_backend_runtime.qualification_http` 的真实本地 HTTP 和签名路由准入；调用方负责应用生命周期。该工具不替代真实设备、权重批准或平台安装验收。
+
 ## CPU 验证
 
-[Plugin Python acceptance](.github/workflows/plugin-python.yml) 分别运行四个插件的 CPU 测试，隔离各自的 Python 环境和依赖。YOLO 使用完整开发锁文件；RapidOCR 与 ONNX Tools 使用镜像的哈希锁定 headless 依赖及已校验契约 wheel，不引入平台 checkout。模型权重和私有 fixture 不进入 CI。
+[Plugin Python acceptance](.github/workflows/plugin-python.yml) 为六个插件定义独立 CPU 作业，隔离各自的 Python 环境和依赖。YOLO 与有状态插件使用各自的开发锁文件；SAM3 作业初始化固定 vendor 并应用请求级 autocast 补丁。RapidOCR 与 ONNX Tools 使用镜像的哈希锁定 headless 依赖及已校验契约 wheel，不引入平台 checkout。模型权重和私有 fixture 不进入 CI。
 
 CPU 测试不授予 CUDA 资格。真实模型推理、逐 session provider、显存回收及平台安装／退役，仍须在获授权的输入和独占设备上验证具体镜像摘要。
 
@@ -49,4 +53,20 @@ python scripts/build-plugin-artifacts.py --revision HEAD --output /private/plugi
   --plugin libreyolo --plugin yolo --plugin rapidocr --plugin onnxtools
 ```
 
-构建器从指定提交创建源码归档，为所选插件和 LibreYOLO native 生成 wheel 和源码分发包，并从 wheel 提取插件拥有的目录，同时生成 `manifest.json` 和 `SHA256SUMS`。默认只选择 LibreYOLO。它不会上传制品，也不包含 SDK、运行时或 mask 源码、模型权重或第三方 wheel。独立的私有哈希锁定候选包与 OCI 流程见 [LibreYOLO](plugins/inference/libreyolo/README.md)。
+有状态插件分别使用下列工具链和独立输出目录；每个构建环境还需安装 `build==1.3.0`、`wheel==0.45.1`。不能用同一个 Python／构建依赖环境混装这两个插件。
+
+| 插件 | Python | Torch／torchvision | CUDA | 构建 setuptools |
+| --- | --- | --- | --- | --- |
+| Grounded-SAM2 | 3.10 | 2.3.1／0.18.1 | 12.1 | 70.3.0 |
+| SAM3 | 3.12 | 2.7.1／0.22.1 | 12.8 | 80.9.0 |
+
+```sh
+python3.10 scripts/build-plugin-artifacts.py --revision HEAD \
+  --output /private/grounded-sam2-release --plugin grounded-sam2
+python3.12 scripts/build-plugin-artifacts.py --revision HEAD \
+  --output /private/sam3-release --plugin sam3
+```
+
+构建器从指定提交创建源码归档，为所选插件生成 wheel 和源码分发包，仅在选择 LibreYOLO 时附带其 native 包，并从 wheel 提取插件拥有的目录，同时生成 `manifest.json` 和 `SHA256SUMS`。默认只选择 LibreYOLO。manifest 从同一提交记录 vendor 子模块的 URL 与固定 commit；第一方源码归档不包含子模块内容。构建模型镜像时必须从对应提交初始化所需子模块，再按插件 Dockerfile 应用固定补丁，不能将 vendor 快照复制进主仓。
+
+构建器不会上传制品，也不包含 SDK、运行时或 mask 源码、模型权重或第三方 wheel。独立的私有哈希锁定候选包与 OCI 流程见各插件文档；公开第一方制品不等于获准公开第三方模型镜像或权重。

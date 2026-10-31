@@ -30,4 +30,6 @@ Real-GPU qualification runs in a separately authorized isolated process with the
 
 For standalone packaging, build wheel and sdist with `python -m build plugins/inference/sam3`; installing the service also requires the exact patched vendor source and first-party contract wheels represented by the locks. The included `uv.lock`, `requirements.lock` and `first-party-requirements.lock` describe the independent environment; do not use platform source paths as runtime dependencies. For managed lifecycle validation see `scripts/validate_managed_lifecycle.py` and its explicit approval prerequisites.
 
+The installed vendor package owns its Python imports and BPE resource lookup; no `/app/vendor` source-tree override is used. Use the authenticated lifecycle validator above for GPU smoke runs.
+
 CPU-only packaging, metadata and HTTP checks do not qualify model inference. Real inference, every pool's two lifecycle cycles, forward/reverse cross-window identity, exact masks, cancellation and teardown require separately authorized GPU and checkpoint acceptance.

@@ -115,6 +115,24 @@ def selections_yolo(root):
     return result
 
 
+def selections_grounded_sam2(root):
+    sys.path.insert(0, str(ROOT / "plugins/inference/grounded-sam2"))
+    from grounded_sam2_plugin.catalog import deployment_selections
+    return [
+        (model, variants, [asset(root, item, item["path"]) for item in assets])
+        for model, variants, assets in deployment_selections(root)
+    ]
+
+
+def selections_sam3(root):
+    sys.path.insert(0, str(ROOT / "plugins/inference/sam3"))
+    from sam3_plugin.catalog import deployment_selections
+    return [
+        (model, variants, [asset(root, item, item["path"]) for item in assets])
+        for model, variants, assets in deployment_selections(root)
+    ]
+
+
 def build(plugin, version, artifact, manifest_sha, root):
     if not version or not re.fullmatch(r"[^\s@]+@sha256:[0-9a-f]{64}", artifact):
         raise ValueError("An immutable OCI artifact and plugin version are required")
@@ -123,7 +141,7 @@ def build(plugin, version, artifact, manifest_sha, root):
     root = root.resolve(strict=True)
     if not root.is_dir():
         raise ValueError("Data root must be a directory")
-    groups = {"libreyolo": selections_libreyolo, "yolo": selections_yolo, "rapidocr": selections_ocr, "onnxtools": selections_onnx}[plugin](root)
+    groups = {"libreyolo": selections_libreyolo, "yolo": selections_yolo, "rapidocr": selections_ocr, "onnxtools": selections_onnx, "grounded-sam2": selections_grounded_sam2, "sam3": selections_sam3}[plugin](root)
     seen, paths, selections = set(), {}, []
     for model, variants, assets in groups:
         key = (model, tuple(sorted(variants.items())))
@@ -145,7 +163,7 @@ def build(plugin, version, artifact, manifest_sha, root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--plugin", choices=("libreyolo", "yolo", "rapidocr", "onnxtools"), required=True)
+    parser.add_argument("--plugin", choices=("libreyolo", "yolo", "rapidocr", "onnxtools", "grounded-sam2", "sam3"), required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--artifact", required=True)
     parser.add_argument("--asset-manifest-sha256", required=True)

@@ -13,7 +13,7 @@ resolution-markers = [
 [[package]]
 name = "aap-backend-runtime"
 version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" }
+source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl" }
 dependencies = [
     { name = "aap-lifecycle-contract" },
     { name = "aap-protocol-v2" },
@@ -23,7 +23,7 @@ dependencies = [
     { name = "pillow" },
 ]
 wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:863e633ab8a55d1ff29936d379e5eeaaa68fbe59b6f0489ea71dcbdb8b042e03" },
+    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:5477efaba43eee794e29682b6e857a35f485d70326317db950a0407d14ca2649" },
 ]
 
 [package.metadata]
@@ -34,9 +34,14 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.110" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "pillow", specifier = ">=10.0" },
+    { name = "pyjwt", marker = "extra == 'qualification'", specifier = ">=2.8,<3" },
+    { name = "pyjwt", marker = "extra == 'test'", specifier = ">=2.8,<3" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24" },
+    { name = "uvicorn", marker = "extra == 'qualification'", specifier = ">=0.29" },
+    { name = "uvicorn", marker = "extra == 'test'", specifier = ">=0.29" },
 ]
-provides-extras = ["test"]
+provides-extras = ["qualification", "test"]
 
 [[package]]
 name = "aap-inference-contract"
@@ -1989,7 +1994,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl" },
+    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl" },
     { name = "aap-inference-contract", marker = "extra == 'dev'", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_inference_contract-0.1.0-py3-none-any.whl" },
     { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
     { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" },

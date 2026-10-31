@@ -20,14 +20,9 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 import tempfile
 from dataclasses import dataclass
 from typing import Any
-
-_VENDOR_ROOT = "/app/vendor/sam3"
-if os.path.isdir(_VENDOR_ROOT) and _VENDOR_ROOT not in sys.path:
-    sys.path.insert(0, _VENDOR_ROOT)
 
 import numpy as np
 import torch
@@ -51,7 +46,6 @@ logger = logging.getLogger("sam3-backend.pvs")
 
 CHECKPOINT_DIR = checkpoint_dir()
 _IMAGE_CKPT = os.path.join(CHECKPOINT_DIR, "sam3.pt")
-_BPE_PATH = os.path.join(_VENDOR_ROOT, "sam3/assets/bpe_simple_vocab_16e6.txt.gz")
 # 单窗安全上限(帧)。PVS 是 SAM2 式 memory 传播(常驻 = memory bank + 当前帧, 非整窗特征),
 # 显存应轻于 multiplex; 但 SAM3 1008² backbone 仍重。默认取 16 与 multiplex 齐, 阶段 B-pvs
 # 用真机 VRAM 画像再调。runner 侧仍按 model_key 分窗。
@@ -122,7 +116,6 @@ class SAM3PVSVideoTracker:
         try:
             model = build_sam3_video_model(
                 checkpoint_path=_IMAGE_CKPT,
-                bpe_path=_BPE_PATH if os.path.isfile(_BPE_PATH) else None,
                 # 图像/视频权重同容 sam3.pt, tracker 相关键齐, 但整包含非 tracker 键 →
                 # 非严格加载(与官方 notebook 及 multiplex 封装一致)。
                 strict_state_dict_loading=False,

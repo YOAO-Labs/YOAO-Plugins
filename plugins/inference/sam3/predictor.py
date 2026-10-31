@@ -34,15 +34,8 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 from collections.abc import Mapping, Sequence
 from typing import Any
-
-# vendor 由容器构建时修补并安装；本地 CPU 单测不安装模型源码。
-# 容器路径显式加入 sys.path，供上游包解析。
-_VENDOR_ROOT = "/app/vendor/sam3"
-if os.path.isdir(_VENDOR_ROOT) and _VENDOR_ROOT not in sys.path:
-    sys.path.insert(0, _VENDOR_ROOT)
 
 import numpy as np
 import torch

@@ -24,13 +24,8 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 import tempfile
 from typing import Any
-
-_VENDOR_ROOT = "/app/vendor/sam3"
-if os.path.isdir(_VENDOR_ROOT) and _VENDOR_ROOT not in sys.path:
-    sys.path.insert(0, _VENDOR_ROOT)
 
 import cv2  # opencv-python-headless, 已在镜像内
 import numpy as np
@@ -51,7 +46,6 @@ logger = logging.getLogger("sam3-backend.video")
 
 CHECKPOINT_DIR = checkpoint_dir()
 _VIDEO_CKPT = os.path.join(CHECKPOINT_DIR, "sam3.1_multiplex.pt")
-_BPE_PATH = os.path.join(_VENDOR_ROOT, "sam3/assets/bpe_simple_vocab_16e6.txt.gz")
 # FlashAttention-3 仅 Hopper(SM90) 优化; 消费级 Ada(4060, SM89) 默认关。可用 env 覆盖。
 _USE_FA3 = os.getenv("SAM3_VIDEO_USE_FA3", "0") == "1"
 # 单次窗口安全上限 (帧), 防超长窗口灌爆显存。视频前向显存随窗口近似线性增长
@@ -100,7 +94,6 @@ class SAM3MultiplexVideoTracker:
         try:
             predictor = build_sam3_multiplex_video_predictor(
                 checkpoint_path=_VIDEO_CKPT,
-                bpe_path=_BPE_PATH if os.path.isfile(_BPE_PATH) else None,
                 use_fa3=use_fa3,
                 warm_up=False,
             )
