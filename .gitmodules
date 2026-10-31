@@ -1,0 +1,3 @@
+[submodule "plugins/inference/sam3/vendor/sam3"]
+	path = plugins/inference/sam3/vendor/sam3
+	url = https://github.com/facebookresearch/sam3.git
