@@ -20,7 +20,8 @@ RUN printf '%s\n' \
     && rm -rf /var/lib/apt/lists/* /tmp/ubuntu-snapshot.list
 COPY --from=uv /uv /usr/local/bin/uv
 RUN uv python install --install-dir /opt/python --no-bin 3.12.11 \
-    && python3.12 -m ensurepip
+    && python3.12 -m venv /opt/sam3-venv
+ENV VIRTUAL_ENV=/opt/sam3-venv PATH=/opt/sam3-venv/bin:${PATH}
 COPY plugins/inference/sam3/*requirements.lock /tmp/
 RUN python3.12 -m pip install --no-deps --require-hashes -r /tmp/build-requirements.lock \
     && python3.12 -m pip install --no-deps --require-hashes -r /tmp/cuda-requirements.lock \
