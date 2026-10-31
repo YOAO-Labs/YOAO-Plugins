@@ -10,9 +10,14 @@ ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 
     MAX_JOBS=2 CMAKE_BUILD_PARALLEL_LEVEL=2 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 \
     CUDA_HOME=/usr/local/cuda PATH=/opt/python/cpython-3.12.11-linux-x86_64-gnu/bin:${PATH}
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN printf '%s\n' \
+    'deb https://snapshot.ubuntu.com/ubuntu/20250604T000000Z/ jammy main universe' \
+    'deb https://snapshot.ubuntu.com/ubuntu/20250604T000000Z/ jammy-updates main universe' \
+    > /tmp/ubuntu-snapshot.list \
+    && apt-get -o Dir::Etc::sourcelist=/tmp/ubuntu-snapshot.list -o Dir::Etc::sourceparts=- -o Acquire::Check-Valid-Until=false update \
+    && apt-get -o Dir::Etc::sourcelist=/tmp/ubuntu-snapshot.list -o Dir::Etc::sourceparts=- -o Acquire::Check-Valid-Until=false install -y --no-install-recommends \
     ca-certificates ninja-build gcc g++ patch libgl1 libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/ubuntu-snapshot.list
 COPY --from=uv /uv /usr/local/bin/uv
 RUN uv python install --install-dir /opt/python --no-bin 3.12.11 \
     && python3.12 -m ensurepip
