@@ -37,14 +37,21 @@ The upstream submodule is `facebookresearch/sam3` at `4cbac146c1b5a1e3a7f5c6a894
 
 Initialize submodules in the checkout. From the repository root, build with `docker build -f plugins/inference/sam3/Dockerfile .`. The image uses the pinned CUDA base digest and installs the separately hashed Python locks; the request-scoped autocast patch is applied with zero fuzz. It does not download checkpoints at startup. Native deployments mount the approved `AAP_PLUGIN_DATA_DIR` (normally `/var/lib/aap-plugin`) and place assets in its `checkpoints/` directory. Standalone deployments may instead set `CHECKPOINT_DIR` (default `/app/checkpoints`). Administrators may explicitly invoke `scripts/download_checkpoints.py` in an appropriately authorized preparation environment; that command requires separate gated access and credentials, and must not run as a governed service startup step. Credentials must not be baked into the image.
 
-The image defaults `HOME` to `/tmp`, allowing Triton and PyTorch kernel caches to
-use the native installation's writable temporary filesystem while its root
-filesystem remains read-only and the service runs as a non-root user. These
-temporary caches are separate from approved checkpoint storage.
+The image defaults `HOME` to `/tmp`, keeping Triton and PyTorch kernel caches out
+of a root-owned home directory. A non-root service also supports a read-only root
+filesystem when `/tmp` is writable; the installer determines the actual root and
+temporary-filesystem mount policy. These caches are separate from approved
+checkpoint storage.
 
 Native startup reads the instance token and GPU verification keyring files, binds signed lifecycle claims to the supplied registry/GPU resource identity, and rejects legacy unsigned GPU workloads. It advertises managed lifecycle only after the SDK validates approved qualification evidence against the actual three-pool topology, GPU identity, immutable image and both checkpoint identities. Signed terminal drain fences new work, waits for admitted work and tracked futures, retires PVS session owners, then waits for builders and borrowers before proving all three pools empty; uncertain session cleanup fails closed.
 
 Persistent PVS state is owned by the exact PVS model-pool entry, with a borrower held only during each start or continuation command. Idle unload, eviction and terminal drain invalidate its contexts and close their state before model disposal; reloading the same key cannot revive an old token. Failed or uncertain cleanup retains ownership and prevents an empty-pool proof. Multiplex tracking retains its separate pool and whole-window behavior.
+
+PVS start and continuation each establish their own device-scoped BF16 autocast
+context in the executing worker thread. Persistent startup cannot rely on the
+outer context of the separate whole-window path. When the configured service
+advertises persistent contexts, GPU qualification also exercises independently
+signed start, continuation and close requests, checking frame and object identity.
 
 Real-GPU qualification runs in a separately authorized isolated process with the same native installation identity and approved assets, never in the governed service. Supply its `AAP_PLUGIN_ID`, `AAP_PLUGIN_VERSION`, `AAP_PLUGIN_OCI_ARTIFACT`, `AAP_PLUGIN_ASSET_MANIFEST_SHA256`, `AAP_PLUGIN_IMAGE_ID`, `AAP_PLUGIN_REGISTRY_ID`, `AAP_ROUTE_REGISTRY_ID`, `AAP_PLUGIN_GPU_RESOURCE_ID`, `AAP_PLUGIN_GPU_UUID`, `AAP_PLUGIN_DEVICE`, `AAP_PLUGIN_TOKEN_FILE`, and `AAP_PLUGIN_DATA_DIR`; set matching `VALIDATION_REGISTRY_ID`, `VALIDATION_GPU_RESOURCE_ID`, `VALIDATION_IMAGE_ID`, `VALIDATION_GPU_UUID`, `CUDA_VERSION`, and the model/fixture approval and hash variables required by `scripts/validate_managed_lifecycle.py`. The isolated validator creates temporary signing keys and exercises real loopback HTTP routing; the resulting canonical report requires independent approval and its digest must be supplied by the installer.
 

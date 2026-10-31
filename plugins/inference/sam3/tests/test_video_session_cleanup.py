@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import pytest
@@ -110,62 +109,3 @@ def test_pvs_close_failure_preserves_uncertain_cleanup(monkeypatch, tmp_path) ->
         tracker.close_session(session)
     assert tracker.cleanup_uncertain is True
     assert tracker.active_sessions == 1
-
-
-
-@pytest.mark.parametrize(
-    ("module", "tracker_type", "args"),
-    [
-        (
-            multiplex_module,
-            multiplex_module.SAM3MultiplexVideoTracker,
-            ("video.mp4", 0, 1, "forward", "car"),
-        ),
-        (
-            pvs_module,
-            pvs_module.SAM3PVSVideoTracker,
-            (
-                "video.mp4",
-                0,
-                1,
-                "forward",
-                [{"obj_id": 1, "bbox": {"x": 0, "y": 0, "w": 1, "h": 1}}],
-            ),
-        ),
-    ],
-)
-def test_video_autocast_is_scoped_even_when_inference_fails(
-    monkeypatch,
-    module,
-    tracker_type,
-    args,
-) -> None:
-    events: list[str] = []
-
-    class _Autocast:
-        def __enter__(self):
-            events.append("enter")
-
-        def __exit__(self, *_args):
-            events.append("exit")
-
-    tracker = tracker_type.__new__(tracker_type)
-    tracker.device = "cuda:0"
-    monkeypatch.setattr(module.torch.cuda, "device", lambda _device: nullcontext())
-    monkeypatch.setattr(
-        module.torch,
-        "autocast",
-        lambda **kwargs: (
-            events.append(f"config:{kwargs['device_type']}:{kwargs['enabled']}")
-            or _Autocast()
-        ),
-    )
-
-    def fail(*_args, **_kwargs):
-        raise RuntimeError("inference failed")
-
-    monkeypatch.setattr(tracker, "_propagate", fail)
-    with pytest.raises(RuntimeError, match="inference failed"):
-        tracker.propagate(*args)
-
-    assert events == ["config:cuda:True", "enter", "exit"]

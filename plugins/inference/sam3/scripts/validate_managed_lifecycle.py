@@ -571,6 +571,52 @@ async def _run() -> dict[str, Any]:
                 },
                 request_headers=headers(AdmissionScope.PREDICT, "1"),
             )
+            pvs_model = next(
+                model for model in setup["models"]
+                if model["id"] == "sam3-video-interactive-tracker"
+            )
+            if pvs_model["tracker_context_mode"] == "session":
+                pvs_job = f"qualification-pvs-{uuid.uuid4().hex}"
+                pvs_token = None
+                for action, first_frame, last_frame in (
+                    ("start", 0, 1), ("continue", 2, 3), ("close", 0, 3)
+                ):
+                    control = {
+                        "action": action, "job_id": pvs_job, "direction": "forward",
+                    }
+                    context = {
+                        "type": "video_tracker",
+                        "model_key": "sam3_video_interactive",
+                        "from_frame": first_frame,
+                        "to_frame": last_frame,
+                        "direction": "forward",
+                        "output_geometry": "bbox",
+                        "tracker_context": control,
+                    }
+                    if action == "start":
+                        control.update(span_start_frame=0, span_end_frame=3)
+                        context["seeds"] = [{
+                            "obj_id": 1,
+                            "bbox": {"x": 0.14, "y": 0.28, "w": 0.44, "h": 0.44},
+                        }]
+                    else:
+                        control["token"] = pvs_token
+                    session_reply = await checked_post(
+                        client, "/predict",
+                        json_body={"task": {"file_path": str(video_path)}, "context": context},
+                        request_headers=headers(AdmissionScope.PREDICT, "1"),
+                    )
+                    metadata = session_reply["meta"]["tracker_context"]
+                    if action == "close":
+                        assert metadata["closed"] is True
+                    else:
+                        assert [
+                            (row["frame_index"], row["instance_id"])
+                            for row in session_reply["result"]
+                        ] == [(first_frame, "1"), (last_frame, "1")]
+                        if pvs_token is not None:
+                            assert metadata["token"] == pvs_token
+                        pvs_token = metadata["token"]
 
             health = (await client.get("/health")).json()
             residency = health["residency"]

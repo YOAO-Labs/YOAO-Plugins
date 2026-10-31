@@ -229,7 +229,11 @@ class SAM3PVSVideoTracker:
 
             device_type = self.device.split(":", 1)[0]
             device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
-            with device_context:
+            with device_context, torch.autocast(
+                device_type=device_type,
+                dtype=torch.bfloat16,
+                enabled=device_type == "cuda",
+            ):
                 state = self._predictor.init_state(
                     video_path=tmp_dir,
                     offload_video_to_cpu=True,
