@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import pytest
@@ -150,6 +151,7 @@ def test_video_autocast_is_scoped_even_when_inference_fails(
 
     tracker = tracker_type.__new__(tracker_type)
     tracker.device = "cuda:0"
+    monkeypatch.setattr(module.torch.cuda, "device", lambda _device: nullcontext())
     monkeypatch.setattr(
         module.torch,
         "autocast",

@@ -25,6 +25,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+from contextlib import nullcontext
 from typing import Any
 
 import cv2  # opencv-python-headless, 已在镜像内
@@ -90,13 +91,15 @@ class SAM3MultiplexVideoTracker:
         )
         # max_num_objects / multiplex_count 锁定 16 (checkpoint 按此训练, 调小会
         # state_dict 形状不匹配加载失败)——不暴露为可调项。
-        # vendor builder 无 device= 形参且内部硬绑 CUDA；SAM3 本期明确为 GPU-only。
+        # The pinned builder has no device argument and uses bare .cuda().
+        # Scope its current device to the selected logical CUDA device.
         try:
-            predictor = build_sam3_multiplex_video_predictor(
-                checkpoint_path=_VIDEO_CKPT,
-                use_fa3=use_fa3,
-                warm_up=False,
-            )
+            with torch.cuda.device(self.device):
+                predictor = build_sam3_multiplex_video_predictor(
+                    checkpoint_path=_VIDEO_CKPT,
+                    use_fa3=use_fa3,
+                    warm_up=False,
+                )
         except Exception as exc:  # noqa: BLE001
             if is_device_error(exc):
                 free_gpu_memory()
@@ -124,7 +127,8 @@ class SAM3MultiplexVideoTracker:
         """Run one multiplex window under a bounded BF16 autocast scope."""
 
         device_type = self.device.split(":", 1)[0]
-        with torch.autocast(
+        device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
+        with device_context, torch.autocast(
             device_type=device_type,
             dtype=torch.bfloat16,
             enabled=device_type == "cuda",

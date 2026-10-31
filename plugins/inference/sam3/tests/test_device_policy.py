@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import sys
 import types
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -57,6 +58,7 @@ def test_image_builder_device_failure_is_not_retried_on_cpu(
     monkeypatch, tmp_path
 ) -> None:
     calls: list[dict] = []
+    monkeypatch.setattr(image_module.torch.cuda, "device", lambda _device: nullcontext())
     cleanup_calls: list[None] = []
 
     def build(**kwargs):
@@ -96,6 +98,7 @@ def test_image_builder_never_downloads_missing_checkpoint(monkeypatch, tmp_path)
 def test_multiplex_builder_device_failure_is_called_once(monkeypatch) -> None:
     calls: list[dict] = []
     cleanup_calls: list[None] = []
+    monkeypatch.setattr(multiplex_module.torch.cuda, "device", lambda _device: nullcontext())
 
     def build(**kwargs):
         calls.append(kwargs)
@@ -122,6 +125,7 @@ def test_multiplex_builder_device_failure_is_called_once(monkeypatch) -> None:
 def test_pvs_builder_device_failure_cleans_up_without_cpu_retry(monkeypatch) -> None:
     calls: list[dict] = []
     cleanup_calls: list[None] = []
+    monkeypatch.setattr(pvs_module.torch.cuda, "device", lambda _device: nullcontext())
 
     def build(**kwargs):
         calls.append(kwargs)
@@ -147,6 +151,7 @@ def test_pvs_builder_device_failure_cleans_up_without_cpu_retry(monkeypatch) -> 
 
 def test_pvs_builder_receives_cuda_device_without_retry(monkeypatch) -> None:
     calls: list[dict] = []
+    monkeypatch.setattr(pvs_module.torch.cuda, "device", lambda _device: nullcontext())
     vendor_tracker = SimpleNamespace()
     model = SimpleNamespace(
         tracker=vendor_tracker,

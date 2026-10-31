@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Any
 
@@ -114,13 +115,14 @@ class SAM3PVSVideoTracker:
         logger.info("building sam3 PVS video predictor ckpt=%s", _IMAGE_CKPT)
         # tracker 内部仍有 CUDA-only 路径；显式锁定 GPU 并在设备失效时直接拒绝。
         try:
-            model = build_sam3_video_model(
-                checkpoint_path=_IMAGE_CKPT,
-                # 图像/视频权重同容 sam3.pt, tracker 相关键齐, 但整包含非 tracker 键 →
-                # 非严格加载(与官方 notebook 及 multiplex 封装一致)。
-                strict_state_dict_loading=False,
-                device=self.device,
-            )
+            with torch.cuda.device(self.device):
+                model = build_sam3_video_model(
+                    checkpoint_path=_IMAGE_CKPT,
+                    # 图像/视频权重同容 sam3.pt, tracker 相关键齐, 但整包含非 tracker 键 →
+                    # 非严格加载(与官方 notebook 及 multiplex 封装一致)。
+                    strict_state_dict_loading=False,
+                    device=self.device,
+                )
         except Exception as exc:  # noqa: BLE001
             if is_device_error(exc):
                 free_gpu_memory()
@@ -147,7 +149,8 @@ class SAM3PVSVideoTracker:
         output_geometry: str = "bbox",
     ) -> list[dict[str, Any]]:
         device_type = self.device.split(":", 1)[0]
-        with torch.autocast(
+        device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
+        with device_context, torch.autocast(
             device_type=device_type,
             dtype=torch.bfloat16,
             enabled=device_type == "cuda",
@@ -224,13 +227,16 @@ class SAM3PVSVideoTracker:
                 )
             local_seed = max(0, min(seed_src_frame - lo, local_count - 1))
 
-            state = self._predictor.init_state(
-                video_path=tmp_dir,
-                offload_video_to_cpu=True,
-                offload_state_to_cpu=True,
-            )
-            for seed in seeds:
-                self._add_seed(state, local_seed, seed, lo, local_count)
+            device_type = self.device.split(":", 1)[0]
+            device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
+            with device_context:
+                state = self._predictor.init_state(
+                    video_path=tmp_dir,
+                    offload_video_to_cpu=True,
+                    offload_state_to_cpu=True,
+                )
+                for seed in seeds:
+                    self._add_seed(state, local_seed, seed, lo, local_count)
             return SAM3PVSSession(lo, hi, direction, tmp_dir, state, local_count)
         except BaseException:
             if isinstance(state, dict):
@@ -250,7 +256,8 @@ class SAM3PVSVideoTracker:
         output_geometry: str = "bbox",
     ) -> list[dict[str, Any]]:
         device_type = self.device.split(":", 1)[0]
-        with torch.autocast(
+        device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
+        with device_context, torch.autocast(
             device_type=device_type,
             dtype=torch.bfloat16,
             enabled=device_type == "cuda",

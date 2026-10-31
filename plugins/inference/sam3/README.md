@@ -2,6 +2,13 @@
 
 Independent `sam3-backend` 0.10.0 distribution. The HTTP service retains the platform's complete `/setup`, `/predict`, image and video sessions, lifecycle, admission, cancellation and drain contracts. It uses Python 3.12, PyTorch 2.7.1, torchvision 0.22.1 and CUDA 12.8. SAM3 inference is CUDA-only: a CPU is not a fallback.
 
+The configured logical CUDA device is used for image model placement and for the
+vendor's implicit CUDA operations in image and video construction and inference.
+The pinned image builder does not move a model for an indexed selector such as
+`cuda:0`, so the plugin explicitly moves the returned model to that device. The
+multiplex builder has no device argument; it runs under the selected CUDA device
+context. A device error fails the build rather than falling back to CPU.
+
 ## Capabilities and assets
 
 | `/setup` model ID | Variant | Capability | Prepared file |

@@ -35,6 +35,7 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Mapping, Sequence
+from contextlib import nullcontext
 from typing import Any
 
 import numpy as np
@@ -184,14 +185,18 @@ class SAM3Predictor:
         logger.info("using local checkpoint: %s", ckpt_path)
 
         try:
-            return build_sam3_image_model(
-                checkpoint_path=ckpt_path,
-                load_from_HF=False,
-                device=self.device,
-                enable_segmentation=True,
-                enable_inst_interactivity=True,  # 解锁 point / interactive_box
-                eval_mode=True,
-            )
+            # The pinned builder only moves the model for the literal "cuda";
+            # indexed selectors such as "cuda:0" otherwise leave it on CPU.
+            with torch.cuda.device(self.device):
+                model = build_sam3_image_model(
+                    checkpoint_path=ckpt_path,
+                    load_from_HF=False,
+                    device=self.device,
+                    enable_segmentation=True,
+                    enable_inst_interactivity=True,  # 解锁 point / interactive_box
+                    eval_mode=True,
+                )
+                return model.to(device=self.device)
         except Exception as exc:  # noqa: BLE001
             if is_device_error(exc):
                 free_gpu_memory()
@@ -283,8 +288,10 @@ class SAM3Predictor:
         self._apply_score_threshold(score_threshold)
         # SAM3.1 multiplex ckpt 部分权重 (vision_backbone.convs.3.*) 缺失, 默认 init 为 fp32,
         # 其余权重以 bf16 加载 → 不包 autocast 会 dtype 冲突. vendor 也是这样用 (见 examples/).
-        with torch.autocast(
-            self.device, dtype=torch.bfloat16, enabled=(self.device == "cuda")
+        device_type = self.device.split(":", 1)[0]
+        device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
+        with device_context, torch.autocast(
+            device_type, dtype=torch.bfloat16, enabled=(device_type == "cuda")
         ):
             state, w, h, hit = self._prime_state(image, cache_key)
             self._processor.reset_all_prompts(state)
@@ -379,8 +386,10 @@ class SAM3Predictor:
         """
         self._apply_score_threshold(score_threshold)
         trimmed_text = (text or "").strip()
-        with torch.autocast(
-            self.device, dtype=torch.bfloat16, enabled=(self.device == "cuda")
+        device_type = self.device.split(":", 1)[0]
+        device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
+        with device_context, torch.autocast(
+            device_type, dtype=torch.bfloat16, enabled=(device_type == "cuda")
         ):
             state, w, h, hit = self._prime_state(image, cache_key)
             self._processor.reset_all_prompts(state)
@@ -457,8 +466,10 @@ class SAM3Predictor:
         返回 (polygonlabels, cache_hit, mask_input_next); geometric 无自然 label, 用
         "object" 占位, workbench 按 active label 重写.
         """
-        with torch.autocast(
-            self.device, dtype=torch.bfloat16, enabled=(self.device == "cuda")
+        device_type = self.device.split(":", 1)[0]
+        device_context = torch.cuda.device(self.device) if device_type == "cuda" else nullcontext()
+        with device_context, torch.autocast(
+            device_type, dtype=torch.bfloat16, enabled=(device_type == "cuda")
         ):
             state, w, h, hit = self._prime_state(image, cache_key)
 
