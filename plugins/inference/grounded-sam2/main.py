@@ -125,6 +125,7 @@ from predictor import (
     DINO_CONFIGS,
     SAM2_CONFIGS,
     GroundedSAM2Predictor,
+    dino_config_path,
 )
 from pool_domain import GroundedSam2Pools
 from schemas import (
@@ -296,15 +297,12 @@ def _require_model_file(path: str, *, role: str) -> None:
 def _preflight_image_model(sam_variant: str, dino_variant: str) -> None:
     _sam_config, sam_checkpoint = SAM2_CONFIGS[sam_variant]
     dino_config, dino_checkpoint = DINO_CONFIGS[dino_variant]
-    dino_config_path = os.getenv(
-        "DINO_CONFIG_PATH",
-        f"/app/vendor/grounded-sam-2/grounding_dino/groundingdino/config/{dino_config}",
-    )
+    config_path = dino_config_path(dino_config)
     _require_model_file(
         os.path.join(CHECKPOINT_DIR, sam_checkpoint),
         role="SAM checkpoint",
     )
-    _require_model_file(dino_config_path, role="GroundingDINO config")
+    _require_model_file(config_path, role="GroundingDINO config")
     _require_model_file(
         os.path.join(CHECKPOINT_DIR, dino_checkpoint),
         role="GroundingDINO checkpoint",
@@ -713,14 +711,18 @@ async def _shutdown() -> None:
             except (asyncio.CancelledError, Exception):  # noqa: BLE001
                 pass
             globals()[task_name] = None
-    await _video_sessions.shutdown()
-    if _gpu_lifecycle is not None:
-        await _gpu_lifecycle.shutdown()
-    _gpu_lifecycle = None
-    _pool_domain = None
-    _pool = None
-    _video_pool = None
-    shutdown_perfhud_collectors()
+    try:
+        await _video_sessions.shutdown()
+    finally:
+        try:
+            if _gpu_lifecycle is not None:
+                await _gpu_lifecycle.shutdown()
+        finally:
+            _gpu_lifecycle = None
+            _pool_domain = None
+            _pool = None
+            _video_pool = None
+            shutdown_perfhud_collectors()
 
 
 def _legacy_pool_status(snapshot: dict[str, Any]) -> dict[str, Any]:

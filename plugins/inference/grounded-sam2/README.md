@@ -2,6 +2,8 @@
 
 Distribution `grounded-sam2-backend` 0.10.1 retains the platform backend's protocol 2.2 service, its distinct image and video model pools, and its stateful tracker sessions. The runtime baseline is Python 3.10, PyTorch 2.3.1, torchvision 0.18.1 and CUDA 12.1. Its pinned third-party source submodule is IDEA-Research/Grounded-SAM-2 at `b7a9c29f196edff0eb54dbe14588d7ae5e3dde28`; initialize recursively before a Docker build. SAM 2 and GroundingDINO source retain their upstream Apache-2.0 licenses and notices; the first-party MIT license does not override third-party source or model terms.
 
+The image retains upstream license files under `/usr/share/licenses/grounded-sam2-vendor`, including the BSD-3-Clause cctorch notice. The submodule remains the authoritative source and license inventory.
+
 `GET /setup`, `GET /health`, `GET /versions`, `POST /predict`, warmup and lifecycle endpoints are retained. Image inference covers text, point, positive/negative points, interactive boxes, batch boxes, masks and scribbles, with polygon or exact COCO RLE as applicable. Interactive requests retain multimask candidates, low-resolution logits and prompt/source identity. Video tracking retains forward/reverse windows, sessions, corrections, cross-window state and cancellation/draining of actual work. Setup/health do not load or download model weights. Auth and lifecycle verification remain governed by the existing backend protocol.
 
 ## Assets and access
@@ -17,6 +19,12 @@ Plugin mode requires the installer-provided identity, route registry, data direc
 ## Build and validation
 
 The root-context Dockerfile pins the CUDA development base image by digest and installs locked Python inputs, the checked-out vendor source, and the plugin wheel. It does not provision any model assets. `uv.lock` is resolved for Python 3.10; `requirements.lock` exports hashed non-Torch Python dependencies and `first-party-requirements.lock` pins published SDK/runtime/contract artifacts. The base image provides Torch and torchvision. No editable platform checkout is required.
+
+System build tools resolve against Ubuntu Jammy's signed `20260601T000000Z` snapshot, rather than floating package repositories.
+
+Build with BuildKit enabled; it bind-mounts the pinned vendor source only for compilation instead of retaining a source layer.
+
+The vendor's GroundingDINO wheel installs `groundingdino`, while its own code imports `grounding_dino.groundingdino`; the image links that namespace to the installed package so its compiled `_C` and config resources resolve to the same wheel. SAM 2 YAMLs and both native extensions are checked from installed packages during the build, without retaining a runtime source checkout. CUDA compilation is bounded by `MAX_JOBS=2`.
 
 The operator-only `scripts/validate_managed_lifecycle.py` requires an isolated, explicitly authorized GPU allocation and matching `VALIDATION_GPU_UUID`, registry/resource identity, image digest, plugin artifact and asset-manifest digest. Set `VALIDATION_MODEL_APPROVAL_REF`, `VALIDATION_FIXTURE_APPROVAL_REF`, and `VALIDATION_WEIGHT_SHA256_JSON` mapping the selected SAM and DINO filenames and all five `bert-base-uncased/` filenames to their approved hashes. The script verifies these bytes before loading models, uses a disposable ephemeral signing authority and real loopback HTTP, and emits evidence bound to the exact installation. A passing report is not transferable to another image, GPU, pool topology, model selection or asset manifest.
 

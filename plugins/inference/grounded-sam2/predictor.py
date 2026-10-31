@@ -22,15 +22,10 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
+from importlib.resources import files
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-# vendor 内 grounding_dino/groundingdino/util/inference.py 用 `import grounding_dino.groundingdino...`
-# 把 vendor 根当顶层包名 (上游 demo 依赖 cwd 在 sys.path 隐式提供). 我们显式注入.
-_VENDOR_ROOT = "/app/vendor/grounded-sam-2"
-if os.path.isdir(_VENDOR_ROOT) and _VENDOR_ROOT not in sys.path:
-    sys.path.insert(0, _VENDOR_ROOT)
 
 import numpy as np
 import torch
@@ -128,6 +123,16 @@ DINO_CONFIGS = {
 }
 
 
+def dino_config_path(config_name: str) -> str:
+    override = os.getenv("DINO_CONFIG_PATH")
+    if override is not None:
+        return override
+    try:
+        return str(files("grounding_dino.groundingdino.config").joinpath(config_name))
+    except ModuleNotFoundError as exc:
+        raise FileNotFoundError("GroundingDINO package configuration is not installed") from exc
+
+
 class GroundedSAM2Predictor:
     """三种 prompt 路由到 SAM 2.1 / GroundingDINO; 返回归一化 polygon dict 列表."""
 
@@ -169,10 +174,7 @@ class GroundedSAM2Predictor:
         from grounding_dino.groundingdino.util.slconfig import SLConfig
 
         cfg_name, ckpt_name = DINO_CONFIGS[self.dino_variant]
-        cfg_path = os.getenv(
-            "DINO_CONFIG_PATH",
-            f"/app/vendor/grounded-sam-2/grounding_dino/groundingdino/config/{cfg_name}",
-        )
+        cfg_path = dino_config_path(cfg_name)
         # Match upstream load_model while explicitly binding its tokenizer and
         # text encoder to the governed, pre-provisioned local directory.
         args = SLConfig.fromfile(cfg_path)

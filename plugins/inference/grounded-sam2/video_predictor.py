@@ -34,15 +34,10 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 import tempfile
 from dataclasses import dataclass
 from typing import Any
 
-# 与 predictor.py 一致: 把 vendor 根注入 sys.path 供上游隐式包名解析。
-_VENDOR_ROOT = "/app/vendor/grounded-sam-2"
-if os.path.isdir(_VENDOR_ROOT) and _VENDOR_ROOT not in sys.path:
-    sys.path.insert(0, _VENDOR_ROOT)
 
 import cv2  # opencv-python-headless, 已在镜像内
 import numpy as np
