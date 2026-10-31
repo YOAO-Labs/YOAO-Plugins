@@ -206,6 +206,12 @@ class GroundedSam2GpuLifecycle(TerminalDrainMixin):
         try:
             if self._retire_sessions is not None:
                 await self._retire_sessions()
+                # TrackerSessionManager.shutdown collects close failures. A
+                # still-live tracker session after all owners finish means
+                # cleanup failed; never wait forever or claim empty residency.
+                snapshot = await self._pool.snapshot()
+                if snapshot.get("active_sessions", 0):
+                    raise RuntimeError("tracker sessions remain after retirement")
         except BaseException as exc:
             async with self._lock:
                 self._phase = "unknown"

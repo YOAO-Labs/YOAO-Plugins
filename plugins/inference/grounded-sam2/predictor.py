@@ -128,7 +128,7 @@ def dino_config_path(config_name: str) -> str:
     if override is not None:
         return override
     try:
-        return str(files("grounding_dino.groundingdino.config").joinpath(config_name))
+        return str(files("groundingdino.config").joinpath(config_name))
     except ModuleNotFoundError as exc:
         raise FileNotFoundError("GroundingDINO package configuration is not installed") from exc
 
@@ -169,9 +169,9 @@ class GroundedSAM2Predictor:
         return SAM2ImagePredictor(sam2_model)
 
     def _build_dino(self, device: str):
-        from grounding_dino.groundingdino.models import build_model
-        from grounding_dino.groundingdino.util.misc import clean_state_dict
-        from grounding_dino.groundingdino.util.slconfig import SLConfig
+        from groundingdino.models import build_model
+        from groundingdino.util.misc import clean_state_dict
+        from groundingdino.util.slconfig import SLConfig
 
         cfg_name, ckpt_name = DINO_CONFIGS[self.dino_variant]
         cfg_path = dino_config_path(cfg_name)

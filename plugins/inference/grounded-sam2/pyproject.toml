@@ -58,7 +58,7 @@ pythonpath = ["."]
 asyncio_mode = "auto"
 
 [tool.uv.sources]
-aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-8b7ecb5247cc/aap_backend_runtime-0.1.0-py3-none-any.whl" }
+aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl" }
 anno-mask-utils = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/anno_mask_utils-0.1.0-py3-none-any.whl" }
 aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
 aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" }

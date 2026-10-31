@@ -24,7 +24,18 @@ System build tools resolve against Ubuntu Jammy's signed `20260601T000000Z` snap
 
 Build with BuildKit enabled; it bind-mounts the pinned vendor source only for compilation instead of retaining a source layer.
 
-The vendor's GroundingDINO wheel installs `groundingdino`, while its own code imports `grounding_dino.groundingdino`; the image links that namespace to the installed package so its compiled `_C` and config resources resolve to the same wheel. SAM 2 YAMLs and both native extensions are checked from installed packages during the build, without retaining a runtime source checkout. CUDA compilation is bounded by `MAX_JOBS=2`.
+The pinned base contains two overlapping `typing-extensions` distributions; the Docker build removes both before installing the single hashed locked version.
+
+The pinned vendor's GroundingDINO wheel owns the `groundingdino` package, but its source imports a different namespace. `groundingdino-canonical-imports.patch` changes only those Python imports to the installed namespace; the image applies it with zero fuzz before building. For a standalone vendor build, from this directory, archive the pinned submodule into a disposable directory, apply the same patch, then install from that directory:
+
+```sh
+vendor_dir=$(mktemp -d)
+git -C vendor/grounded-sam-2 archive b7a9c29f196edff0eb54dbe14588d7ae5e3dde28 | tar -x -C "$vendor_dir"
+patch --batch --fuzz=0 -p1 -d "$vendor_dir" -i "$PWD/groundingdino-canonical-imports.patch"
+python -m pip install --no-deps --no-build-isolation "$vendor_dir/grounding_dino"
+```
+
+SAM 2 YAMLs and both native extensions are checked from installed packages during the image build, without retaining a runtime source checkout. CUDA compilation is bounded by `MAX_JOBS=2`.
 
 The operator-only `scripts/validate_managed_lifecycle.py` requires an isolated, explicitly authorized GPU allocation and matching `VALIDATION_GPU_UUID`, registry/resource identity, image digest, plugin artifact and asset-manifest digest. Set `VALIDATION_MODEL_APPROVAL_REF`, `VALIDATION_FIXTURE_APPROVAL_REF`, and `VALIDATION_WEIGHT_SHA256_JSON` mapping the selected SAM and DINO filenames and all five `bert-base-uncased/` filenames to their approved hashes. The script verifies these bytes before loading models, uses a disposable ephemeral signing authority and real loopback HTTP, and emits evidence bound to the exact installation. A passing report is not transferable to another image, GPU, pool topology, model selection or asset manifest.
 

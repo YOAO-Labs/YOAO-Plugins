@@ -17,19 +17,23 @@ RUN rm -f /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources \
     ca-certificates ninja-build gcc-10 g++-10 libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 COPY plugins/inference/grounded-sam2/build-requirements.lock plugins/inference/grounded-sam2/requirements.lock /tmp/
-RUN python -m pip install --no-deps --require-hashes -r /tmp/build-requirements.lock \
+# The pinned base contains two overlapping typing-extensions distributions.
+RUN python -m pip uninstall -y typing-extensions \
+    && python -m pip uninstall -y typing-extensions \
+    && python -m pip install --no-deps --require-hashes -r /tmp/build-requirements.lock \
     && python -m pip install --no-deps --require-hashes --no-build-isolation -r /tmp/requirements.lock
+COPY plugins/inference/grounded-sam2/groundingdino-canonical-imports.patch /tmp/
 RUN --mount=type=bind,source=plugins/inference/grounded-sam2/vendor/grounded-sam-2,target=/mnt/grounded-vendor,readonly \
     cp -a /mnt/grounded-vendor /tmp/grounded-vendor \
+    && patch --batch --fuzz=0 -p1 -d /tmp/grounded-vendor -i /tmp/groundingdino-canonical-imports.patch \
     && test -f /tmp/grounded-vendor/setup.py && test -f /tmp/grounded-vendor/grounding_dino/setup.py \
     && python -m pip install --no-deps --no-build-isolation /tmp/grounded-vendor \
     && python -m pip install --no-deps --no-build-isolation /tmp/grounded-vendor/grounding_dino \
-    && python -c "from pathlib import Path; import groundingdino; p=Path(groundingdino.__file__).resolve().parent; ns=p.parent/'grounding_dino'; ns.mkdir(exist_ok=True); (ns/'groundingdino').symlink_to(p, target_is_directory=True)" \
     && mkdir -p /usr/share/licenses/grounded-sam2-vendor \
     && cp /tmp/grounded-vendor/LICENSE* /usr/share/licenses/grounded-sam2-vendor/ \
     && cp /tmp/grounded-vendor/grounding_dino/LICENSE /usr/share/licenses/grounded-sam2-vendor/LICENSE_grounding_dino_subtree \
     && rm -rf /tmp/grounded-vendor \
-    && python -c "import torch, sam2._C, grounding_dino.groundingdino._C; from importlib.resources import files; from hydra import compose; names=('t','s','b+','l'); assert all(files('sam2').joinpath('configs','sam2.1',f'sam2.1_hiera_{n}.yaml').is_file() and compose(config_name=f'configs/sam2.1/sam2.1_hiera_{n}.yaml') for n in names); assert all(files('grounding_dino.groundingdino.config').joinpath(n).is_file() for n in ('GroundingDINO_SwinT_OGC.py','GroundingDINO_SwinB_cfg.py'))"
+    && python -c "import torch, sam2._C, groundingdino._C; from importlib.resources import files; from hydra import compose; names=('t','s','b+','l'); assert all(files('sam2').joinpath('configs','sam2.1',f'sam2.1_hiera_{n}.yaml').is_file() and compose(config_name=f'configs/sam2.1/sam2.1_hiera_{n}.yaml') for n in names); assert all(files('groundingdino.config').joinpath(n).is_file() for n in ('GroundingDINO_SwinT_OGC.py','GroundingDINO_SwinB_cfg.py'))"
 COPY plugins/inference/grounded-sam2/first-party-requirements.lock /tmp/
 RUN python -m pip install --no-deps --require-hashes -r /tmp/first-party-requirements.lock
 COPY plugins/inference/grounded-sam2/*.py plugins/inference/grounded-sam2/pyproject.toml plugins/inference/grounded-sam2/README.md plugins/inference/grounded-sam2/LICENSE /tmp/grounded-sam2/
