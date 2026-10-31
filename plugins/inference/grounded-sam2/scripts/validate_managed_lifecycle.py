@@ -587,6 +587,8 @@ async def _run() -> dict[str, Any]:
                 raise AssertionError("managed unload did not clear both pools")
             if final_health["cache"]["size"] != 0:
                 raise AssertionError("embedding cache remained populated")
+            if final_health["video_pool"]["active_sessions"] != 0:
+                raise AssertionError("tracker sessions remained active")
             if any(_torch_memory(main.torch).values()):
                 raise AssertionError("Grounded-SAM2 unload retained PyTorch memory")
             contract_checks["full_cleanup"] = True
@@ -632,7 +634,6 @@ async def _run() -> dict[str, Any]:
             "registry_id": REGISTRY_ID,
             "gpu_resource_id": RESOURCE_ID,
             "pools": {pool_id: {"cap": int(snapshot["cap"])} for pool_id, snapshot in final_snapshot["pools"].items()},
-            "session_counts": {"video": 0},
         }
         return build_managed_lifecycle_evidence(
             backend_name=plugin_id,
@@ -658,6 +659,9 @@ async def _run() -> dict[str, Any]:
             contract_checks=contract_checks,
             final_residency=final_health["residency"],
             runtime_ephemera_clean=True,
+            workload_evidence={
+                "tracker_sessions_after_unload": final_health["video_pool"]["active_sessions"],
+            },
         )
     finally:
         try:

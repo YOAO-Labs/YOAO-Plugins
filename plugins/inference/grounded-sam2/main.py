@@ -643,7 +643,7 @@ async def _load_models() -> None:
         plugin_verified_lifecycle(
             pool_topology=_pool_topology(), runtime_versions=_plugin_runtime_versions(),
             gpu_facts=_plugin_gpu_facts or {}, expected_weights=_qualification_weights(),
-            session_counts={"video": 0},
+            session_counts={},
         ) if options else False
     )
     build_serial_lock = asyncio.Lock()
