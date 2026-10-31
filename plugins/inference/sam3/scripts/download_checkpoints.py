@@ -24,7 +24,8 @@ authorization or redistribution grant.
 
 Env:
     HF_TOKEN                    = HuggingFace access token (required for image, video 时另需 license)
-    CHECKPOINT_DIR              = /app/checkpoints (default)
+    AAP_PLUGIN_DATA_DIR         = native plugin data root (checkpoints/ underneath)
+    CHECKPOINT_DIR              = legacy standalone checkpoint directory
     SAM3_IMAGE_HF_REPO_ID       = facebook/sam3 (default; 图像模型仓库)
     SAM3_IMAGE_CHECKPOINT_FILE  = sam3.pt (default; 图像 PCS + inst 权重)
     SAM3_DOWNLOAD_VIDEO         = 1 (default; 0 → 关闭, 跳过 multiplex + config 下载)
@@ -38,7 +39,9 @@ import os
 import sys
 from pathlib import Path
 
-CHECKPOINT_DIR = Path(os.getenv("CHECKPOINT_DIR", "/app/checkpoints"))
+from sam3_plugin.runtime_config import checkpoint_dir
+
+CHECKPOINT_DIR = Path(checkpoint_dir())
 # 图像模型 (PCS + inst 交互): sam3.pt。
 IMAGE_HF_REPO_ID = os.getenv("SAM3_IMAGE_HF_REPO_ID", "facebook/sam3")
 IMAGE_CHECKPOINT_FILE = os.getenv("SAM3_IMAGE_CHECKPOINT_FILE", "sam3.pt")

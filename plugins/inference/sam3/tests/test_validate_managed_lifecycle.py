@@ -21,6 +21,7 @@ def test_main_keeps_runtime_output_out_of_json(monkeypatch, capsys) -> None:
 
     captured = capsys.readouterr()
     assert json.loads(captured.out) == evidence
+    assert captured.out.strip() == json.dumps(evidence, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
     assert "third-party diagnostic" in captured.err
 
 

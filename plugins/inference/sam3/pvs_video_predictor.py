@@ -40,6 +40,7 @@ from aap_backend_runtime import (
 )
 from aap_protocol_v2 import MaskPromptPayload
 from mask_utils import decode_coco_rle
+from sam3_plugin.runtime_config import checkpoint_dir, configured_device
 
 # 复用 multiplex 封装里的通用几何/IO 静态工具(抽窗解码、mask→几何、临时目录清理),
 # 避免重复实现; 这些与 multiplex 逻辑无关, 纯 OpenCV/几何。
@@ -47,7 +48,8 @@ from video_predictor import SAM3MultiplexVideoTracker, _to_numpy
 
 logger = logging.getLogger("sam3-backend.pvs")
 
-CHECKPOINT_DIR = os.getenv("CHECKPOINT_DIR", "/app/checkpoints")
+
+CHECKPOINT_DIR = checkpoint_dir()
 _IMAGE_CKPT = os.path.join(CHECKPOINT_DIR, "sam3.pt")
 _BPE_PATH = os.path.join(_VENDOR_ROOT, "sam3/assets/bpe_simple_vocab_16e6.txt.gz")
 # 单窗安全上限(帧)。PVS 是 SAM2 式 memory 传播(常驻 = memory bank + 当前帧, 非整窗特征),
@@ -103,7 +105,7 @@ class SAM3PVSVideoTracker:
     ) -> None:
         self.max_window_frames = max_window_frames
         self.max_context_frames = max_context_frames
-        self.device = require_gpu_device("cuda")
+        self.device = require_gpu_device(configured_device())
         self.active_sessions = 0
         self._predictor = self._load_predictor()
 

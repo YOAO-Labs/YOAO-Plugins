@@ -206,7 +206,7 @@ def test_health_reports_unknown_until_a_cuda_pool_is_loaded(monkeypatch) -> None
 
         compute = (await main_module.health())["compute"]
         assert compute == {
-            "configured_device": "cuda",
+            "configured_device": "cuda:0",
             "effective_device": None,
             "cpu_fallback_supported": False,
         }

@@ -53,8 +53,8 @@ CONTROL_SCOPES = {
     AdmissionScope.MODE,
     AdmissionScope.RESET,
 }
-REGISTRY_ID = "sam3-validation"
-RESOURCE_ID = "local-validation-gpu"
+REGISTRY_ID = os.getenv("VALIDATION_REGISTRY_ID", "sam3-validation")
+RESOURCE_ID = os.getenv("VALIDATION_GPU_RESOURCE_ID", "local-validation-gpu")
 SHA256_LENGTH = 64
 
 
@@ -330,6 +330,17 @@ async def _run() -> dict[str, Any]:
     image_id = _required_env("VALIDATION_IMAGE_ID")
     model_approval_ref = _required_env("VALIDATION_MODEL_APPROVAL_REF")
     fixture_approval_ref = _required_env("VALIDATION_FIXTURE_APPROVAL_REF")
+    native_plugin_id = os.environ.get("VALIDATION_PLUGIN_ID")
+    if native_plugin_id:
+        if os.environ.get("AAP_PLUGIN_TOKEN_FILE"):
+            raise RuntimeError("Run qualification in an isolated validation process, not the native service")
+        _required_env("VALIDATION_REGISTRY_ID")
+        _required_env("VALIDATION_GPU_RESOURCE_ID")
+        _required_env("VALIDATION_GPU_UUID")
+        _required_env("VALIDATION_PLUGIN_VERSION")
+        _required_env("VALIDATION_OCI_ARTIFACT")
+        _required_env("VALIDATION_ASSET_MANIFEST_SHA256")
+        _required_env("CUDA_VERSION")
     private_key = Ed25519PrivateKey.generate()
     os.environ["GPU_LIFECYCLE_VERIFY_KEYS_JSON"] = json.dumps(
         {"validation": encode_ed25519_public_key(private_key.public_key())}
@@ -648,7 +659,9 @@ async def _run() -> dict[str, Any]:
         if leftovers:
             raise RuntimeError(f"temporary video artifacts remain: {leftovers}")
 
-        checkpoint_dir = Path(os.getenv("CHECKPOINT_DIR", "/app/checkpoints"))
+        from sam3_plugin.runtime_config import checkpoint_dir as resolve_checkpoint_dir
+
+        checkpoint_dir = Path(resolve_checkpoint_dir())
         artifacts = [
             _approved_artifact(
                 checkpoint_dir / "sam3.pt",
@@ -678,6 +691,28 @@ async def _run() -> dict[str, Any]:
             pool_id: {"cap": int(snapshot["cap"])}
             for pool_id, snapshot in cycle_2_pool["pools"].items()
         }
+        runtime_versions = {
+            "python": platform.python_version(),
+            "torch": str(main.torch.__version__),
+            "cuda": str(main.torch.version.cuda),
+            "backend": str(main.BACKEND_VERSION),
+        }
+        if native_plugin_id:
+            runtime_versions.update(
+                plugin_id=native_plugin_id,
+                plugin_version=_required_env("VALIDATION_PLUGIN_VERSION"),
+                artifact=_required_env("VALIDATION_OCI_ARTIFACT"),
+                asset_manifest_sha256=_required_env("VALIDATION_ASSET_MANIFEST_SHA256"),
+                registry_id=REGISTRY_ID,
+                gpu_resource_id=RESOURCE_ID,
+                driver_version=gpu["driver_version"],
+                cuda_image=_required_env("CUDA_VERSION"),
+            )
+            pool_topology = {
+                "registry_id": REGISTRY_ID,
+                "gpu_resource_id": RESOURCE_ID,
+                "pools": pool_topology,
+            }
         cycles = [
             memory_cycle_evidence(
                 cycle=1,
@@ -695,16 +730,11 @@ async def _run() -> dict[str, Any]:
             ),
         ]
         return build_managed_lifecycle_evidence(
-            backend_name="sam3-backend",
+            backend_name=native_plugin_id or "sam3-backend",
             deployment={
                 "git_commit": git_commit,
                 "image_id": image_id,
-                "runtime_versions": {
-                    "python": platform.python_version(),
-                    "torch": str(main.torch.__version__),
-                    "cuda": str(main.torch.version.cuda),
-                    "backend": str(main.BACKEND_VERSION),
-                },
+                "runtime_versions": runtime_versions,
                 "pool_topology": pool_topology,
             },
             artifacts=artifacts,
@@ -759,7 +789,7 @@ def main() -> None:
         print(f"managed lifecycle validation failed: {exc}", file=sys.stderr)
         print(json.dumps(_failed_evidence(exc), ensure_ascii=False, sort_keys=True))
         raise SystemExit(1) from exc
-    print(json.dumps(evidence, ensure_ascii=False, sort_keys=True))
+    print(json.dumps(evidence, ensure_ascii=True, sort_keys=True, separators=(",", ":")))
 
 
 if __name__ == "__main__":

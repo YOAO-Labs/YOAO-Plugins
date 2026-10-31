@@ -13,6 +13,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
+from aap_backend_runtime.gpu_lifecycle import TerminalDrainMixin
 from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
 from aap_protocol_v2.lifecycle import (
     AdmissionScope,
@@ -137,7 +138,7 @@ class WorkloadOperation:
             raise asyncio.CancelledError
 
 
-class Sam3GpuLifecycle:
+class Sam3GpuLifecycle(TerminalDrainMixin):
     """Single-process managed lifecycle guard for the SAM3 image, multiplex video, and PVS video pools."""
 
     def __init__(
@@ -147,11 +148,28 @@ class Sam3GpuLifecycle:
         verify_keyring: Mapping[str, Ed25519PublicKey],
         evictable_verified: bool = False,
         boot_id: str | None = None,
+        expected_registry_id: str | None = None,
+        expected_gpu_resource_id: str | None = None,
+        allow_legacy_workloads: bool = True,
     ) -> None:
         self._pool = pool
         self._verify_keyring = dict(verify_keyring)
         self._evictable_verified = evictable_verified
         self._boot_id = boot_id or uuid.uuid4().hex
+        self._expected_registry_id = expected_registry_id
+        self._expected_gpu_resource_id = expected_gpu_resource_id
+        self._expected_identity = (
+            BoundLifecycleIdentity(
+                backend_registry_id=expected_registry_id,
+                gpu_resource_id=expected_gpu_resource_id,
+            )
+            if expected_registry_id and expected_gpu_resource_id else None
+        )
+        self._allow_legacy_workloads = allow_legacy_workloads
+        self._terminal_cpu_enabled = False
+        self._terminal_pool_ids = ("image", "multiplex_video", "pvs_video")
+        self._terminal_identity = None
+        self._terminal_task = None
         self._lock = asyncio.Lock()
 
         self._gate = LifecycleGate.LEGACY
@@ -199,6 +217,9 @@ class Sam3GpuLifecycle:
 
         async with self._lock:
             self._prune_jtis_locked()
+            self._require_not_terminal_locked()
+            if self._gate is LifecycleGate.LEGACY and not self._allow_legacy_workloads:
+                raise LifecycleHTTPError(LifecycleErrorCode.ADMISSION_DENIED)
             if self._phase in {"draining", "unloading"}:
                 raise LifecycleHTTPError(
                     LifecycleErrorCode.BACKEND_DRAINING,
@@ -345,6 +366,7 @@ class Sam3GpuLifecycle:
         )
 
         async with self._lock:
+            self._require_not_terminal_locked()
             self._validate_control_claim_locked(claims, AdmissionScope.MODE)
             if request.gate is LifecycleGate.ENFORCE and not self._evictable_verified:
                 raise LifecycleHTTPError(
@@ -416,6 +438,7 @@ class Sam3GpuLifecycle:
         )
 
         async with self._lock:
+            self._require_not_terminal_locked()
             self._validate_control_claim_locked(claims, AdmissionScope.RESET)
             self._consume_jti_locked(claims, fingerprint, workload=False)
             incoming = int(request.control_epoch)
@@ -486,6 +509,7 @@ class Sam3GpuLifecycle:
         )
         fingerprint = self._fingerprint("/drain", canonical, claims)
         async with self._lock:
+            self._require_not_terminal_locked()
             self._validate_enforced_transition_locked(claims, AdmissionScope.DRAIN)
             self._consume_jti_locked(claims, fingerprint, workload=False)
             if self._generation == canonical:
@@ -531,6 +555,7 @@ class Sam3GpuLifecycle:
         )
         fingerprint = self._fingerprint("/drain/cancel", canonical, claims)
         async with self._lock:
+            self._require_not_terminal_locked()
             self._validate_enforced_transition_locked(claims, AdmissionScope.RESUME)
             self._consume_jti_locked(claims, fingerprint, workload=False)
             expected_resume = _ResumeRecord(
@@ -576,6 +601,7 @@ class Sam3GpuLifecycle:
         )
         fingerprint = self._fingerprint("/unload", canonical, claims)
         async with self._lock:
+            self._require_not_terminal_locked()
             self._validate_enforced_transition_locked(claims, AdmissionScope.UNLOAD)
             self._consume_jti_locked(claims, fingerprint, workload=False)
             if canonical != self._generation:
@@ -619,6 +645,7 @@ class Sam3GpuLifecycle:
 
     async def legacy_unload(self) -> dict[str, Any]:
         async with self._lock:
+            self._require_not_terminal_locked()
             if self._gate is LifecycleGate.ENFORCE:
                 raise LifecycleHTTPError(LifecycleErrorCode.ADMISSION_DENIED)
             snapshot = await self._pool.snapshot()
@@ -970,6 +997,11 @@ class Sam3GpuLifecycle:
         scope: AdmissionScope,
     ) -> None:
         if claims.scope is not scope or claims.boot_id != self._boot_id:
+            raise LifecycleHTTPError(LifecycleErrorCode.ADMISSION_DENIED)
+        if self._expected_identity is not None and self._expected_identity != BoundLifecycleIdentity(
+            backend_registry_id=claims.backend_registry_id,
+            gpu_resource_id=claims.gpu_resource_id,
+        ):
             raise LifecycleHTTPError(LifecycleErrorCode.ADMISSION_DENIED)
         if self._identity is not None and not self._identity_matches(claims):
             raise LifecycleHTTPError(LifecycleErrorCode.ADMISSION_DENIED)

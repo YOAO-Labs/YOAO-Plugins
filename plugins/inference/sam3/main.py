@@ -38,8 +38,10 @@ import functools
 import logging
 import math
 import os
+import platform
 import tempfile
 import time
+from pathlib import Path
 from typing import Any, Callable
 
 import httpx
@@ -88,6 +90,13 @@ from aap_protocol_v2.lifecycle import (
     parse_gpu_control_token_header_values,
 )
 from aap_backend_runtime.backend_auth import install_backend_auth
+from aap_backend_runtime.gpu import observed_cuda_runtime_version, observed_single_nvidia_gpu
+from aap_backend_runtime.plugin_service import (
+    install_plugin_service,
+    plugin_lifecycle_options,
+    plugin_setup_fields,
+    plugin_verified_lifecycle,
+)
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.routing import APIRoute
@@ -123,6 +132,7 @@ from pvs_video_predictor import (
 )
 from pool_domain import Sam3Pools
 from schemas import BatchPredictResponse, Context, PredictionResult, WarmupResponse
+from sam3_plugin.runtime_config import checkpoint_dir, configured_device
 
 logger = logging.getLogger("sam3-backend")
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
@@ -145,9 +155,9 @@ MANAGED_LIFECYCLE_VERIFIED = deployment_verified_flag("SAM3_MANAGED_LIFECYCLE_VE
 MAX_PREDICT_REQUEST_BYTES = 6 * 1024 * 1024
 
 app = FastAPI(title="sam3-backend", version=BACKEND_VERSION)
-install_backend_routing_controller(app)
-
-install_backend_auth(app, "sam3")
+if not install_plugin_service(app, lambda: _gpu_lifecycle):
+    install_backend_routing_controller(app)
+    install_backend_auth(app, "sam3")
 
 
 async def _buffer_bounded_predict_body(request: Request) -> None:
@@ -230,6 +240,37 @@ _pvs_pool: ManagedLruPool[str, SAM3PVSVideoTracker] | None = None
 _pvs_sessions = TrackerSessionManager(ttl_seconds=300.0)
 _pool_domain: Sam3Pools | None = None
 _gpu_lifecycle: Sam3GpuLifecycle | None = None
+_plugin_lifecycle_verified = False
+_plugin_gpu_facts: dict[str, Any] | None = None
+_plugin_cuda_runtime: str | None = None
+_PLUGIN_POOLS = {"image": {"cap": 1}, "multiplex_video": {"cap": 1}, "pvs_video": {"cap": 1}}
+
+
+def _plugin_runtime_versions() -> dict[str, str]:
+    result = {"python": platform.python_version(), "torch": str(torch.__version__), "backend": BACKEND_VERSION}
+    if _plugin_cuda_runtime:
+        result["cuda"] = _plugin_cuda_runtime
+        result["cuda_image"] = os.environ["CUDA_VERSION"]
+    return result
+
+
+def _qualification_weights() -> list[dict[str, Any]]:
+    if not os.environ.get("AAP_PLUGIN_QUALIFICATION_FILE"):
+        return []
+    from aap_backend_runtime import artifact_evidence
+    from sam3_plugin.catalog import descriptor
+
+    root = Path(os.environ["AAP_PLUGIN_DATA_DIR"]).resolve(strict=True)
+    weights = []
+    for item in descriptor()["assets"]:
+        path = (root / item["path"]).resolve(strict=True)
+        if not path.is_relative_to(root):
+            raise ValueError("Checkpoint escapes plugin data directory")
+        observed = artifact_evidence(path, kind="weight")
+        if (observed["sha256"], observed["size_bytes"]) != (item["sha256"], item["size_bytes"]):
+            raise ValueError("Checkpoint differs from the published SAM3 catalog")
+        weights.append({"sha256": observed["sha256"], "size_bytes": observed["size_bytes"]})
+    return weights
 
 
 def _build_predictor(_key: str = _POOL_KEY) -> SAM3Predictor:
@@ -276,7 +317,7 @@ def _pvs_artifact(key: str) -> BuildArtifact[SAM3PVSVideoTracker]:
 
 
 def _require_checkpoint(filename: str) -> None:
-    path = os.path.join(os.getenv("CHECKPOINT_DIR", "/app/checkpoints"), filename)
+    path = os.path.join(checkpoint_dir(), filename)
     if not os.path.isfile(path):
         raise FileNotFoundError(f"checkpoint not provisioned: {path}")
 
@@ -453,9 +494,33 @@ async def _idle_watcher() -> None:
 async def _load_models() -> None:
     global _gpu_lifecycle, _idle_task, _image_pool, _last_request_at
     global _multiplex_pool, _pool_domain, _pvs_pool
+    global _plugin_lifecycle_verified, _plugin_gpu_facts, _plugin_cuda_runtime
     validate_single_gpu_device_set()
-    raw_keyring = os.getenv("GPU_LIFECYCLE_VERIFY_KEYS_JSON", "").strip()
+    plugin_options = plugin_lifecycle_options()
+    if plugin_options:
+        configured_device()
+        keyring_file = os.environ.get("AAP_PLUGIN_GPU_KEYRING_FILE")
+        if not keyring_file:
+            raise RuntimeError("CUDA plugin lifecycle keyring is unavailable")
+        raw_keyring = Path(keyring_file).read_text(encoding="utf-8").strip()
+    else:
+        raw_keyring = os.getenv("GPU_LIFECYCLE_VERIFY_KEYS_JSON", "").strip()
     verify_keyring = load_verify_keyring(raw_keyring) if raw_keyring else {}
+    if plugin_options and not verify_keyring:
+        raise RuntimeError("CUDA plugin lifecycle keyring has no verification keys")
+    _plugin_gpu_facts = observed_single_nvidia_gpu(os.environ["AAP_PLUGIN_GPU_UUID"]) if plugin_options else None
+    _plugin_cuda_runtime = observed_cuda_runtime_version(library_name="libcudart.so.12") if plugin_options else None
+    if plugin_options and (not torch.cuda.is_available() or torch.cuda.device_count() != 1):
+        raise RuntimeError("CUDA plugin requires exactly one visible CUDA device")
+    _plugin_lifecycle_verified = (
+        plugin_verified_lifecycle(
+            pool_topology=_PLUGIN_POOLS,
+            runtime_versions=_plugin_runtime_versions(),
+            gpu_facts=_plugin_gpu_facts or {},
+            expected_weights=_qualification_weights(),
+            session_counts={},
+        ) if plugin_options else False
+    )
     build_serial_lock = asyncio.Lock()
     _image_pool = ManagedLruPool(
         cap=1,
@@ -495,7 +560,10 @@ async def _load_models() -> None:
     _gpu_lifecycle = Sam3GpuLifecycle(
         _pool_domain,
         verify_keyring=verify_keyring,
-        evictable_verified=MANAGED_LIFECYCLE_VERIFIED,
+        evictable_verified=_plugin_lifecycle_verified if plugin_options else MANAGED_LIFECYCLE_VERIFIED,
+        expected_registry_id=plugin_options.get("expected_registry_id"),
+        expected_gpu_resource_id=plugin_options.get("expected_gpu_resource_id"),
+        allow_legacy_workloads=plugin_options.get("allow_legacy_workloads", True),
     )
     # 不再启动急加载: 未注册 / 无流量时白占 ~3.6GB 显存。改纯懒加载——首个推理 /
     # 预热请求通过对应受管 pool 冷启；需暖启时由模型市场发起「预热默认」。
@@ -617,6 +685,8 @@ async def health() -> dict:
         gpu_info["gpu_utilization_percent"] = perf.get("gpu_utilization_percent")
         gpu_info["gpu_temperature_celsius"] = perf.get("gpu_temperature_celsius")
         gpu_info["gpu_power_watts"] = perf.get("gpu_power_watts")
+    if _plugin_gpu_facts:
+        gpu_info = {**(gpu_info or {}), **_plugin_gpu_facts}
     host = {
         "container_cpu_percent": perf.get("container_cpu_percent"),
         "container_memory_percent": perf.get("container_memory_percent"),
@@ -639,13 +709,14 @@ async def health() -> dict:
         # SAM3 是 GPU-only：effective_device 仅反映已成功加载池的实际设备。
         # 未加载或 GPU 不可用时为 None，不会伪报 CPU fallback。
         "compute": {
-            "configured_device": "cuda",
+            "configured_device": configured_device(),
             "effective_device": _effective_compute_device(aggregate),
             "cpu_fallback_supported": False,
         },
         "residency": residency_payload,
         "idle_unload_seconds": IDLE_UNLOAD_SECONDS,
         "last_request_age_seconds": round(time.monotonic() - _last_request_at, 2),
+        **({"pool_topology": _PLUGIN_POOLS} if plugin_lifecycle_options() else {}),
     }
 
 
@@ -898,7 +969,15 @@ def setup() -> dict:
             "params": base["params"],
         },
     ]
-    if MANAGED_LIFECYCLE_VERIFIED:
+    if plugin_lifecycle_options():
+        base.update(plugin_setup_fields(_PLUGIN_POOLS, _plugin_runtime_versions()))
+        if _plugin_gpu_facts:
+            base["runtime_info"].update(
+                driver_version=_plugin_gpu_facts["driver_version"],
+                total_memory_mb=_plugin_gpu_facts["total_memory_mb"],
+                cuda_build=_plugin_cuda_runtime,
+            )
+    if _plugin_lifecycle_verified or (MANAGED_LIFECYCLE_VERIFIED and not plugin_lifecycle_options()):
         base["managed_lifecycle"] = ManagedLifecycleCapabilities().model_dump(
             mode="json"
         )

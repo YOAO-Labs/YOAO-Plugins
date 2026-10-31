@@ -73,6 +73,7 @@ from mask_utils import (
     mask_to_preview_polygon,
     scribbles_to_point_prompts,
 )
+from sam3_plugin.runtime_config import checkpoint_dir, configured_device
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ def _maybe_encode_low_res(
         return None
 
 
-CHECKPOINT_DIR = os.getenv("CHECKPOINT_DIR", "/app/checkpoints")
+CHECKPOINT_DIR = checkpoint_dir()
 # 图像模型变体名: 当前加载 sam3.pt (facebook/sam3, 3.0) —— 官方 image+inst 路径所用权重。
 # (sam3.1_multiplex 是视频模型, 与 image-inst 代码不兼容, 仅留作后续视频追踪, 见 _load_model。)
 MODEL_VARIANT = "sam3"
@@ -155,7 +156,7 @@ class SAM3Predictor:
         score_threshold: float = DEFAULT_SCORE_THRESHOLD,
     ) -> None:
         self.checkpoint_dir = checkpoint_dir
-        self.device = require_gpu_device("cuda")
+        self.device = require_gpu_device(configured_device())
         self.embedding_cache = embedding_cache
         self.score_threshold = score_threshold
 

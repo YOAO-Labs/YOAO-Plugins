@@ -29,7 +29,7 @@ class _Model:
     device = "cuda:0"
 
 
-def _domain(*, free_gpu_memory=None):
+def _domain(*, free_gpu_memory=None, **lifecycle_options):
     from gpu_lifecycle import Sam3GpuLifecycle
     from aap_backend_runtime import BuildArtifact, ManagedLruPool
     from pool_domain import Sam3Pools
@@ -61,6 +61,7 @@ def _domain(*, free_gpu_memory=None):
         verify_keyring={"current": private_key.public_key()},
         evictable_verified=True,
         boot_id="boot-1",
+        **lifecycle_options,
     )
     return lifecycle, pool, private_key
 
@@ -112,6 +113,42 @@ async def _enforce(lifecycle, private_key, *, epoch: str = "1"):
         ),
     )
 
+
+
+@pytest.mark.asyncio
+async def test_native_terminal_drain_fences_all_pools_and_future_workloads() -> None:
+    lifecycle, pool, key = _domain(
+        expected_registry_id="backend-1",
+        expected_gpu_resource_id="node-a/GPU-1",
+        allow_legacy_workloads=False,
+    )
+    with pytest.raises(LifecycleHTTPError):
+        await lifecycle.begin_workload(AdmissionScope.PREDICT, generation_header=None, token=None)
+    await pool.warmup("resident")
+    token = _token(lifecycle, key, AdmissionScope.DRAIN, generation="1", jti="terminal-drain")
+    async with pool.borrow("resident"):
+        draining = asyncio.create_task(
+            lifecycle.terminal_drain_signed("1", generation_header="1", token=token)
+        )
+        await asyncio.sleep(0.03)
+        assert not draining.done()
+    result = await draining
+    assert result["unloaded"] is True
+    assert set(result["pool_ids"]) == {"image", "multiplex_video", "pvs_video"}
+    assert (await pool.snapshot())["current_size"] == 0
+    with pytest.raises(LifecycleHTTPError):
+        await _enforce(lifecycle, key)
+
+
+@pytest.mark.asyncio
+async def test_native_rejects_signed_wrong_registry() -> None:
+    lifecycle, _pool, key = _domain(
+        expected_registry_id="different-backend",
+        expected_gpu_resource_id="node-a/GPU-1",
+        allow_legacy_workloads=False,
+    )
+    with pytest.raises(LifecycleHTTPError):
+        await _enforce(lifecycle, key)
 
 @pytest.mark.asyncio
 async def test_fresh_boot_reports_trusted_legacy_empty_residency() -> None:

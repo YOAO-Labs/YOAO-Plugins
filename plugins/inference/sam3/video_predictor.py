@@ -44,10 +44,12 @@ from aap_backend_runtime import (
 )
 from mask_utils.polygon import mask_to_polygon  # 与图片栈共用的 mask→polygon 矢量化
 from mask_utils.rle import encode_coco_rle
+from sam3_plugin.runtime_config import checkpoint_dir, configured_device
 
 logger = logging.getLogger("sam3-backend.video")
 
-CHECKPOINT_DIR = os.getenv("CHECKPOINT_DIR", "/app/checkpoints")
+
+CHECKPOINT_DIR = checkpoint_dir()
 _VIDEO_CKPT = os.path.join(CHECKPOINT_DIR, "sam3.1_multiplex.pt")
 _BPE_PATH = os.path.join(_VENDOR_ROOT, "sam3/assets/bpe_simple_vocab_16e6.txt.gz")
 # FlashAttention-3 仅 Hopper(SM90) 优化; 消费级 Ada(4060, SM89) 默认关。可用 env 覆盖。
@@ -75,7 +77,7 @@ class SAM3MultiplexVideoTracker:
         max_window_frames: int = DEFAULT_MAX_WINDOW_FRAMES,
     ) -> None:
         self.max_window_frames = max_window_frames
-        self.device = require_gpu_device("cuda")
+        self.device = require_gpu_device(configured_device())
         self.active_sessions = 0
         self.cleanup_uncertain = False
         self._predictor = self._load_predictor(use_fa3)
