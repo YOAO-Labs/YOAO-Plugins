@@ -150,6 +150,142 @@ async def test_native_rejects_signed_wrong_registry() -> None:
     with pytest.raises(LifecycleHTTPError):
         await _enforce(lifecycle, key)
 
+
+@pytest.mark.asyncio
+async def test_terminal_drain_retires_idle_session_only_after_active_work_finishes() -> None:
+    from aap_backend_runtime import TrackerSessionManager
+
+    sessions = TrackerSessionManager(ttl_seconds=0)
+    lifecycle, _pool, key = _domain(
+        expected_registry_id="backend-1",
+        expected_gpu_resource_id="node-a/GPU-1",
+        allow_legacy_workloads=False,
+        retire_sessions=sessions.shutdown,
+    )
+    closed = asyncio.Event()
+
+    async def open_session(_lease):
+        return object()
+
+    async def close_session(_lease, _state):
+        closed.set()
+
+    await _enforce(lifecycle, key)
+    operation = await lifecycle.begin_workload(
+        AdmissionScope.PREDICT, generation_header="1",
+        token=_token(lifecycle, key, AdmissionScope.PREDICT, generation="1", jti="active-predict"),
+    )
+    await sessions.start(
+        binding=("bound",),
+        borrow=lambda: lifecycle._pool.pvs.borrow("pvs"),  # noqa: SLF001
+        open_session=open_session,
+        close_session=close_session,
+    )
+    pending = asyncio.get_running_loop().create_future()
+    operation.track_future(pending)
+    await operation.close()
+    bad_token = _token(lifecycle, Ed25519PrivateKey.generate(), AdmissionScope.DRAIN, generation="2", jti="bad-drain")
+    with pytest.raises(LifecycleHTTPError):
+        await lifecycle.terminal_drain_signed("2", generation_header="2", token=bad_token)
+    assert not closed.is_set()
+    token = _token(lifecycle, key, AdmissionScope.DRAIN, generation="2", jti="valid-drain")
+    draining = asyncio.create_task(lifecycle.terminal_drain_signed("2", generation_header="2", token=token))
+    try:
+        await asyncio.sleep(0.03)
+        assert not closed.is_set()
+        assert not draining.done()
+        pending.set_result(None)
+        result = await asyncio.wait_for(asyncio.shield(draining), timeout=0.5)
+        assert closed.is_set()
+        assert result["unloaded"] is True
+        assert (await lifecycle._pool.snapshot())["borrowers"] == 0  # noqa: SLF001
+    finally:
+        if not pending.done():
+            pending.set_result(None)
+        await sessions.shutdown()
+        await asyncio.gather(draining, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_terminal_drain_waits_for_a_start_already_admitted() -> None:
+    from aap_backend_runtime import TrackerSessionManager
+
+    sessions = TrackerSessionManager(ttl_seconds=0)
+    lifecycle, _pool, key = _domain(
+        expected_registry_id="backend-1", expected_gpu_resource_id="node-a/GPU-1",
+        allow_legacy_workloads=False, retire_sessions=sessions.shutdown,
+    )
+    await _enforce(lifecycle, key)
+    operation = await lifecycle.begin_workload(
+        AdmissionScope.PREDICT, generation_header="1",
+        token=_token(lifecycle, key, AdmissionScope.PREDICT, generation="1", jti="start-operation"),
+    )
+    started, release, closed = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    async def open_session(_lease):
+        started.set()
+        await release.wait()
+        return object()
+
+    async def close_session(_lease, _state):
+        closed.set()
+
+    async def start():
+        try:
+            return await sessions.start(
+                binding=("bound",), borrow=lambda: lifecycle._pool.pvs.borrow("pvs"),  # noqa: SLF001
+                open_session=open_session, close_session=close_session,
+            )
+        finally:
+            await operation.close()
+
+    starting = asyncio.create_task(start())
+    await started.wait()
+    token = _token(lifecycle, key, AdmissionScope.DRAIN, generation="2", jti="drain-start")
+    draining = asyncio.create_task(lifecycle.terminal_drain_signed("2", generation_header="2", token=token))
+    try:
+        await asyncio.sleep(0.03)
+        assert not draining.done() and not closed.is_set()
+        release.set()
+        await starting
+        result = await asyncio.wait_for(asyncio.shield(draining), timeout=0.5)
+        assert result["unloaded"] and closed.is_set()
+    finally:
+        release.set()
+        await asyncio.gather(starting, return_exceptions=True)
+        await sessions.shutdown()
+        await asyncio.gather(draining, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_terminal_drain_preserves_uncertain_session_cleanup() -> None:
+    from aap_backend_runtime import TrackerSessionManager
+
+    sessions = TrackerSessionManager(ttl_seconds=0)
+    lifecycle, _pool, key = _domain(
+        expected_registry_id="backend-1", expected_gpu_resource_id="node-a/GPU-1",
+        allow_legacy_workloads=False, retire_sessions=sessions.shutdown,
+    )
+    await _enforce(lifecycle, key)
+
+    async def open_session(_lease):
+        return object()
+
+    async def close_session(lease, _state):
+        lease.resource.cleanup_uncertain = True
+        raise RuntimeError("session close failed")
+
+    await sessions.start(
+        binding=("bound",), borrow=lambda: lifecycle._pool.pvs.borrow("pvs"),  # noqa: SLF001
+        open_session=open_session, close_session=close_session,
+    )
+    token = _token(lifecycle, key, AdmissionScope.DRAIN, generation="1", jti="drain-failed-close")
+    with pytest.raises(LifecycleHTTPError) as exc:
+        await asyncio.wait_for(lifecycle.terminal_drain_signed("1", generation_header="1", token=token), timeout=0.5)
+    assert exc.value.detail["error_code"] == "gpu_unload_failed"
+    assert (await lifecycle._pool.snapshot())["cleanup_failed"] is True  # noqa: SLF001
+
+
 @pytest.mark.asyncio
 async def test_fresh_boot_reports_trusted_legacy_empty_residency() -> None:
     lifecycle, _pool, _key = _domain()

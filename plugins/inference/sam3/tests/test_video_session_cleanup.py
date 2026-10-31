@@ -98,6 +98,19 @@ def test_multiplex_close_failure_marks_cleanup_uncertain(
     assert tracker.cleanup_uncertain is True
 
 
+def test_pvs_close_failure_preserves_uncertain_cleanup(monkeypatch, tmp_path) -> None:
+    tracker = pvs_module.SAM3PVSVideoTracker.__new__(pvs_module.SAM3PVSVideoTracker)
+    tracker.active_sessions = 1
+    tracker.cleanup_uncertain = False
+    session = pvs_module.SAM3PVSSession(0, 1, "forward", str(tmp_path), {}, 2)
+    monkeypatch.setattr(multiplex_module.SAM3MultiplexVideoTracker, "_cleanup_tmp", lambda _path: None)
+    monkeypatch.setattr(pvs_module, "free_gpu_memory", MagicMock(side_effect=RuntimeError("cleanup failed")))
+    with pytest.raises(RuntimeError, match="cleanup failed"):
+        tracker.close_session(session)
+    assert tracker.cleanup_uncertain is True
+    assert tracker.active_sessions == 1
+
+
 
 @pytest.mark.parametrize(
     ("module", "tracker_type", "args"),

@@ -569,6 +569,7 @@ async def _load_models() -> None:
         expected_registry_id=plugin_options.get("expected_registry_id"),
         expected_gpu_resource_id=plugin_options.get("expected_gpu_resource_id"),
         allow_legacy_workloads=plugin_options.get("allow_legacy_workloads", True),
+        retire_sessions=_pvs_sessions.shutdown,
     )
     # 不再启动急加载: 未注册 / 无流量时白占 ~3.6GB 显存。改纯懒加载——首个推理 /
     # 预热请求通过对应受管 pool 冷启；需暖启时由模型市场发起「预热默认」。
@@ -597,9 +598,10 @@ async def _shutdown() -> None:
         except (asyncio.CancelledError, Exception):  # noqa: BLE001
             pass
         _idle_task = None
-    await _pvs_sessions.shutdown()
     if _gpu_lifecycle is not None:
         await _gpu_lifecycle.shutdown()
+    else:
+        await _pvs_sessions.shutdown()
     _gpu_lifecycle = None
     _pool_domain = None
     _image_pool = None

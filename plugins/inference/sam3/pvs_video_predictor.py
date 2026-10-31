@@ -104,6 +104,7 @@ class SAM3PVSVideoTracker:
         max_context_frames: int = DEFAULT_MAX_CONTEXT_FRAMES,
     ) -> None:
         self.max_window_frames = max_window_frames
+        self.cleanup_uncertain = False
         self.max_context_frames = max_context_frames
         self.device = require_gpu_device(configured_device())
         self.active_sessions = 0
@@ -322,12 +323,16 @@ class SAM3PVSVideoTracker:
         return results
 
     def close_session(self, session: SAM3PVSSession) -> None:
-        if isinstance(session.state, dict):
-            session.state.clear()
-        session.state = None
-        SAM3MultiplexVideoTracker._cleanup_tmp(session.tmp_dir)
-        free_gpu_memory()
-        self.active_sessions = max(0, self.active_sessions - 1)
+        try:
+            if isinstance(session.state, dict):
+                session.state.clear()
+            session.state = None
+            SAM3MultiplexVideoTracker._cleanup_tmp(session.tmp_dir)
+            free_gpu_memory()
+            self.active_sessions = max(0, self.active_sessions - 1)
+        except BaseException:
+            self.cleanup_uncertain = True
+            raise
 
     # ---------- 内部工具 ----------
 

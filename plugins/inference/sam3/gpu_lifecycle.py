@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
@@ -151,6 +152,7 @@ class Sam3GpuLifecycle(TerminalDrainMixin):
         expected_registry_id: str | None = None,
         expected_gpu_resource_id: str | None = None,
         allow_legacy_workloads: bool = True,
+        retire_sessions: Callable[[], Awaitable[None]] | None = None,
     ) -> None:
         self._pool = pool
         self._verify_keyring = dict(verify_keyring)
@@ -166,6 +168,7 @@ class Sam3GpuLifecycle(TerminalDrainMixin):
             if expected_registry_id and expected_gpu_resource_id else None
         )
         self._allow_legacy_workloads = allow_legacy_workloads
+        self._retire_sessions = retire_sessions
         self._terminal_cpu_enabled = False
         self._terminal_pool_ids = ("image", "multiplex_video", "pvs_video")
         self._terminal_identity = None
@@ -736,6 +739,34 @@ class Sam3GpuLifecycle(TerminalDrainMixin):
                     self._generation_open = False
         return count
 
+    async def _execute_terminal_drain(self, proof: dict[str, Any]) -> dict[str, Any]:
+        """Fence first, wait for admitted work, then retire persistent sessions."""
+        try:
+            while True:
+                async with self._lock:
+                    if self._phase == "unknown":
+                        raise RuntimeError("backend cleanup became uncertain during terminal drain")
+                    if self._phase != "unloading" and not self._active:
+                        self._phase = "draining"
+                        break
+                await asyncio.sleep(0.01)
+            if self._retire_sessions is not None:
+                await self._retire_sessions()
+            while True:
+                async with self._lock:
+                    snapshot = await self._pool.snapshot()
+                    if snapshot["cleanup_failed"]:
+                        raise RuntimeError("session cleanup became uncertain during terminal drain")
+                    if not self._active and not self._pool_is_active(snapshot):
+                        break
+                await asyncio.sleep(0.01)
+        except BaseException as exc:
+            async with self._lock:
+                self._phase = "unknown"
+            raise LifecycleHTTPError(LifecycleErrorCode.UNLOAD_FAILED, message=str(exc)) from exc
+        return await super()._execute_terminal_drain(proof)
+
+
     async def shutdown(self) -> None:
         if self._shutdown_task is None:
             self._shutdown_task = asyncio.create_task(self._shutdown_impl())
@@ -764,18 +795,31 @@ class Sam3GpuLifecycle(TerminalDrainMixin):
 
     async def _shutdown_impl(self) -> None:
         async with self._lock:
-            self._phase = "unloading"
-        while True:
-            async with self._lock:
-                if not self._active:
-                    break
-            await asyncio.sleep(0.01)
+            terminal_task = self._terminal_task
+            if terminal_task is None:
+                self._phase = "unloading"
         try:
+            if terminal_task is not None:
+                await asyncio.shield(terminal_task)
+            while True:
+                async with self._lock:
+                    if not self._active:
+                        break
+                await asyncio.sleep(0.01)
+            if terminal_task is None and self._retire_sessions is not None:
+                await self._retire_sessions()
+            snapshot = await self._pool.snapshot()
+            if snapshot["cleanup_failed"]:
+                raise RuntimeError("session cleanup became uncertain during shutdown")
             await self._pool.shutdown()
-        finally:
+        except BaseException:
             async with self._lock:
-                self._phase = "normal"
+                self._phase = "unknown"
                 self._generation_open = False
+            raise
+        async with self._lock:
+            self._phase = "draining" if terminal_task is not None else "normal"
+            self._generation_open = False
 
     async def _execute_reset(self, control_epoch: str) -> LifecycleResetResponse:
         try:
