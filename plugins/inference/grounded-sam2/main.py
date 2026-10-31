@@ -1104,6 +1104,8 @@ def setup() -> dict:
         if _plugin_gpu_facts:
             base["runtime_info"].update(
                 driver_version=_plugin_gpu_facts["driver_version"],
+                total_memory_mb=_plugin_gpu_facts["total_memory_mb"],
+                cuda_build=_plugin_cuda_runtime,
                 physical_gpu_uuid=_plugin_gpu_facts["device_uuid"],
             )
     if _plugin_lifecycle_verified or (MANAGED_LIFECYCLE_VERIFIED and not plugin_lifecycle_options()):
