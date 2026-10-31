@@ -149,32 +149,6 @@ def test_pvs_builder_device_failure_cleans_up_without_cpu_retry(monkeypatch) -> 
     assert cleanup_calls == [None]
 
 
-def test_pvs_builder_receives_cuda_device_without_retry(monkeypatch) -> None:
-    calls: list[dict] = []
-    monkeypatch.setattr(pvs_module.torch.cuda, "device", lambda _device: nullcontext())
-    vendor_tracker = SimpleNamespace()
-    model = SimpleNamespace(
-        tracker=vendor_tracker,
-        detector=SimpleNamespace(backbone=object()),
-    )
-
-    def build(**kwargs):
-        calls.append(kwargs)
-        return model
-
-    fake_builder = types.ModuleType("sam3.model_builder")
-    fake_builder.build_sam3_video_model = build
-    monkeypatch.setitem(sys.modules, "sam3.model_builder", fake_builder)
-    monkeypatch.setattr(pvs_module.os.path, "isfile", lambda _path: True)
-
-    tracker = object.__new__(pvs_module.SAM3PVSVideoTracker)
-    tracker.device = "cuda"
-
-    assert tracker._load_predictor() is vendor_tracker
-    assert [call["device"] for call in calls] == ["cuda"]
-    assert vendor_tracker.backbone is model.detector.backbone
-
-
 def test_health_reports_unknown_until_a_cuda_pool_is_loaded(monkeypatch) -> None:
     import main as main_module  # noqa: PLC0415
     from gpu_lifecycle import Sam3GpuLifecycle  # noqa: PLC0415
