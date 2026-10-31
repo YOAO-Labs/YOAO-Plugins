@@ -1,0 +1,72 @@
+[project]
+name = "grounded-sam2-backend"
+version = "0.10.1"
+description = "Grounded-SAM-2 inference backend for ai-annotation-platform"
+license = { file = "LICENSE" }
+requires-python = ">=3.10,<3.11"
+dependencies = [
+    "aap-backend-runtime==0.1.0",
+    "aap-lifecycle-contract==0.1.0",
+    "aap-protocol-v2==0.2.0",
+    "aap-task-contract==0.1.0",
+    "anno-mask-utils==0.1.0",
+    "torch==2.3.1",
+    "torchvision==0.18.1",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.5",
+    "httpx>=0.27",
+    "numpy>=1.24.4,<2.0",
+    "pillow>=10.0",
+    "opencv-python-headless>=4.9",
+    "shapely>=2.0",
+    "huggingface_hub>=0.23,<1.0",
+    "transformers>=4.40,<5",
+    "supervision>=0.21",
+    "addict>=2.4",
+    "pycocotools>=2.0",
+    "timm>=0.9",
+    "yapf",
+    "prometheus-client>=0.20",
+    "cryptography>=43.0.0",
+    "pyOpenSSL>=24.2.1",
+    "PyJWT>=2.10,<3",
+    "pynvml>=11.5",
+    "psutil>=5.9",
+    "hydra-core>=1.3.2",
+    "iopath>=0.1.10",
+    "tqdm>=4.66.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[build-system]
+requires = ["setuptools==70.3.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["main", "predictor", "schemas", "embedding_cache", "observability", "model_pool", "video_predictor", "video_pool", "pool_domain", "gpu_lifecycle"]
+packages = ["scripts", "grounded_sam2_plugin"]
+
+[tool.setuptools.package-data]
+grounded_sam2_plugin = ["pretrained-assets.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+[tool.uv.sources]
+aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl" }
+anno-mask-utils = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/anno_mask_utils-0.1.0-py3-none-any.whl" }
+aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
+aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" }
+aap-task-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl" }
+torch = { index = "pytorch-cu121" }
+torchvision = { index = "pytorch-cu121" }
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
