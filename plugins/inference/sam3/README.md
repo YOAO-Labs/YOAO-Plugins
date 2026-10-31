@@ -21,6 +21,12 @@ context. A device error fails the build rather than falling back to CPU.
 
 The existing APIs preserve exact masks/RLE and polygons, low-resolution logits and multimask candidates, prompt/source/object identity, cross-window sessions, lost/close semantics, and cancellation/drain of actual work and borrowers. Video responses are whole-window JSON, not an incremental frame stream. BPE vocabulary is included in the upstream SAM3 package; the local-checkpoint builders do not need Hugging Face configuration files. Keep vendor package data intact.
 
+Single-candidate image continuation resamples SAM3's native 288×288 logits to the
+shared 256×256 wire format and restores the native grid on the next request, using
+the same pixel-center nearest-neighbor sampling in both directions. Multimask
+results do not emit an ambiguous continuation token. Invalid logits fail explicitly
+rather than silently dropping `mask_input_next`.
+
 `sam3_plugin.catalog.descriptor()` and `deployment_selections(data_root)` use only the standard library and do not access or mutate assets. The published checkpoint hashes come from public Git LFS pointer texts whose Git blob SHA-1s match the upstream gated repositories' public tree entries; catalog `identity_evidence` records those blob IDs and pointer sources. This verifies metadata without downloading weights. Metadata does not authorize download, execution or redistribution.
 
 ## Access and licensing
@@ -30,6 +36,11 @@ The upstream submodule is `facebookresearch/sam3` at `4cbac146c1b5a1e3a7f5c6a894
 ## Build and run
 
 Initialize submodules in the checkout. From the repository root, build with `docker build -f plugins/inference/sam3/Dockerfile .`. The image uses the pinned CUDA base digest and installs the separately hashed Python locks; the request-scoped autocast patch is applied with zero fuzz. It does not download checkpoints at startup. Native deployments mount the approved `AAP_PLUGIN_DATA_DIR` (normally `/var/lib/aap-plugin`) and place assets in its `checkpoints/` directory. Standalone deployments may instead set `CHECKPOINT_DIR` (default `/app/checkpoints`). Administrators may explicitly invoke `scripts/download_checkpoints.py` in an appropriately authorized preparation environment; that command requires separate gated access and credentials, and must not run as a governed service startup step. Credentials must not be baked into the image.
+
+The image defaults `HOME` to `/tmp`, allowing Triton and PyTorch kernel caches to
+use the native installation's writable temporary filesystem while its root
+filesystem remains read-only and the service runs as a non-root user. These
+temporary caches are separate from approved checkpoint storage.
 
 Native startup reads the instance token and GPU verification keyring files, binds signed lifecycle claims to the supplied registry/GPU resource identity, and rejects legacy unsigned GPU workloads. It advertises managed lifecycle only after the SDK validates approved qualification evidence against the actual three-pool topology, GPU identity, immutable image and both checkpoint identities. Signed terminal drain fences new work, waits for admitted work and tracked futures, retires PVS session owners, then waits for builders and borrowers before proving all three pools empty; uncertain session cleanup fails closed.
 

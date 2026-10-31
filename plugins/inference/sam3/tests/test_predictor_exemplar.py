@@ -442,12 +442,12 @@ def test_reset_called_before_and_after_prompt(predictor_with_mocks, fake_image):
 
 
 def _fake_inst_output(num: int):
-    """模拟 model.predict_inst 返回 (masks CxHxW float 0/1, iou C, low_res Cx256x256)."""
+    """Simulate native masks, confidence scores and 288×288 SAM3 logits."""
     mask = np.zeros((480, 640), dtype=np.float32)
     mask[100:300, 100:300] = 1.0
     masks = np.stack([mask] * num)  # (C, H, W)
     ious = np.array([0.7, 0.95, 0.6][:num], dtype=np.float32)
-    low_res = np.zeros((num, 256, 256), dtype=np.float32)
+    low_res = np.zeros((num, 288, 288), dtype=np.float32)
     return masks, ious, low_res
 
 

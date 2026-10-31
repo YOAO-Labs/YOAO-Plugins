@@ -40,5 +40,6 @@ RUN test -f /tmp/sam3-plugin/vendor/sam3/pyproject.toml \
     && mkdir -p /app/checkpoints /app/scripts \
     && cp /tmp/sam3-plugin/scripts/* /app/scripts/ \
     && rm -rf /tmp/sam3-plugin /tmp/wheels
+ENV HOME=/tmp
 EXPOSE 8002
 ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]

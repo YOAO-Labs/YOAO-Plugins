@@ -76,6 +76,25 @@ DEFAULT_SIMPLIFY_TOLERANCE = 1.0
 VERTEX_COUNT_WARN_THRESHOLD = 200
 
 
+def _resize_low_res_logits(
+    logits: np.ndarray,
+    size: tuple[int, int],
+) -> np.ndarray:
+    """Use the same pixel-center sampling for native and wire logits grids."""
+    if logits.shape[-2:] == size:
+        return logits
+    height, width = size
+    ys = np.minimum(
+        ((np.arange(height) + 0.5) * logits.shape[-2] / height).astype(int),
+        logits.shape[-2] - 1,
+    )
+    xs = np.minimum(
+        ((np.arange(width) + 0.5) * logits.shape[-1] / width).astype(int),
+        logits.shape[-1] - 1,
+    )
+    return logits[..., ys[:, None], xs]
+
+
 def _resolve_mask_input(
     mask_input: str | None,
     mask_prompt: Mapping[str, Any] | None,
@@ -85,23 +104,7 @@ def _resolve_mask_input(
     low_res_size: tuple[int, int],
 ) -> np.ndarray | None:
     if mask_input is not None:
-        decoded = decode_low_res_mask(mask_input)
-        if decoded.shape[-2:] == low_res_size:
-            return decoded
-        low_res_height, low_res_width = low_res_size
-        ys = np.minimum(
-            (
-                (np.arange(low_res_height) + 0.5) * decoded.shape[-2] / low_res_height
-            ).astype(int),
-            decoded.shape[-2] - 1,
-        )
-        xs = np.minimum(
-            (
-                (np.arange(low_res_width) + 0.5) * decoded.shape[-1] / low_res_width
-            ).astype(int),
-            decoded.shape[-1] - 1,
-        )
-        return decoded[:, ys][:, :, xs]
+        return _resize_low_res_logits(decode_low_res_mask(mask_input), low_res_size)
     if mask_prompt is not None:
         return mask_prompt_to_low_res_logits(
             mask_prompt,
@@ -120,11 +123,7 @@ def _maybe_encode_low_res(
 
     if not enable or low_res is None or len(low_res) < 1:
         return None
-    try:
-        return encode_low_res_mask(low_res[0])
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("failed to encode mask_input_next: %s", exc)
-        return None
+    return encode_low_res_mask(_resize_low_res_logits(low_res[0], (256, 256)))
 
 
 CHECKPOINT_DIR = checkpoint_dir()
