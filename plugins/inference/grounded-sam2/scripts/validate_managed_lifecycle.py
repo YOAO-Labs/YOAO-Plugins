@@ -613,7 +613,7 @@ async def _run() -> dict[str, Any]:
                 ),
             ]
         )
-        gpu["runtime_version"] = str(main.torch.version.cuda)
+        gpu["runtime_version"] = main._plugin_cuda_runtime
         cycles = [
             memory_cycle_evidence(
                 cycle=1,
