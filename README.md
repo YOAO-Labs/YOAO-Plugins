@@ -25,7 +25,7 @@ Grounded-SAM2 的图像池同时构造 SAM、GroundingDINO 和 BERT，因此图�
 
 ## 已安装环境下的插件开发
 
-使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-1380d8a79814) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。开发环境的契约安装步骤见 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK#portable-contracts-and-local-development)；已安装插件继续使用自身哈希锁固定的发布制品。SDK 的通用入口为 `aap-inference-plugin`：
+使用公开 [SDK 发布渠道](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/python-sdk-46ae0c4f5f03) 安装 SDK、运行时和所需契约 wheel；验证发布 manifest 中的摘要，并以哈希锁定所有依赖。开发环境的契约安装步骤见 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK#portable-contracts-and-local-development)；已安装插件继续使用自身哈希锁固定的发布制品。SDK 的通用入口为 `aap-inference-plugin`：
 
 ```sh
 aap-inference-plugin init my-plugin
@@ -37,6 +37,8 @@ uv sync --python 3.11 --frozen
 通用 SDK 不准备 LibreYOLO 权重。需要官方 LibreYOLO 模型时，请先审查模型许可，然后使用 [LibreYOLO 文档](plugins/inference/libreyolo/README.md)中的 `aap-libreyolo prepare-assets`。本地开发 token 不是平台管理员凭据，本地预检不等于受管平台部署资格。
 
 有状态官方插件实现完整推理 HTTP 契约并复用 SDK 运行时，不缩减为仅提供检测的简化作者接口。独立模型资格检查复用 `aap_backend_runtime.qualification_http` 的真实本地 HTTP 和签名路由准入；调用方负责应用生命周期。该工具不替代真实设备、权重批准或平台安装验收。
+
+持久 tracker 状态由实际模型池条目持有，命令执行结束即释放 borrower；后续命令重新借用同一条目，不能按 key 静默重建旧上下文。驱逐、排空与关闭须等待真实会话清理，失败保持未知状态；每个窗口仍独立进行签名准入和完成计账。两种 SAM 保留独立依赖环境、池拓扑和上下文合同，不能互相继承资格。
 
 ## CPU 验证
 
