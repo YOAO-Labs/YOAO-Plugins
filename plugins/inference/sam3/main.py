@@ -41,6 +41,8 @@ import os
 import platform
 import tempfile
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Callable
 
@@ -52,6 +54,7 @@ from aap_backend_runtime import (
     ManagedBuildTimeout,
     ManagedLruPool,
     ManagedPoolBusyError,
+    ResourceLease,
     TrackerSessionLost,
     TrackerSessionManager,
     deployment_verified_flag,
@@ -1901,6 +1904,16 @@ def _run_pvs_video_tracker_sync(
                 pass
 
 
+@asynccontextmanager
+async def _borrow_pvs_session(
+    pool: ManagedLruPool[str, SAM3PVSVideoTracker],
+) -> AsyncIterator[
+    tuple[ResourceLease[str, SAM3PVSVideoTracker], ResourceLease[str, SAM3PVSVideoTracker]]
+]:
+    async with pool.borrow(_PVS_KEY) as lease:
+        yield lease, lease
+
+
 async def _run_pvs_video_tracker(
     file_path: str,
     ctx: dict,
@@ -1951,7 +1964,7 @@ async def _run_pvs_video_tracker(
                 try:
                     token = await _pvs_sessions.start(
                         binding=binding,
-                        borrow=lambda: _pvs_pool.borrow(_PVS_KEY),
+                        borrow=lambda: _borrow_pvs_session(_pvs_pool),
                         open_session=lambda lease: _run_executor_to_completion(
                             functools.partial(
                                 lease.resource.start_session,

@@ -407,3 +407,75 @@ def test_deployment_gate_controls_declaration_and_rejects_invalid_value(
             _load_main()
     finally:
         sys.modules.pop("main", None)
+
+
+@pytest.mark.parametrize("evict", [False, True])
+def test_pvs_session_windows_release_borrow_and_retire_state(monkeypatch, evict):
+    from aap_backend_runtime import BuildArtifact, ManagedLruPool, TrackerSessionManager
+    from fastapi import HTTPException
+
+    main = _load_main()
+    trackers = []
+
+    class Tracker:
+        device = "cpu"
+        cleanup_uncertain = False
+
+        def __init__(self):
+            self.active_sessions = 0
+            self.closed = 0
+            trackers.append(self)
+
+        def start_session(self, _path, _start, _end, _direction, _seeds):
+            self.active_sessions += 1
+            return {"windows": 0}
+
+        def continue_session(self, state, start, end, output_geometry):
+            state["windows"] += 1
+            return [{"window": [start, end], "sequence": state["windows"], "geometry": output_geometry}]
+
+        def close_session(self, _state):
+            self.active_sessions -= 1
+            self.closed += 1
+
+    async def scenario():
+        pool = ManagedLruPool(1, lambda _key: BuildArtifact(Tracker()), str, lambda: None)
+        sessions = TrackerSessionManager(ttl_seconds=300)
+        monkeypatch.setattr(main, "_pvs_pool", pool)
+        monkeypatch.setattr(main, "_pvs_sessions", sessions)
+        monkeypatch.setattr(main, "_video_local_path", lambda path: path)
+        control = {"action": "start", "job_id": "job", "direction": "forward",
+                   "span_start_frame": 0, "span_end_frame": 9}
+        context = {"from_frame": 0, "to_frame": 4, "direction": "forward",
+                   "output_geometry": "polygon", "tracker_context": control,
+                   "seeds": [{"obj_id": 1, "bbox": {"x": 0, "y": 0, "w": 1, "h": 1}}]}
+        first, meta = await main._run_pvs_video_tracker("source.mp4", context)
+        assert first == [{"window": [0, 4], "sequence": 1, "geometry": "polygon"}]
+        token = meta["tracker_context"]["token"]
+        assert (await pool.snapshot())["borrowers"] == 0
+        assert (await pool.snapshot())["active_sessions"] == 1
+        control = {"action": "continue", "job_id": "job", "direction": "forward", "token": token}
+        context.update(from_frame=5, to_frame=9, tracker_context=control)
+        second, _ = await main._run_pvs_video_tracker("source.mp4", context)
+        assert second == [{"window": [5, 9], "sequence": 2, "geometry": "polygon"}]
+        assert (await pool.snapshot())["borrowers"] == 0
+        original = trackers[0]
+        if evict:
+            async with pool.borrow("other"):
+                pass
+            async with pool.borrow(main._PVS_KEY):
+                pass
+            with pytest.raises(HTTPException) as exc:
+                await main._run_pvs_video_tracker("source.mp4", context)
+            assert exc.value.status_code == 409
+            assert exc.value.detail == {"reason": "tracker_context_lost"}
+        else:
+            control["action"] = "close"
+            result, meta = await main._run_pvs_video_tracker("source.mp4", context)
+            assert result == [] and meta["tracker_context"]["closed"] is True
+        assert original.closed == 1 and original.active_sessions == 0
+        assert (await pool.snapshot())["borrowers"] == 0
+        await sessions.shutdown()
+        await pool.shutdown()
+
+    _run(scenario())

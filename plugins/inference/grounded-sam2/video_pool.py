@@ -14,6 +14,7 @@ from aap_backend_runtime import (
     ManagedBuildTimeout,
     ManagedLruPool,
     ManagedPoolBusyError,
+    ResourceLease,
 )
 
 if TYPE_CHECKING:
@@ -81,6 +82,20 @@ class VideoPool:
         self._last_request_at = time.monotonic()
         async with self._pool.borrow(sam_variant) as lease:
             yield TrackerLease(
+                sam_variant=sam_variant,
+                tracker=lease.resource,
+                cache_hit=lease.cache_hit,
+                model_load_ms=lease.load_ms,
+            )
+
+    @asynccontextmanager
+    async def borrow_session(
+        self, sam_variant: str
+    ) -> AsyncIterator[tuple[ResourceLease[str, SAM2VideoTracker], TrackerLease]]:
+        """Keep the managed entry identity alongside the tracker-facing lease."""
+        self._last_request_at = time.monotonic()
+        async with self._pool.borrow(sam_variant) as lease:
+            yield lease, TrackerLease(
                 sam_variant=sam_variant,
                 tracker=lease.resource,
                 cache_hit=lease.cache_hit,

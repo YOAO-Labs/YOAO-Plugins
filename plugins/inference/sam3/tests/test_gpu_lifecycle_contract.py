@@ -6,6 +6,7 @@ import asyncio
 import sys
 import threading
 import time
+from contextlib import asynccontextmanager
 from unittest.mock import MagicMock
 
 import pytest
@@ -151,6 +152,44 @@ async def test_native_rejects_signed_wrong_registry() -> None:
         await _enforce(lifecycle, key)
 
 
+@asynccontextmanager
+async def _session_borrow(pool):
+    async with pool.borrow("pvs") as lease:
+        yield lease, lease
+
+
+@pytest.mark.asyncio
+async def test_idle_unload_retires_owned_pvs_session() -> None:
+    from aap_backend_runtime import TrackerSessionLost, TrackerSessionManager
+
+    sessions = TrackerSessionManager(ttl_seconds=300)
+    lifecycle, _pool, _key = _domain(retire_sessions=sessions.shutdown)
+    closed = []
+
+    async def open_session(lease):
+        lease.resource.active_sessions = 1
+        return object()
+
+    async def close_session(lease, _state):
+        lease.resource.active_sessions = 0
+        closed.append(True)
+
+    session = await sessions.start(
+        binding=("bound",),
+        borrow=lambda: _session_borrow(lifecycle._pool.pvs),  # noqa: SLF001
+        open_session=open_session,
+        close_session=close_session,
+    )
+    assert await lifecycle.try_idle_unload("pvs_video", idle_before=time.monotonic() + 1) == 1
+    assert closed == [True]
+    snapshot = await lifecycle._pool.pvs.snapshot()  # noqa: SLF001
+    assert snapshot["current_size"] == 0
+    assert snapshot["active_sessions"] == 0 and snapshot["borrowers"] == 0
+    with pytest.raises(TrackerSessionLost):
+        await sessions.call(session, ("bound",), lambda _lease, _state: None)
+    await lifecycle.shutdown()
+
+
 @pytest.mark.asyncio
 async def test_terminal_drain_retires_idle_session_only_after_active_work_finishes() -> None:
     from aap_backend_runtime import TrackerSessionManager
@@ -177,7 +216,7 @@ async def test_terminal_drain_retires_idle_session_only_after_active_work_finish
     )
     await sessions.start(
         binding=("bound",),
-        borrow=lambda: lifecycle._pool.pvs.borrow("pvs"),  # noqa: SLF001
+        borrow=lambda: _session_borrow(lifecycle._pool.pvs),  # noqa: SLF001
         open_session=open_session,
         close_session=close_session,
     )
@@ -233,7 +272,7 @@ async def test_terminal_drain_waits_for_a_start_already_admitted() -> None:
     async def start():
         try:
             return await sessions.start(
-                binding=("bound",), borrow=lambda: lifecycle._pool.pvs.borrow("pvs"),  # noqa: SLF001
+                binding=("bound",), borrow=lambda: _session_borrow(lifecycle._pool.pvs),  # noqa: SLF001
                 open_session=open_session, close_session=close_session,
             )
         finally:
@@ -276,7 +315,7 @@ async def test_terminal_drain_preserves_uncertain_session_cleanup() -> None:
         raise RuntimeError("session close failed")
 
     await sessions.start(
-        binding=("bound",), borrow=lambda: lifecycle._pool.pvs.borrow("pvs"),  # noqa: SLF001
+        binding=("bound",), borrow=lambda: _session_borrow(lifecycle._pool.pvs),  # noqa: SLF001
         open_session=open_session, close_session=close_session,
     )
     token = _token(lifecycle, key, AdmissionScope.DRAIN, generation="1", jti="drain-failed-close")

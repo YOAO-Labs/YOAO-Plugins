@@ -364,3 +364,142 @@ def test_deployment_gate_controls_declaration_and_rejects_invalid_value(
             _load_main()
     finally:
         sys.modules.pop("main", None)
+
+
+@pytest.mark.parametrize("evict", [False, True])
+def test_video_session_windows_release_borrow_and_retire_state(monkeypatch, evict):
+    from aap_backend_runtime import TrackerSessionManager
+    from fastapi import HTTPException
+    from video_pool import VideoPool
+
+    main = _load_main()
+    trackers = []
+
+    class Tracker:
+        device = "cpu"
+        cleanup_uncertain = False
+
+        def __init__(self):
+            self.active_sessions = 0
+            self.closed = 0
+            trackers.append(self)
+
+        def start_session(self, _path, _start, _end, _direction, _seeds):
+            self.active_sessions += 1
+            return {"windows": 0}
+
+        def continue_session(self, state, start, end, *, output_geometry):
+            state["windows"] += 1
+            return [{"window": [start, end], "sequence": state["windows"], "geometry": output_geometry}]
+
+        def close_session(self, _state):
+            self.active_sessions -= 1
+            self.closed += 1
+
+    async def scenario():
+        pool = VideoPool(1, lambda _variant: Tracker(), lambda: None)
+        sessions = TrackerSessionManager(ttl_seconds=300)
+        monkeypatch.setattr(main, "_video_pool", pool)
+        monkeypatch.setattr(main, "_video_sessions", sessions)
+        monkeypatch.setattr(main, "_video_local_path", lambda path: path)
+        control = {"action": "start", "job_id": "job", "direction": "forward",
+                   "span_start_frame": 0, "span_end_frame": 9}
+        context = {"from_frame": 0, "to_frame": 4, "direction": "forward",
+                   "output_geometry": "mask", "tracker_context": control,
+                   "seeds": [{"obj_id": 1, "bbox": {"x": 0, "y": 0, "w": 1, "h": 1}}]}
+        first, variant, meta = await main._run_video_tracker("source.mp4", context)
+        assert first == [{"window": [0, 4], "sequence": 1, "geometry": "mask"}]
+        token = meta["tracker_context"]["token"]
+        assert (await pool.snapshot())["borrowers"] == 0
+        assert (await pool.snapshot())["active_sessions"] == 1
+        control = {"action": "continue", "job_id": "job", "direction": "forward", "token": token}
+        context.update(from_frame=5, to_frame=9, tracker_context=control)
+        second, _, _ = await main._run_video_tracker("source.mp4", context)
+        assert second == [{"window": [5, 9], "sequence": 2, "geometry": "mask"}]
+        assert (await pool.snapshot())["borrowers"] == 0
+        original = trackers[0]
+        if evict:
+            async with pool.borrow("other-variant"):
+                pass
+            async with pool.borrow(variant):
+                pass
+            with pytest.raises(HTTPException) as exc:
+                await main._run_video_tracker("source.mp4", context)
+            assert exc.value.status_code == 409
+            assert exc.value.detail == {"reason": "tracker_context_lost"}
+        else:
+            control["action"] = "close"
+            result, _, meta = await main._run_video_tracker("source.mp4", context)
+            assert result == [] and meta["tracker_context"]["closed"] is True
+        assert original.closed == 1 and original.active_sessions == 0
+        assert (await pool.snapshot())["borrowers"] == 0
+        await sessions.shutdown()
+        await pool.shutdown()
+
+    _run(scenario())
+
+
+def test_cancelled_session_window_holds_borrow_until_thread_finishes(monkeypatch):
+    from aap_backend_runtime import TrackerSessionManager
+    from video_pool import VideoPool
+
+    main = _load_main()
+    started, release = threading.Event(), threading.Event()
+
+    class Tracker:
+        device = "cpu"
+        cleanup_uncertain = False
+
+        def __init__(self):
+            self.active_sessions = 0
+            self.block = False
+
+        def start_session(self, *_args):
+            self.active_sessions += 1
+            return object()
+
+        def continue_session(self, _state, _start, _end, *, output_geometry):
+            if self.block:
+                started.set()
+                release.wait(timeout=5)
+            return []
+
+        def close_session(self, _state):
+            self.active_sessions -= 1
+
+    async def scenario():
+        tracker = Tracker()
+        pool = VideoPool(1, lambda _variant: tracker, lambda: None)
+        sessions = TrackerSessionManager(ttl_seconds=300)
+        monkeypatch.setattr(main, "_video_pool", pool)
+        monkeypatch.setattr(main, "_video_sessions", sessions)
+        monkeypatch.setattr(main, "_video_local_path", lambda path: path)
+        context = {
+            "from_frame": 0, "to_frame": 4, "direction": "forward",
+            "seeds": [{"bbox": {"x": 0, "y": 0, "w": 1, "h": 1}}],
+            "tracker_context": {"action": "start", "job_id": "job", "direction": "forward",
+                                "span_start_frame": 0, "span_end_frame": 9},
+        }
+        _, _, meta = await main._run_video_tracker("source.mp4", context)
+        context["tracker_context"] = {
+            "action": "continue", "job_id": "job", "direction": "forward",
+            "token": meta["tracker_context"]["token"],
+        }
+        tracker.block = True
+        task = asyncio.create_task(main._run_video_tracker("source.mp4", context))
+        try:
+            while not started.is_set():
+                await asyncio.sleep(0)
+            task.cancel()
+            await asyncio.sleep(0)
+            assert not task.done()
+            assert (await pool.snapshot())["borrowers"] == 1
+        finally:
+            release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert (await pool.snapshot())["borrowers"] == 0
+        await sessions.shutdown()
+        await pool.shutdown()
+
+    _run(scenario())

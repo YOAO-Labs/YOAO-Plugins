@@ -2111,7 +2111,7 @@ async def _run_video_tracker(
                 try:
                     token = await _video_sessions.start(
                         binding=binding,
-                        borrow=lambda: _video_pool.borrow(sv),
+                        borrow=lambda: _video_pool.borrow_session(sv),
                         open_session=lambda lease: _run_executor_to_completion(
                             functools.partial(
                                 lease.tracker.start_session,

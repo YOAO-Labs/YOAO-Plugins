@@ -713,7 +713,11 @@ class Sam3GpuLifecycle(TerminalDrainMixin):
             if self._phase != "normal" or self._active:
                 return 0
             snapshot = await self._pool.snapshot_for(pool_id)
-            if self._pool_is_active(snapshot) or snapshot["current_size"] == 0:
+            # Only PVS has persistent sessions owned by its pool entry.
+            if (
+                self._pool_is_active(snapshot, include_sessions=pool_id != "pvs_video")
+                or snapshot["current_size"] == 0
+            ):
                 return 0
             managed = self._generation is not None and not self._unmanaged_tainted
             self._phase = "unloading"
@@ -1148,13 +1152,13 @@ class Sam3GpuLifecycle(TerminalDrainMixin):
         return tuple(normalized)
 
     @staticmethod
-    def _pool_is_active(snapshot: dict[str, Any]) -> bool:
+    def _pool_is_active(snapshot: dict[str, Any], *, include_sessions: bool = True) -> bool:
         return bool(
             snapshot["builders"]
             or snapshot["reserved_build_slots"]
             or snapshot["borrowers"]
             or snapshot["waiters"]
-            or snapshot.get("active_sessions", 0)
+            or (include_sessions and snapshot.get("active_sessions", 0))
             or snapshot["cleanup_in_progress"]
         )
 
