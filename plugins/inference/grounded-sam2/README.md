@@ -16,6 +16,8 @@ Catalog identities come from the corresponding public Hugging Face model reposit
 
 Plugin mode requires the installer-provided identity, route registry, data directory, device and private backend token. CUDA installations also require the public GPU admission keyring and matching allocated GPU identity; they reject CPU fallback. CPU plugin mode and standalone fallback retain their distinct behavior. `/setup` advertises managed GPU lifecycle only when approved evidence matches this installation; terminal retirement fences new work, waits for active operations, closes video sessions and drains both pools.
 
+Persistent tracker state belongs to the exact video model-pool entry that opened it, rather than keeping a borrower between requests. Each start or continuation command borrows that entry only while executing. Idle unload, eviction and terminal drain invalidate its contexts and close their state before disposing the model; a token cannot attach to a later reload of the same model key. Failed or uncertain cleanup retains ownership and prevents an empty-pool proof.
+
 ## Build and validation
 
 The root-context Dockerfile pins the CUDA development base image by digest and installs locked Python inputs, the checked-out vendor source, and the plugin wheel. It does not provision any model assets. `uv.lock` is resolved for Python 3.10; `requirements.lock` exports hashed non-Torch Python dependencies and `first-party-requirements.lock` pins published SDK/runtime/contract artifacts. The base image provides Torch and torchvision. No editable platform checkout is required.
