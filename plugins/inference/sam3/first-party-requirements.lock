@@ -1,0 +1,5 @@
+https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-6b0f437333b3/aap_backend_runtime-0.1.0-py3-none-any.whl --hash=sha256:863e633ab8a55d1ff29936d379e5eeaaa68fbe59b6f0489ea71dcbdb8b042e03
+https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl --hash=sha256:8d0ac680cf3828889bb9598401b18086851bd257da51b474f0755adc35c2b0eb
+https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl --hash=sha256:8163ae3fb137395960b9111037f9939679943120870d02e87d16f4bc225699e5
+https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl --hash=sha256:7f71b56a3cf6e1cd17049d077739b34784216fd45b13a1280d01acce07224637
+https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/anno_mask_utils-0.1.0-py3-none-any.whl --hash=sha256:065c1e62194562b42b99d3d23117b6c6b6b1b925277687575a7702838b028567

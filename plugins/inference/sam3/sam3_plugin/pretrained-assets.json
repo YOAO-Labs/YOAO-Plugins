@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "plugin_id": "sam3",
+  "plugin_version": "0.10.0",
+  "runtime_compatibility": {
+    "python": "3.12",
+    "torch": "2.7.1",
+    "cuda": "12.8",
+    "devices": ["cuda"],
+    "vendor": "https://github.com/facebookresearch/sam3/tree/4cbac146c1b5a1e3a7f5c6a894901090b4dfd65b"
+  },
+  "assets": [
+    {
+      "path": "checkpoints/sam3.pt",
+      "source": "https://huggingface.co/facebook/sam3/blob/3c879f39826c281e95690f02c7821c4de09afae7/sam3.pt",
+      "size_bytes": 3450062241,
+      "sha256": "9999e2341ceef5e136daa386eecb55cb414446a00ac2b55eb2dfd2f7c3cf8c9e",
+      "identity_evidence": {"upstream_git_blob": "5b7c2eaba7c1e2a81f26bc7476bfe80e43e979e4", "lfs_pointer": "https://huggingface.co/1038lab/sam3/raw/main/sam3.pt"},
+      "license": {"identifier": "SAM License", "evidence": "https://huggingface.co/facebook/sam3/blob/main/LICENSE", "access": "gated"},
+      "models": [
+        {"model_id": "sam3-detection", "variants": {"model_variant": "sam3"}},
+        {"model_id": "sam3-segmentation", "variants": {"model_variant": "sam3"}},
+        {"model_id": "sam3-interactive-seg", "variants": {"model_variant": "sam3"}},
+        {"model_id": "sam3-video-interactive-tracker", "variants": {"model_variant": "sam3"}}
+      ]
+    },
+    {
+      "path": "checkpoints/sam3.1_multiplex.pt",
+      "source": "https://huggingface.co/facebook/sam3.1/blob/daa63191845a41281374e725f4c9e51c7a824460/sam3.1_multiplex.pt",
+      "size_bytes": 3502755717,
+      "sha256": "0567debeec80ba4ac6369540c6c248025283cb3ff2b92827509e57e2b3541cb6",
+      "identity_evidence": {"upstream_git_blob": "88589b6b0bee708b57010d3ed6f413476e4be255", "lfs_pointer": "https://huggingface.co/AEmotionStudio/sam3.1/raw/main/sam3.1_multiplex.pt"},
+      "license": {"identifier": "SAM License", "evidence": "https://huggingface.co/facebook/sam3.1/blob/main/LICENSE", "access": "gated separately"},
+      "models": [
+        {"model_id": "sam3-video-tracker", "variants": {"model_variant": "sam3"}}
+      ]
+    }
+  ]
+}
