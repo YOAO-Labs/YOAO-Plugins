@@ -340,6 +340,10 @@ def _native_binding() -> tuple[str, str, str, str]:
         or re.fullmatch(r"sha256:[0-9a-f]{64}", image_id) is None
     ):
         raise RuntimeError("qualification requires immutable image and manifest identities")
+    from sam3_plugin.catalog import catalog_sha256
+
+    if manifest != catalog_sha256():
+        raise RuntimeError("qualification asset manifest differs from the installed catalog")
     if (
         _required_env("AAP_PLUGIN_REGISTRY_ID") != registry
         or _required_env("AAP_ROUTE_REGISTRY_ID") != registry

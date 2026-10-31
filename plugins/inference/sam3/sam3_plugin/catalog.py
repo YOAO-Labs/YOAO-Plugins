@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from importlib.resources import files
 
 
 def descriptor() -> dict:
     return json.loads(files("sam3_plugin").joinpath("pretrained-assets.json").read_text(encoding="utf-8"))
+
+
+def catalog_sha256() -> str:
+    return sha256(files("sam3_plugin").joinpath("pretrained-assets.json").read_bytes()).hexdigest()
 
 
 def deployment_selections(data_root):

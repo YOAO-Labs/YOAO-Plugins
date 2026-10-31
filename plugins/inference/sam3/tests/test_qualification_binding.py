@@ -1,6 +1,7 @@
 import pytest
 
 from scripts.validate_managed_lifecycle import _native_binding
+from sam3_plugin.catalog import catalog_sha256
 
 
 @pytest.fixture
@@ -15,7 +16,7 @@ def native_env(monkeypatch, tmp_path):
         'VALIDATION_GPU_UUID': gpu, 'VALIDATION_IMAGE_ID': image, 'AAP_PLUGIN_IMAGE_ID': image,
         'AAP_PLUGIN_ID': 'sam3', 'AAP_PLUGIN_VERSION': '0.10.0', 'AAP_PLUGIN_DEVICE': 'cuda:0',
         'AAP_PLUGIN_OCI_ARTIFACT': 'example/sam3@' + image,
-        'AAP_PLUGIN_ASSET_MANIFEST_SHA256': 'b' * 64,
+        'AAP_PLUGIN_ASSET_MANIFEST_SHA256': catalog_sha256(),
         'AAP_PLUGIN_TOKEN_FILE': str(tmp_path / 'token'), 'AAP_PLUGIN_DATA_DIR': str(tmp_path),
         'CUDA_VERSION': '12.8.0',
     }
@@ -46,4 +47,10 @@ def test_native_binding_rejects_identity_drift(native_env, monkeypatch, field):
 def test_native_binding_rejects_reusing_qualification(native_env, monkeypatch):
     monkeypatch.setenv('AAP_PLUGIN_QUALIFICATION_FILE', '/tmp/old-report')
     with pytest.raises(RuntimeError, match='cannot reuse'):
+        _native_binding()
+
+
+def test_native_binding_rejects_another_catalog(native_env, monkeypatch):
+    monkeypatch.setenv('AAP_PLUGIN_ASSET_MANIFEST_SHA256', 'b' * 64)
+    with pytest.raises(RuntimeError, match='differs from the installed catalog'):
         _native_binding()

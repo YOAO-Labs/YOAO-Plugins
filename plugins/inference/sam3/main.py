@@ -498,6 +498,11 @@ async def _load_models() -> None:
     validate_single_gpu_device_set()
     plugin_options = plugin_lifecycle_options()
     if plugin_options:
+        from sam3_plugin.catalog import catalog_sha256
+
+        manifest_sha = os.environ.get("AAP_PLUGIN_ASSET_MANIFEST_SHA256")
+        if manifest_sha and manifest_sha != catalog_sha256():
+            raise RuntimeError("Plugin asset manifest does not match the installed catalog")
         configured_device()
         keyring_file = os.environ.get("AAP_PLUGIN_GPU_KEYRING_FILE")
         if not keyring_file:
