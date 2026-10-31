@@ -1,0 +1,4 @@
+include Dockerfile Dockerfile.dockerignore LICENSE README.md *requirements.lock requirements.lock uv.lock groundingdino-canonical-imports.patch
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include grounded_sam2_plugin *.json
