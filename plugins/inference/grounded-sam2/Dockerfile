@@ -2,6 +2,8 @@
 FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-devel@sha256:a22a1fca37f8361c8a1e859cd6eb6bd9d1fb384f9c0dcb2cfc691a178eb03d17
 
 ARG TORCH_ARCH="7.0;7.5;8.0;8.6"
+ARG CONTRACT_MANIFEST
+ARG CONTRACT_MANIFEST_SHA256
 ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
     HF_HOME=/app/.cache/huggingface HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
@@ -34,13 +36,21 @@ RUN --mount=type=bind,source=plugins/inference/grounded-sam2/vendor/grounded-sam
     && cp /tmp/grounded-vendor/grounding_dino/LICENSE /usr/share/licenses/grounded-sam2-vendor/LICENSE_grounding_dino_subtree \
     && rm -rf /tmp/grounded-vendor \
     && python -c "import torch, sam2._C, groundingdino._C; from importlib.resources import files; from hydra import compose; names=('t','s','b+','l'); assert all(files('sam2').joinpath('configs','sam2.1',f'sam2.1_hiera_{n}.yaml').is_file() and compose(config_name=f'configs/sam2.1/sam2.1_hiera_{n}.yaml') for n in names); assert all(files('groundingdino.config').joinpath(n).is_file() for n in ('GroundingDINO_SwinT_OGC.py','GroundingDINO_SwinB_cfg.py'))"
+COPY scripts/fetch-contracts.py /tmp/fetch-contracts.py
+RUN --mount=type=bind,source=.,target=/mnt/build-context,readonly \
+    cd /mnt/build-context \
+    && python /tmp/fetch-contracts.py --manifest "${CONTRACT_MANIFEST}" --sha256 "${CONTRACT_MANIFEST_SHA256}" --output /tmp/contracts \
+       --package yoao-lifecycle-contract --package yoao-protocol-v2 --package yoao-task-contract \
+    && python -m pip install --no-deps /tmp/contracts/*.whl \
+    && rm -rf /tmp/contracts
 COPY plugins/inference/grounded-sam2/first-party-requirements.lock /tmp/
-RUN python -m pip install --no-deps --require-hashes -r /tmp/first-party-requirements.lock
+RUN --mount=type=bind,source=.,target=/mnt/build-context,readonly \
+    python -m pip install --no-deps --require-hashes -r /tmp/first-party-requirements.lock
 COPY plugins/inference/grounded-sam2/*.py plugins/inference/grounded-sam2/pyproject.toml plugins/inference/grounded-sam2/README.md plugins/inference/grounded-sam2/LICENSE /tmp/grounded-sam2/
 COPY plugins/inference/grounded-sam2/grounded_sam2_plugin/ /tmp/grounded-sam2/grounded_sam2_plugin/
 COPY plugins/inference/grounded-sam2/scripts/ /tmp/grounded-sam2/scripts/
 RUN python -m pip wheel --no-deps --no-build-isolation -w /tmp/wheels /tmp/grounded-sam2 \
-    && python -m pip install --no-deps /tmp/wheels/grounded_sam2_backend-*.whl \
+    && python -m pip install --no-deps /tmp/wheels/yoao_grounded_sam2_plugin-*.whl \
     && python -c "import torch, torchvision; assert torch.__version__.split('+')[0] == '2.3.1'; assert torchvision.__version__.split('+')[0] == '0.18.1'" \
     && python -m pip check \
     && rm -rf /tmp/grounded-sam2 /tmp/wheels && mkdir -p /app/checkpoints /app/.cache/huggingface

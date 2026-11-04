@@ -24,13 +24,13 @@ import cv2
 import httpx
 import numpy as np
 from PIL import Image, ImageDraw
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     artifact_evidence,
     build_managed_lifecycle_evidence,
     exercise_lifecycle_fault_matrix,
 )
-from aap_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
-from aap_protocol_v2.lifecycle import (
+from yoao_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     GPU_ADMISSION_TOKEN_HEADER,
@@ -279,7 +279,7 @@ async def _run() -> dict[str, Any]:
 
     app_root = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(app_root))
-    from aap_backend_runtime.qualification_http import http_client, bind_operator_routes
+    from yoao_backend_runtime.qualification_http import http_client, bind_operator_routes
     import main  # noqa: PLC0415
 
     # Verify every image-pool asset before allocating a GPU or loading models.

@@ -43,13 +43,13 @@ import cv2  # opencv-python-headless, 已在镜像内
 import numpy as np
 import torch
 
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     effective_device,
     free_gpu_memory,
     is_device_error,
     latch_cpu,
 )
-from aap_protocol_v2 import MaskPromptPayload
+from yoao_protocol_v2 import MaskPromptPayload
 from mask_utils import decode_coco_rle
 from mask_utils.polygon import mask_to_polygon  # 与图片栈共用的 mask→polygon 矢量化
 from mask_utils.rle import encode_coco_rle

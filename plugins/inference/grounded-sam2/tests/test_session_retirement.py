@@ -3,9 +3,9 @@ import asyncio
 import time
 
 import pytest
-from aap_backend_runtime import TrackerSessionLost, TrackerSessionManager
-from aap_protocol_v2.errors import LifecycleHTTPError
-from aap_protocol_v2.lifecycle import AdmissionScope, AdmissionTokenClaims, LifecycleModeRequest, sign_admission_token
+from yoao_backend_runtime import TrackerSessionLost, TrackerSessionManager
+from yoao_protocol_v2.errors import LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import AdmissionScope, AdmissionTokenClaims, LifecycleModeRequest, sign_admission_token
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from gpu_lifecycle import GroundedSam2GpuLifecycle

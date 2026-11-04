@@ -8,8 +8,8 @@ import time
 from typing import Any
 
 import pytest
-from aap_protocol_v2.errors import LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     LifecycleState,

@@ -113,7 +113,7 @@ def test_point_single_mask_default(predictor):
 
 def test_point_mask_input_decoded_and_passed(predictor):
     """context.mask_input 解码成 (1,256,256) 透传 _sam_predictor.predict。"""
-    from aap_protocol_v2 import encode_low_res_mask
+    from yoao_protocol_v2 import encode_low_res_mask
 
     low_res = np.zeros((1, 256, 256), dtype=np.float32)
     predictor._sam_predictor.predict = MagicMock(
@@ -218,7 +218,7 @@ def test_interactive_box_native_mask_output(predictor):
 
 
 def test_point_native_mask_preserves_non_square_pixels(predictor):
-    from aap_protocol_v2 import CocoRlePayload, native_mask_candidate_id
+    from yoao_protocol_v2 import CocoRlePayload, native_mask_candidate_id
     from mask_utils import decode_coco_rle
 
     mask = np.array([[1, 0, 1], [0, 1, 0]], dtype=np.uint8)

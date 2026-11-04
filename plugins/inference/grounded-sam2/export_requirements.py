@@ -5,8 +5,8 @@ import tomllib
 root = Path(__file__).parent
 lock = tomllib.loads((root / "uv.lock").read_text())
 excluded = {
-    "grounded-sam2-backend", "aap-backend-runtime", "aap-lifecycle-contract",
-    "aap-protocol-v2", "aap-task-contract", "anno-mask-utils", "torch",
+    "yoao-grounded-sam2-plugin", "yoao-backend-runtime", "yoao-lifecycle-contract",
+    "yoao-protocol-v2", "yoao-task-contract", "yoao-mask-utils", "torch",
     "torchvision", "triton", "intel-openmp", "mkl", "tbb",
 }
 lines = ["# Generated from uv.lock; Torch/CUDA are supplied by the pinned base image."]

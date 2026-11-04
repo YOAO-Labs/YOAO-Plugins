@@ -1,6 +1,6 @@
-# Grounded-SAM-2 backend
+# Grounded-SAM-2 plugin
 
-Distribution `grounded-sam2-backend` 0.10.1 retains the platform backend's protocol 2.2 service, its distinct image and video model pools, and its stateful tracker sessions. The runtime baseline is Python 3.10, PyTorch 2.3.1, torchvision 0.18.1 and CUDA 12.1. Its pinned third-party source submodule is IDEA-Research/Grounded-SAM-2 at `b7a9c29f196edff0eb54dbe14588d7ae5e3dde28`; initialize recursively before a Docker build. SAM 2 and GroundingDINO source retain their upstream Apache-2.0 licenses and notices; the first-party MIT license does not override third-party source or model terms.
+Distribution `yoao-grounded-sam2-plugin` 0.10.1 retains the platform backend's protocol 2.2 service, its distinct image and video model pools, and its stateful tracker sessions. The runtime baseline is Python 3.10, PyTorch 2.3.1, torchvision 0.18.1 and CUDA 12.1. Its pinned third-party source submodule is IDEA-Research/Grounded-SAM-2 at `b7a9c29f196edff0eb54dbe14588d7ae5e3dde28`; initialize recursively before a Docker build. SAM 2 and GroundingDINO source retain their upstream Apache-2.0 licenses and notices; the first-party MIT license does not override third-party source or model terms.
 
 The image retains upstream license files under `/usr/share/licenses/grounded-sam2-vendor`, including the BSD-3-Clause cctorch notice. The submodule remains the authoritative source and license inventory.
 
@@ -20,7 +20,9 @@ Persistent tracker state belongs to the exact video model-pool entry that opened
 
 ## Build and validation
 
-The root-context Dockerfile pins the CUDA development base image by digest and installs locked Python inputs, the checked-out vendor source, and the plugin wheel. It does not provision any model assets. `uv.lock` is resolved for Python 3.10; `requirements.lock` exports hashed non-Torch Python dependencies and `first-party-requirements.lock` pins published SDK/runtime/contract artifacts. The base image provides Torch and torchvision. No editable platform checkout is required.
+The root-context Dockerfile pins the CUDA development base image by digest and installs locked Python inputs, the checked-out vendor source, and the plugin wheel. It does not provision model assets. Regenerate `uv.lock` for Python 3.10 with a find-links source containing the five actual candidate first-party wheels, then export `requirements.lock` using `export_requirements.py`. Regenerate `first-party-requirements.lock` with immutable wheel URLs and SHA256 hashes for exactly `yoao-backend-runtime==0.1.0` and `yoao-mask-utils==0.1.0`; it must not contain the contract wheels. Local wheel URLs can use `file:///mnt/build-context/` followed by a path in the repository-root build context. The base image provides Torch and torchvision.
+
+Provide a real contract manifest and its SHA256 as `CONTRACT_MANIFEST` and `CONTRACT_MANIFEST_SHA256` build arguments. The manifest is a URL or a path relative to the repository-root build context; local manifest and referenced wheels must be available in that context and not excluded by `Dockerfile.dockerignore`. The fetcher verifies the manifest and selected wheel hashes and installs only `yoao-lifecycle-contract==0.1.0`, `yoao-protocol-v2==0.2.0`, and `yoao-task-contract==0.1.0`; `pip check` enforces the plugin's versions. No editable platform checkout is required. Candidate wheel and sdist artifacts must be built and validated against these real inputs before any separately authorized publication; the renamed distributions are not assumed to have been published.
 
 System build tools resolve against Ubuntu Jammy's signed `20260601T000000Z` snapshot, rather than floating package repositories.
 

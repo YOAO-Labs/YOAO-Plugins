@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     GPU_ADMISSION_TOKEN_HEADER,
     GPU_GENERATION_HEADER,
     GPU_HEALTH_CHALLENGE_HEADER,
@@ -368,7 +368,7 @@ def test_deployment_gate_controls_declaration_and_rejects_invalid_value(
 
 @pytest.mark.parametrize("evict", [False, True])
 def test_video_session_windows_release_borrow_and_retire_state(monkeypatch, evict):
-    from aap_backend_runtime import TrackerSessionManager
+    from yoao_backend_runtime import TrackerSessionManager
     from fastapi import HTTPException
     from video_pool import VideoPool
 
@@ -440,7 +440,7 @@ def test_video_session_windows_release_borrow_and_retire_state(monkeypatch, evic
 
 
 def test_cancelled_session_window_holds_borrow_until_thread_finishes(monkeypatch):
-    from aap_backend_runtime import TrackerSessionManager
+    from yoao_backend_runtime import TrackerSessionManager
     from video_pool import VideoPool
 
     main = _load_main()

@@ -4,7 +4,7 @@ vendor 形态: vendor/grounded-sam-2/ 是固定 commit 的上游 Git submodule.
 本模块只对 vendor 内的 SAM 2.1 image_predictor + GroundingDINO inference utilities 做一层 prompt 适配,
 返回平台协议要求的 polygonlabels / rectanglelabels 字典数组.
 
-mask → polygon 简化策略 (由独立的 anno-mask-utils 包提供, 与 sam3-backend 共用):
+Mask-to-polygon simplification uses yoao-mask-utils, shared with the SAM3 plugin:
     cv2.findContours(RETR_CCOMP, CHAIN_APPROX_NONE)  # CCOMP 抓内外环
     → 各连通域外环 / hole 配对（hierarchy parent 索引归属）
     → shapely.simplify(tolerance=DEFAULT_SIMPLIFY_TOLERANCE, preserve_topology=True)
@@ -31,13 +31,13 @@ import numpy as np
 import torch
 from PIL import Image
 
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     effective_device,
     free_gpu_memory,
     is_device_error,
     latch_cpu,
 )
-from aap_protocol_v2 import (
+from yoao_protocol_v2 import (
     CocoRlePayload,
     MAX_SCRIBBLE_RASTERIZED_PIXELS,
     NativeMaskCandidate,
