@@ -40,11 +40,20 @@ ONNX Runtime 1.23.2，`cuda` 使用 ONNX Runtime GPU 1.23.2 和 cuDNN 9.10.2。
 CUDA/cuBLAS 由 GPU 基础镜像提供。共享 runtime 还依赖 `yoao-lifecycle-contract`。
 
 `uv.lock` 固定完整依赖图，`requirements-cpu.txt` 和
-`requirements-runtime.txt` 分别固定第三方 registry artifact 哈希。这些生成锁在名称切换后
-必须从真实候选制品重新生成，不能使用旧锁证明新发行包可安装。需要匹配本插件版本约束的
-`yoao-backend-runtime` wheel，以及含 `yoao-task-contract`、`yoao-protocol-v2`、
-`yoao-lifecycle-contract` wheel 和摘要的真实契约 manifest；`build-inputs.py` 使用仓库的
-`scripts/fetch-contracts.py` 校验 manifest 与所选 wheel，另行校验本地 runtime wheel 摘要。
+`requirements-runtime.txt` 分别固定第三方 registry artifact 哈希。开发和重新生成锁文件前，
+在本仓库根目录用两份真实候选 manifest 及其独立 SHA256 暂存 wheel：
+
+```bash
+python3 scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" \
+  --sha256 "$CONTRACT_MANIFEST_SHA256" --output .artifacts/python/first-party \
+  --package yoao-task-contract --package yoao-protocol-v2 --package yoao-lifecycle-contract
+python3 scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" \
+  --sha256 "$SDK_MANIFEST_SHA256" --output .artifacts/python/first-party \
+  --package yoao-backend-runtime
+```
+
+`pyproject.toml` 使用该目录下的非 editable wheel；manifest 路径或 URL 必须与对应
+wheel 相邻。`build-inputs.py` 独立校验所选契约 wheel 和本地 runtime wheel 摘要。
 候选制品不是公开发布证明；本阶段不发布、不推送、不变更版本。
 
 镜像以 `--no-deps --require-hashes` 安装第三方锁文件，之后安装已校验第一方 wheel

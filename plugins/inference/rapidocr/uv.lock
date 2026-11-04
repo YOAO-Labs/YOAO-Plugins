@@ -6,81 +6,9 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 conflicts = [[
-    { package = "rapidocr-backend", extra = "cpu" },
-    { package = "rapidocr-backend", extra = "cuda" },
+    { package = "yoao-rapidocr-plugin", extra = "cpu" },
+    { package = "yoao-rapidocr-plugin", extra = "cuda" },
 ]]
-
-[[package]]
-name = "aap-backend-runtime"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" }
-dependencies = [
-    { name = "aap-lifecycle-contract" },
-    { name = "aap-protocol-v2" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "pillow", version = "12.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "pillow", version = "13.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-]
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:96556de7d2cc56b3ddbd8f2b83178058a9cc4743d3a58f884f3b3a837e0478c4" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aap-lifecycle-contract" },
-    { name = "aap-protocol-v2" },
-    { name = "cryptography", specifier = ">=43.0.0" },
-    { name = "fastapi", specifier = ">=0.110" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "pillow", specifier = ">=10.0" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
-]
-provides-extras = ["test"]
-
-[[package]]
-name = "aap-lifecycle-contract"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:08512210f4229dd1fb1f885ccfb3b7cb099981d351b2d870d712dc64fe631e94" },
-]
-
-[[package]]
-name = "aap-protocol-v2"
-version = "0.2.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" }
-dependencies = [
-    { name = "aap-task-contract" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "pydantic" },
-    { name = "pyjwt" },
-]
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:3863853646ea0d4934a7d7d55ca0e3c2b0e180c1cff93192b96fdc7a172ad561" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aap-task-contract" },
-    { name = "cryptography", specifier = ">=43.0.0" },
-    { name = "fastapi", specifier = ">=0.110" },
-    { name = "numpy", marker = "extra == 'test'", specifier = ">=1.24" },
-    { name = "pydantic", specifier = ">=2.5" },
-    { name = "pyjwt", specifier = ">=2.10,<3" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
-]
-provides-extras = ["test"]
-
-[[package]]
-name = "aap-task-contract"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" }
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:a1c953f1ad4c9fd212dce549058ec959c3d2778a673af648cfd386e8580f4b7a" },
-]
 
 [[package]]
 name = "annotated-doc"
@@ -105,9 +33,9 @@ name = "anyio"
 version = "4.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
     { name = "idna" },
-    { name = "typing-extensions", marker = "python_full_version < '3.15' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a9/d2/f4d173e22df740bc37b1db102b386ba719b66e95b0f0d751f556b387e6d2/anyio-4.15.1.tar.gz", hash = "sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94", size = 276966, upload-time = "2026-09-05T10:42:39.44Z" }
 wheels = [
@@ -137,8 +65,8 @@ name = "cffi"
 version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", version = "3.11", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and implementation_name != 'PyPy') or (python_full_version >= '3.11' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda') or (implementation_name == 'PyPy' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "pycparser", version = "3.12", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and implementation_name != 'PyPy') or (python_full_version < '3.11' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda') or (implementation_name == 'PyPy' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "pycparser", version = "3.11", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.11' and implementation_name != 'PyPy') or (python_full_version >= '3.11' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda') or (implementation_name == 'PyPy' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "pycparser", version = "3.12", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.11' and implementation_name != 'PyPy') or (python_full_version < '3.11' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda') or (implementation_name == 'PyPy' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9e/ef/008a1939e372c06329a3fce4279c02f328488f3526744906eeec3da7ad5f/cffi-2.1.1.tar.gz", hash = "sha256:dd31f52ea1086513bb9df30f8fcee9b8918323ae067a3d5b78bc826a000712be", size = 530807, upload-time = "2026-08-03T21:21:18.939Z" }
 wheels = [
@@ -441,7 +369,7 @@ name = "colorlog"
 version = "6.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8c/55/ba79756cb90c8d69d599d57785398ac87bba7b19c80e87f4e8a562197c93/colorlog-6.12.0.tar.gz", hash = "sha256:2a7924c1dadf18b22a0eb8b06d1c7b01d5341707ec1641eb6fcc4fde0c3e8e5f", size = 18151, upload-time = "2026-07-23T13:40:40.71Z" }
 wheels = [
@@ -453,8 +381,8 @@ name = "cryptography"
 version = "50.0.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9d/af/182eb91b0df3fe75c4d9f26fe70684569566745f6ba7e5c9c73a862c5252/cryptography-50.0.2.tar.gz", hash = "sha256:7b46165bb56eb4704e2eaaf86f3c940d19154535d9b0ca7d6d590b04060e00d5", size = 880623, upload-time = "2026-09-30T15:30:04.884Z" }
 wheels = [
@@ -523,7 +451,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -538,8 +466,8 @@ dependencies = [
     { name = "annotated-doc" },
     { name = "opentelemetry-api" },
     { name = "pydantic" },
-    { name = "starlette", version = "1.7.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "starlette", version = "1.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "starlette", version = "1.7.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "starlette", version = "1.10.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
@@ -1431,7 +1359,7 @@ name = "pyjwt"
 version = "2.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/43/ea/5194e52748b0da83d71e082d75496eaec6e58f419f5e184786ded517e6a9/pyjwt-2.15.1.tar.gz", hash = "sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8", size = 121252, upload-time = "2026-09-28T18:40:42.598Z" }
 wheels = [
@@ -1452,13 +1380,13 @@ name = "pytest"
 version = "9.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "exceptiongroup", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
     { name = "pygments" },
-    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/79/42/bb4641652e58dedeac2ec51abc1f8cae4fee4ec63899a0999016229a0f2a/pytest-9.2.0.tar.gz", hash = "sha256:97c4f3b1f3c7414aa36465e09b8220f1d03627993bd51b1282e193753c80557b", size = 1797555, upload-time = "2026-10-27T21:30:20.728Z" }
 wheels = [
@@ -1470,9 +1398,9 @@ name = "pytest-asyncio"
 version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "backports-asyncio-runner", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "backports-asyncio-runner", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
     { name = "pytest" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f8/9a/887535e477847f5159377ab35303923644840b13c0ca03c0a467f84d4680/pytest_asyncio-1.4.1.tar.gz", hash = "sha256:e8266eb094e5ee9ffdb2068c9836f33e209ea77a970eb846933d416b5602669b", size = 145237, upload-time = "2026-10-25T21:05:37.135Z" }
 wheels = [
@@ -1561,84 +1489,19 @@ dependencies = [
     { name = "numpy" },
     { name = "omegaconf" },
     { name = "opencv-python" },
-    { name = "pillow", version = "12.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "pillow", version = "13.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "pillow", version = "12.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "pillow", version = "13.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
     { name = "pyclipper" },
     { name = "pyyaml" },
     { name = "requests" },
-    { name = "shapely", version = "2.1.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "shapely", version = "2.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "shapely", version = "2.1.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "shapely", version = "2.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
     { name = "six" },
     { name = "tqdm" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/e0/3d3c394448c3527aa99b858647b5404110c5e30a5549f9e2bc4c645bb6b8/rapidocr-3.9.0-py3-none-any.whl", hash = "sha256:f9e624d11315aa1ffe8ecf486a9ae7c2f7bef741d25a1e508fc5e25cb75dfed5", size = 27240223, upload-time = "2026-06-23T02:33:55.29Z" },
 ]
-
-[[package]]
-name = "rapidocr-backend"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "aap-backend-runtime" },
-    { name = "aap-lifecycle-contract" },
-    { name = "aap-protocol-v2" },
-    { name = "aap-task-contract" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "numpy" },
-    { name = "opencv-python-headless" },
-    { name = "pillow", version = "12.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "pillow", version = "13.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "pydantic" },
-    { name = "pyjwt" },
-    { name = "rapidocr" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-build = [
-    { name = "setuptools" },
-    { name = "wheel" },
-]
-cpu = [
-    { name = "onnxruntime" },
-]
-cuda = [
-    { name = "nvidia-cudnn-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "onnxruntime-gpu" },
-]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" },
-    { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
-    { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" },
-    { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" },
-    { name = "cryptography", specifier = ">=43.0.0" },
-    { name = "fastapi", specifier = ">=0.110" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "numpy", specifier = "==2.2.6" },
-    { name = "nvidia-cudnn-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'cuda'", specifier = "==9.10.2.21" },
-    { name = "onnxruntime", marker = "extra == 'cpu'", specifier = "==1.23.2" },
-    { name = "onnxruntime-gpu", marker = "extra == 'cuda'", specifier = "==1.23.2" },
-    { name = "opencv-python-headless", specifier = "==5.0.0.93" },
-    { name = "pillow", specifier = ">=10" },
-    { name = "pydantic", specifier = ">=2.5" },
-    { name = "pyjwt", specifier = ">=2.10,<3" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
-    { name = "rapidocr", specifier = "==3.9.0" },
-    { name = "setuptools", marker = "extra == 'build'", specifier = "==80.9.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.27" },
-    { name = "wheel", marker = "extra == 'build'", specifier = "==0.45.1" },
-]
-provides-extras = ["dev", "cpu", "cuda", "build"]
 
 [[package]]
 name = "requests"
@@ -1672,7 +1535,7 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "numpy", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4d/bc/0989043118a27cccb4e906a46b7565ce36ca7b57f5a18b78f4f1b0f72d9d/shapely-2.1.2.tar.gz", hash = "sha256:2ed4ecb28320a433db18a5bf029986aa8afcfd740745e78847e330d5d94922a9", size = 315489, upload-time = "2025-09-24T13:51:41.432Z" }
 wheels = [
@@ -1742,7 +1605,7 @@ resolution-markers = [
     "python_full_version >= '3.11'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "numpy", marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f3/ab/924b6e202f796d270a3041a230151f7908db5ea48c74effe6f8023e9bd05/shapely-2.2.0.tar.gz", hash = "sha256:e8865e553d874a1ec4a032057ea81fca9def37b188cd8fb550af3b3480b3f88c", size = 380326, upload-time = "2026-10-07T09:18:01.001Z" }
 wheels = [
@@ -1828,8 +1691,8 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 dependencies = [
-    { name = "anyio", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "anyio", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7b/2b/3850dc6bf7ef71b088962eba31dafc6cffd2f96e577ebb0bb316df96da3e/starlette-1.7.0.tar.gz", hash = "sha256:c79f74ea63cff761804fbbfb182f1e0b440c2d07b164d24700c5a1bab5d6ff5d", size = 2736246, upload-time = "2026-09-23T07:30:26.35Z" }
 wheels = [
@@ -1844,8 +1707,8 @@ resolution-markers = [
     "python_full_version >= '3.11'",
 ]
 dependencies = [
-    { name = "anyio", marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "typing-extensions", marker = "(python_full_version >= '3.11' and python_full_version < '3.13') or (python_full_version < '3.11' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda') or (python_full_version >= '3.13' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "anyio", marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "typing-extensions", marker = "(python_full_version >= '3.11' and python_full_version < '3.13') or (python_full_version < '3.11' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda') or (python_full_version >= '3.13' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/48/bb/3d8757f21e9a53d9035c9eb039a777047139a16bfdbedfc7a58241c3d914/starlette-1.10.0.tar.gz", hash = "sha256:b8399098d4c1e3522734f7235dc79b1fc967f96cf139c81e0fa30479e0685f9b", size = 2734356, upload-time = "2026-10-24T15:04:12.342Z" }
 wheels = [
@@ -1941,7 +1804,7 @@ name = "tqdm"
 version = "4.70.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0d/ea/b2a5bd54b28a324dae8211928b2d730b6547500342c7e6c6dea08bd0a485/tqdm-4.70.1.tar.gz", hash = "sha256:cefd0eca11b2a37a3aee776544d4f4ae913f02688135b5556b8788dfa474afc4", size = 171846, upload-time = "2026-09-11T07:25:16.601Z" }
 wheels = [
@@ -1985,7 +1848,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "h11" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/da/34/30e9280707135d2cfc589dfff3cb796bd07a3aeb1a3e415ba09dd89d7bb4/uvicorn-0.54.0.tar.gz", hash = "sha256:a2e33cbfaa0306f8e6b0c13e0cb89d7d7a2da3e62b90c66e18c33d9807b28620", size = 112283, upload-time = "2026-09-25T06:52:37.601Z" }
 wheels = [
@@ -1997,10 +1860,10 @@ standard = [
     { name = "httptools" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
-    { name = "uvloop", marker = "(platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32') or (platform_python_implementation == 'PyPy' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda') or (sys_platform == 'cygwin' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda') or (sys_platform == 'win32' and extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "uvloop", marker = "(platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32') or (platform_python_implementation == 'PyPy' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda') or (sys_platform == 'cygwin' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda') or (sys_platform == 'win32' and extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
     { name = "watchfiles" },
-    { name = "websockets", version = "16.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
-    { name = "websockets", version = "17.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-16-rapidocr-backend-cpu' and extra == 'extra-16-rapidocr-backend-cuda')" },
+    { name = "websockets", version = "16.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "websockets", version = "17.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
 ]
 
 [[package]]
@@ -2392,4 +2255,147 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8a/98/2d9906746cdc6a6ef809ae6338005b3f21bb568bea3165cfc6a243fdc25c/wheel-0.45.1.tar.gz", hash = "sha256:661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729", size = 107545, upload-time = "2024-11-23T00:18:23.513Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/2c/87f3254fd8ffd29e4c02732eee68a83a1d3c346ae39bc6822dcbcb697f2b/wheel-0.45.1-py3-none-any.whl", hash = "sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248", size = 72494, upload-time = "2024-11-23T00:18:21.207Z" },
+]
+
+[[package]]
+name = "yoao-backend-runtime"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pillow", version = "12.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "pillow", version = "13.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "yoao-lifecycle-contract" },
+    { name = "yoao-protocol-v2" },
+]
+wheels = [
+    { filename = "yoao_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:03cada7a9488086fa7a65ccb282c6f44571dfb983f5a6258a9de9c15ebc962e0" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = ">=43.0.0" },
+    { name = "fastapi", specifier = ">=0.110" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pillow", specifier = ">=10.0" },
+    { name = "pyjwt", marker = "extra == 'qualification'", specifier = ">=2.8,<3" },
+    { name = "pyjwt", marker = "extra == 'test'", specifier = ">=2.8,<3" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24" },
+    { name = "uvicorn", marker = "extra == 'qualification'", specifier = ">=0.29" },
+    { name = "uvicorn", marker = "extra == 'test'", specifier = ">=0.29" },
+    { name = "yoao-lifecycle-contract" },
+    { name = "yoao-protocol-v2" },
+]
+provides-extras = ["qualification", "test"]
+
+[[package]]
+name = "yoao-lifecycle-contract"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" }
+wheels = [
+    { filename = "yoao_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:e09eba4ae27c3b76b962b95724608a4be2f491102cb6bd6cee0661cf893fdcdd" },
+]
+
+[[package]]
+name = "yoao-protocol-v2"
+version = "0.2.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "pyjwt" },
+    { name = "yoao-task-contract" },
+]
+wheels = [
+    { filename = "yoao_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:b06ca5eacad3165a4dfe32f492f951b914eb6fa0226079586b78659e41b7e0e2" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = ">=43.0.0" },
+    { name = "fastapi", specifier = ">=0.110" },
+    { name = "numpy", marker = "extra == 'test'", specifier = ">=1.24" },
+    { name = "pydantic", specifier = ">=2.5" },
+    { name = "pyjwt", specifier = ">=2.10,<3" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24" },
+    { name = "yoao-task-contract" },
+]
+provides-extras = ["test"]
+
+[[package]]
+name = "yoao-rapidocr-plugin"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "numpy" },
+    { name = "opencv-python-headless" },
+    { name = "pillow", version = "12.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "pillow", version = "13.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' or (extra == 'extra-20-yoao-rapidocr-plugin-cpu' and extra == 'extra-20-yoao-rapidocr-plugin-cuda')" },
+    { name = "pydantic" },
+    { name = "pyjwt" },
+    { name = "rapidocr" },
+    { name = "uvicorn", extra = ["standard"] },
+    { name = "yoao-backend-runtime" },
+    { name = "yoao-lifecycle-contract" },
+    { name = "yoao-protocol-v2" },
+    { name = "yoao-task-contract" },
+]
+
+[package.optional-dependencies]
+build = [
+    { name = "setuptools" },
+    { name = "wheel" },
+]
+cpu = [
+    { name = "onnxruntime" },
+]
+cuda = [
+    { name = "nvidia-cudnn-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "onnxruntime-gpu" },
+]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = ">=43.0.0" },
+    { name = "fastapi", specifier = ">=0.110" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "numpy", specifier = "==2.2.6" },
+    { name = "nvidia-cudnn-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'cuda'", specifier = "==9.10.2.21" },
+    { name = "onnxruntime", marker = "extra == 'cpu'", specifier = "==1.23.2" },
+    { name = "onnxruntime-gpu", marker = "extra == 'cuda'", specifier = "==1.23.2" },
+    { name = "opencv-python-headless", specifier = "==5.0.0.93" },
+    { name = "pillow", specifier = ">=10" },
+    { name = "pydantic", specifier = ">=2.5" },
+    { name = "pyjwt", specifier = ">=2.10,<3" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
+    { name = "rapidocr", specifier = "==3.9.0" },
+    { name = "setuptools", marker = "extra == 'build'", specifier = "==80.9.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.27" },
+    { name = "wheel", marker = "extra == 'build'", specifier = "==0.45.1" },
+    { name = "yoao-backend-runtime", path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" },
+    { name = "yoao-lifecycle-contract", path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" },
+    { name = "yoao-protocol-v2", path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" },
+    { name = "yoao-task-contract", path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" },
+]
+provides-extras = ["dev", "cpu", "cuda", "build"]
+
+[[package]]
+name = "yoao-task-contract"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
+wheels = [
+    { filename = "yoao_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:438ca14610facaec2217a1f0c15c2d59f77fff4aba695227e6aaffc2ee219dea" },
 ]
