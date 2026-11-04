@@ -1,5 +1,5 @@
-yoao-backend-runtime==0.1.0
-yoao-lifecycle-contract==0.1.0
-yoao-mask-utils==0.1.0
-yoao-protocol-v2==0.2.0
-yoao-task-contract==0.1.0
+yoao-backend-runtime==0.1.0 --hash=sha256:03cada7a9488086fa7a65ccb282c6f44571dfb983f5a6258a9de9c15ebc962e0
+yoao-lifecycle-contract==0.1.0 --hash=sha256:e09eba4ae27c3b76b962b95724608a4be2f491102cb6bd6cee0661cf893fdcdd
+yoao-mask-utils==0.1.0 --hash=sha256:c16f52c3b2d3fa934238082ae1f846f5cadb2c0955b4163704c7d483b2aa88ca
+yoao-protocol-v2==0.2.0 --hash=sha256:b06ca5eacad3165a4dfe32f492f951b914eb6fa0226079586b78659e41b7e0e2
+yoao-task-contract==0.1.0 --hash=sha256:438ca14610facaec2217a1f0c15c2d59f77fff4aba695227e6aaffc2ee219dea
