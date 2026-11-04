@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 
-from aap_backend_runtime import artifact_evidence
+from yoao_backend_runtime import artifact_evidence
 
 INVENTORY_NAME = "qualification-weights.json"
 

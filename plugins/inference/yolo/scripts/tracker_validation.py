@@ -9,7 +9,7 @@ from pathlib import Path
 
 import cv2
 
-from aap_backend_runtime import artifact_evidence
+from yoao_backend_runtime import artifact_evidence
 from scripts.open_vocabulary_validation import MIN_GEOMETRY_IOU, _iou_box
 
 INPUTS = {

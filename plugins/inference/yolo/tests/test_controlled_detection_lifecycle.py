@@ -10,9 +10,9 @@ from types import SimpleNamespace
 import httpx
 import numpy as np
 import pytest
-from aap_backend_runtime import exercise_lifecycle_fault_matrix
-from aap_backend_runtime.backend_auth import backend_auth_headers
-from aap_protocol_v2.lifecycle import (
+from yoao_backend_runtime import exercise_lifecycle_fault_matrix
+from yoao_backend_runtime.backend_auth import backend_auth_headers
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     GPU_ADMISSION_TOKEN_HEADER,
@@ -378,7 +378,7 @@ async def test_real_managed_routes_and_fault_matrix_keep_exact_detection_identit
     # immutable installation, request parsing, pool ownership, and fault routes
     # run their production code; this remains a CPU tool contract test.
     import main
-    from aap_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
+    from yoao_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
     from model_pool import ModelPool
     from predictor import model_key_for_context
 

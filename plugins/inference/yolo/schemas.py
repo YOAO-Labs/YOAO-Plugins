@@ -1,19 +1,18 @@
-"""yolo-backend 特有的请求 Pydantic schema.
+"""YOLO-specific request schemas.
 
-通用部分 (TaskItem / PredictionResult / BatchPredictResponse / WarmupResponse) 从
-`aap_protocol_v2` 共享包引入 (apps/_shared/protocol_v2). 这里只放 yolo 的
-Context: 与 sam3/gsam2 的 prompt 驱动不同, yolo 走纯批量 + variants 驱动.
+Shared protocol v2 types come from ``yoao_protocol_v2``.
+YOLO supports batches and variants as well as interactive exemplar requests.
 """
 
 from __future__ import annotations
 
-from aap_protocol_v2.model_metadata import BuiltinModelRef
+from yoao_protocol_v2.model_metadata import BuiltinModelRef
 
 import logging
 import math
 from typing import Literal
 
-from aap_protocol_v2 import (
+from yoao_protocol_v2 import (
     BatchPredictResponse,
     PredictionResult,
     TaskItem,
@@ -22,8 +21,8 @@ from aap_protocol_v2 import (
     normalize_context_model_variants,
 )
 from pydantic import BaseModel, Field, PrivateAttr, model_validator, field_validator
-from aap_protocol_v2.predict import normalize_context_task
-from aap_task_contract import normalize_task
+from yoao_protocol_v2.predict import normalize_context_task
+from yoao_task_contract import normalize_task
 from managed_models import ManagedModelRef
 from sample_evaluations import EvaluationRequest
 

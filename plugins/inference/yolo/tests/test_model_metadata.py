@@ -7,7 +7,7 @@ import pytest
 
 from class_names import COCO80
 from model_metadata import ModelMetadataStore, file_signature
-from aap_protocol_v2.model_metadata import ModelMetadataResponse
+from yoao_protocol_v2.model_metadata import ModelMetadataResponse
 
 
 def observe(store, path, names=None, **kwargs):

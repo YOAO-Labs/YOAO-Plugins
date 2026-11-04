@@ -29,7 +29,7 @@ def test_plugin_auth_managed_access_and_terminal_drain(tmp_path):
     script = textwrap.dedent('''
         from pathlib import Path
         from fastapi.testclient import TestClient
-        from aap_inference_contract.plugin import PluginManifest, PluginModelCapability
+        from yoao_inference_contract.plugin import PluginManifest, PluginModelCapability
         import os
         from yolo_plugin.catalog import catalog_sha256
         os.environ["AAP_PLUGIN_ASSET_MANIFEST_SHA256"] = catalog_sha256()

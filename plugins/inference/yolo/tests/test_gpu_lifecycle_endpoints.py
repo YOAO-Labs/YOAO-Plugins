@@ -10,7 +10,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     GPU_ADMISSION_TOKEN_HEADER,

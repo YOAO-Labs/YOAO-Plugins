@@ -9,7 +9,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.lifecycle import (
     GPU_HEALTH_CHALLENGE_HEADER,
     GPU_HEALTH_CHALLENGE_QUERY_PARAM,
 )

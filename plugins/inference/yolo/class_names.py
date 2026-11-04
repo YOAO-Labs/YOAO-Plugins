@@ -120,7 +120,7 @@ def classes_for_task(task: str) -> list[dict] | None:
     detection / segmentation → COCO80, obb → DOTA15, keypoint → COCO_POSE,
     其它 (含开集 task) → None。
     """
-    from aap_task_contract import normalize_task
+    from yoao_task_contract import normalize_task
 
     task = normalize_task(task, allow_unknown=True)
     if task in ("detect", "segment"):

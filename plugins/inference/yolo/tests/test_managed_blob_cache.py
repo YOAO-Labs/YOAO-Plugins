@@ -42,7 +42,7 @@ def installation(raw=RAW, **changes):
 
 def transport(monkeypatch, handler):
     monkeypatch.setattr(
-        "aap_backend_runtime.managed_models.httpx.AsyncClient",
+        "yoao_backend_runtime.managed_models.httpx.AsyncClient",
         lambda **kwargs: HTTP_CLIENT(transport=httpx.MockTransport(handler), **kwargs),
     )
 

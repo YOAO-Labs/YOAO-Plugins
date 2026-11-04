@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from aap_backend_runtime import artifact_evidence
+from yoao_backend_runtime import artifact_evidence
 
 
 INPUTS = {

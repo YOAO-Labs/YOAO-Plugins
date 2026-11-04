@@ -7,8 +7,8 @@ import threading
 import time
 
 import pytest
-from aap_protocol_v2.errors import LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     LifecycleModeRequest,
@@ -24,7 +24,7 @@ class _Model:
 
 
 def _domain(*, free_gpu_memory=None, evictable_verified: bool = True):
-    from aap_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
+    from yoao_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
     from model_pool import ModelPool
 
     private_key = Ed25519PrivateKey.generate()
@@ -694,7 +694,7 @@ async def test_cancelled_close_still_releases_active_operation() -> None:
 
 @pytest.mark.asyncio
 async def test_cancelled_legacy_unload_owner_recovers_without_keyring() -> None:
-    from aap_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
+    from yoao_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
     from model_pool import ModelPool
 
     cleanup_started = threading.Event()
@@ -858,7 +858,7 @@ async def test_first_signed_control_cannot_choose_instance_identity(registry, re
 
 @pytest.mark.asyncio
 async def test_signed_control_requires_preconfigured_binding():
-    from aap_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
+    from yoao_backend_runtime.gpu_lifecycle import ManagedGpuLifecycle
     from model_pool import ModelPool
 
     key = Ed25519PrivateKey.generate()

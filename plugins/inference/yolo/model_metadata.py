@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from training_contract.assets import resolve_prepared_asset
 
-from aap_protocol_v2.model_metadata import (
+from yoao_protocol_v2.model_metadata import (
     ModelClassMetadata,
     ModelMetadataResponse,
     classes_digest,

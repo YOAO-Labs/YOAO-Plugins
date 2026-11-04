@@ -9,12 +9,13 @@ lines = [
     "# Generated from uv.lock; binary packages come from the immutable Docker base."
 ]
 excluded = {
-    "yolo-backend",
-    "aap-backend-runtime",
-    "aap-lifecycle-contract",
-    "aap-protocol-v2",
-    "aap-training-contract",
-    "aap-task-contract",
+    "yoao-yolo-plugin",
+    "yoao-backend-runtime",
+    "yoao-inference-contract",
+    "yoao-lifecycle-contract",
+    "yoao-protocol-v2",
+    "yoao-training-contract",
+    "yoao-task-contract",
     "clip",
     "torch",
     "torchvision",

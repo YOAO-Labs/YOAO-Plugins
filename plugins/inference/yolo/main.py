@@ -14,8 +14,8 @@
 
 from __future__ import annotations
 
-from aap_task_contract import normalize_task
-from aap_protocol_v2.routing_runtime import install_backend_routing_controller
+from yoao_task_contract import normalize_task
+from yoao_protocol_v2.routing_runtime import install_backend_routing_controller
 from training_contract.assets import resolve_prepared_asset
 
 import asyncio
@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     deployment_verified_flag,
     effective_device,
     effective_device_value,
@@ -42,7 +42,7 @@ from aap_backend_runtime import (
     versions_payload,
     validate_single_gpu_device_set,
 )
-from aap_protocol_v2 import (
+from yoao_protocol_v2 import (
     COMPAT_PROTOCOL_VERSIONS,
     PROTOCOL_VERSION,
     BatchPredictResponse,
@@ -51,8 +51,8 @@ from aap_protocol_v2 import (
     PredictionResult,
     VariantNotSupportedError,
 )
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     GPU_ADMISSION_TOKEN_HEADER,
     GPU_GENERATION_HEADER,
@@ -67,9 +67,9 @@ from aap_protocol_v2.lifecycle import (
     parse_gpu_admission_header_values,
     parse_gpu_control_token_header_values,
 )
-from aap_backend_runtime.backend_auth import install_backend_auth
-from aap_backend_runtime.gpu import observed_cuda_runtime_version, observed_single_nvidia_gpu
-from aap_backend_runtime.plugin_service import (
+from yoao_backend_runtime.backend_auth import install_backend_auth
+from yoao_backend_runtime.gpu import observed_cuda_runtime_version, observed_single_nvidia_gpu
+from yoao_backend_runtime.plugin_service import (
     install_plugin_service,
     plugin_lifecycle_options,
     plugin_setup_fields,
@@ -90,7 +90,7 @@ from managed_models import (
     authenticate as authenticate_managed,
     digest,
 )
-from aap_backend_runtime.gpu_lifecycle import WorkloadOperation, ManagedGpuLifecycle
+from yoao_backend_runtime.gpu_lifecycle import WorkloadOperation, ManagedGpuLifecycle
 from model_pool import ModelBuildTimeout, ModelPool, PoolBusyError
 from model_registry import (
     MODEL_MATRIX,
@@ -1241,7 +1241,7 @@ async def _run_predict(
                     **(ctx._segmentation_meta or {}),
                 }
                 if ctx.task == "segment":
-                    from aap_protocol_v2.mask_interaction import MAX_MASK_RESPONSE_BYTES
+                    from yoao_protocol_v2.mask_interaction import MAX_MASK_RESPONSE_BYTES
 
                     if ctx._segmentation_meta is None:
                         raise ValueError(

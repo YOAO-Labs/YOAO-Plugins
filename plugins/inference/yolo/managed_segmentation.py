@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from aap_protocol_v2.mask_interaction import (
+from yoao_protocol_v2.mask_interaction import (
     CocoRlePayload,
     MAX_MASK_DIMENSION,
     MAX_MASK_PIXELS,

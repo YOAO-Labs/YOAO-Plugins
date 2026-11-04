@@ -14,8 +14,8 @@ from urllib.parse import urlsplit
 
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from aap_backend_runtime.managed_models import ManagedModelStore as _ManagedModelStore
-from aap_backend_runtime.backend_auth import backend_credential, require_external_bearer
+from yoao_backend_runtime.managed_models import ManagedModelStore as _ManagedModelStore
+from yoao_backend_runtime.backend_auth import backend_credential, require_external_bearer
 from training_contract.model_return import ultralytics_identity
 from training_contract.inference_runtime import inference_runtime
 from training_contract.models import model_spec

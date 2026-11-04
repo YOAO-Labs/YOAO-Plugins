@@ -19,9 +19,9 @@
 from __future__ import annotations
 
 from typing import Final
-from aap_task_contract import normalize_task
+from yoao_task_contract import normalize_task
 
-# 协议 v2 task id (与 capability_registry / aap_protocol_v2.vocab.TASK_VALUES 对齐).
+# Protocol v2 task IDs align with yoao_protocol_v2.vocab.TASK_VALUES.
 TASK_DETECTION: Final[str] = "detect"
 TASK_SEGMENTATION: Final[str] = "segment"
 TASK_KEYPOINT: Final[str] = "pose"

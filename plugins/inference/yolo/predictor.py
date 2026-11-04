@@ -26,7 +26,7 @@ from typing import Any
 import re
 
 import numpy as np
-from aap_backend_runtime import fetch_image
+from yoao_backend_runtime import fetch_image
 from fastapi import HTTPException
 
 from model_registry import (

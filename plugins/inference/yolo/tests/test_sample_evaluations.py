@@ -507,7 +507,7 @@ async def test_lost_response_is_recovered_from_receipt_without_another_native_ca
     tmp_path, monkeypatch
 ):
     import main
-    from aap_protocol_v2 import PredictionResult
+    from yoao_protocol_v2 import PredictionResult
 
     store = EvaluationRequestStore(tmp_path)
     req, body, profile = qualified_batch(store)
