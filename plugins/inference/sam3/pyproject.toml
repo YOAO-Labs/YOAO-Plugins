@@ -42,6 +42,11 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.uv.sources]
+yoao-backend-runtime = { path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" }
+yoao-lifecycle-contract = { path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" }
+yoao-protocol-v2 = { path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" }
+yoao-task-contract = { path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
+yoao-mask-utils = { path = "../../../.artifacts/python/first-party/yoao_mask_utils-0.1.0-py3-none-any.whl" }
 sam3 = { path = "vendor/sam3" }
 torch = { index = "pytorch-cu128" }
 torchvision = { index = "pytorch-cu128" }
