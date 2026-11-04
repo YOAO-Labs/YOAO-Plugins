@@ -1,6 +1,6 @@
 import pytest
 
-from aap_libreyolo_plugin import manifest
+from yoao_libreyolo_plugin import manifest
 
 
 def test_manifest_uses_inspected_console_script():

@@ -6,7 +6,7 @@ import json
 import threading
 
 from libreyolo_native import LibreDetectionModel
-from aap_inference_plugin import Detection
+from yoao_inference_plugin import Detection
 from training_contract.inference_runtime import inference_runtime
 from training_contract.model_return import libre_identity
 

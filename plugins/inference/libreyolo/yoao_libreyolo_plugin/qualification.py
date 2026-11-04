@@ -13,7 +13,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from aap_lifecycle_contract import validate_managed_lifecycle_evidence
+from yoao_lifecycle_contract import validate_managed_lifecycle_evidence
 
 
 def current_gpu(uuid):
@@ -80,7 +80,7 @@ def verify_qualification(
         raise ValueError("Lifecycle evidence must use canonical JSON bytes")
     report = validate_managed_lifecycle_evidence(payload)
     manifest = (
-        files("aap_libreyolo_plugin")
+        files("yoao_libreyolo_plugin")
         .joinpath("controlled-model-assets.json")
         .read_bytes()
     )

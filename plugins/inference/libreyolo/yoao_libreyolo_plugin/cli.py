@@ -21,9 +21,9 @@ def serve(args, provider_factory=Provider):
     from importlib.metadata import version
     import torch
     import uvicorn
-    from aap_backend_runtime.managed_models import ManagedModelStore
-    from aap_inference_plugin import DetectionConfig, create_detection_app
-    from aap_protocol_v2.lifecycle import load_verify_keyring
+    from yoao_backend_runtime.managed_models import ManagedModelStore
+    from yoao_inference_plugin import DetectionConfig, create_detection_app
+    from yoao_protocol_v2.lifecycle import load_verify_keyring
     from training_contract.inference_runtime import inference_runtime
     from .install import inspect, install_request_model, validate_installed_receipt
     from training_contract.model_return import LIBRE_FORMAT, LIBRE_RUNTIME
@@ -192,7 +192,7 @@ def serve(args, provider_factory=Provider):
 
 
 def main(provider_factory=Provider):
-    parser = argparse.ArgumentParser(prog="aap-libreyolo")
+    parser = argparse.ArgumentParser(prog="yoao-libreyolo")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("prepare-assets", "serve"):
         command = sub.add_parser(name)

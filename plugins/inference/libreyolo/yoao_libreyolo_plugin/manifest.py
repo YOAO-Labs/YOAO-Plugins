@@ -42,7 +42,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def run(args) -> None:
-    from aap_inference_contract.plugin import PluginManifest
+    from yoao_inference_contract.plugin import PluginManifest
     from training_contract.model_return import LIBRE_FORMAT
 
     inspection = json.loads(
@@ -60,18 +60,18 @@ def run(args) -> None:
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
     manifest_bytes = (
-        files("aap_libreyolo_plugin")
+        files("yoao_libreyolo_plugin")
         .joinpath("controlled-model-assets.json")
         .read_bytes()
     )
     manifest = PluginManifest.model_validate(
         {
             "plugin_id": "libreyolo",
-            "version": version("aap-libreyolo-plugin"),
+            "version": version("yoao-libreyolo-plugin"),
             "publisher": args.publisher,
             "license": args.license,
             "artifact": digests[0],
-            "sdk_compatibility": version("aap-inference-plugin-sdk"),
+            "sdk_compatibility": version("yoao-inference-plugin-sdk"),
             "entrypoint": entrypoint,
             "capabilities": ["inference", "detection", "managed_models"],
             "models": [

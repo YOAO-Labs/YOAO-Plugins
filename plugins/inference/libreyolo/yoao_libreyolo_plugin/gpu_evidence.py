@@ -10,7 +10,7 @@ from pathlib import Path
 import subprocess
 
 import httpx
-from aap_protocol_v2.lifecycle import DrainTransitionResponse, ManagedUnloadResponse
+from yoao_protocol_v2.lifecycle import DrainTransitionResponse, ManagedUnloadResponse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--url", required=True)

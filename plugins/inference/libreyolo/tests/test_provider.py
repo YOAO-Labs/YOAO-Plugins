@@ -5,8 +5,8 @@ import json
 import pytest
 from training_contract.model_return import libre_identity
 
-from aap_libreyolo_plugin.install import install_request_model, validate_installed_receipt
-from aap_libreyolo_plugin.provider import validate_receipt
+from yoao_libreyolo_plugin.install import install_request_model, validate_installed_receipt
+from yoao_libreyolo_plugin.provider import validate_receipt
 
 
 def receipt():
@@ -54,7 +54,7 @@ def test_installed_receipt_checks_artifact_length(tmp_path):
 async def test_installed_native_receipt_rejects_corrupted_qualification(tmp_path, monkeypatch):
     import httpx
     from fastapi import HTTPException
-    from aap_backend_runtime.managed_models import ManagedModelStore
+    from yoao_backend_runtime.managed_models import ManagedModelStore
 
     raw = b"controlled checkpoint"
     fields = {**receipt(), "sha256": hashlib.sha256(raw).hexdigest(),
@@ -63,7 +63,7 @@ async def test_installed_native_receipt_rejects_corrupted_qualification(tmp_path
     body = install_request_model(["https://assets.example"]).model_validate(fields)
     client = httpx.AsyncClient
     transport = httpx.MockTransport(lambda request: httpx.Response(200, content=raw))
-    monkeypatch.setattr("aap_backend_runtime.managed_models.httpx.AsyncClient",
+    monkeypatch.setattr("yoao_backend_runtime.managed_models.httpx.AsyncClient",
                         lambda **kwargs: client(transport=transport, **kwargs))
     store = ManagedModelStore(tmp_path, inspect=lambda *_: None,
                               validate_receipt=validate_installed_receipt)

@@ -187,8 +187,8 @@ def result(xyxy=None, scores=None, indexes=None):
 
 
 def test_all_detections_are_normalized_once_with_original_pixel_dimensions():
-    from aap_inference_plugin.conversion import rectangles
-    from aap_libreyolo_plugin.provider import Model, Provider
+    from yoao_inference_plugin.conversion import rectangles
+    from yoao_libreyolo_plugin.provider import Model, Provider
 
     raw = result()
     validate_result(raw, (200, 120), raw.names, None, 10)

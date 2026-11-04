@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import uvicorn
-from aap_inference_plugin.app import create_detection_app
-from aap_inference_plugin.types import DetectionConfig
-from aap_protocol_v2.lifecycle import load_verify_keyring
+from yoao_inference_plugin.app import create_detection_app
+from yoao_inference_plugin.types import DetectionConfig
+from yoao_protocol_v2.lifecycle import load_verify_keyring
 
 from .assets import assets, verify
 from .device import verify_device

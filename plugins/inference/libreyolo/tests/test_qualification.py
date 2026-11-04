@@ -2,9 +2,9 @@ import hashlib
 import json
 
 import pytest
-from aap_backend_runtime.lifecycle_evidence import build_managed_lifecycle_evidence
-from aap_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
-from aap_libreyolo_plugin import qualification
+from yoao_backend_runtime.lifecycle_evidence import build_managed_lifecycle_evidence
+from yoao_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
+from yoao_libreyolo_plugin import qualification
 
 
 def test_report_requires_exact_digest_and_deployment_identity(tmp_path, monkeypatch):

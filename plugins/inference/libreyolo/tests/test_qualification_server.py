@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from aap_libreyolo_plugin import qualification_server
+from yoao_libreyolo_plugin import qualification_server
 
 
 def test_local_server_uses_injected_provider_and_loopback(tmp_path, monkeypatch):

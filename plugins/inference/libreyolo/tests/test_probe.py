@@ -4,8 +4,8 @@ from types import SimpleNamespace
 from PIL import Image
 import torch
 
-from aap_libreyolo_plugin import assets, device, probe
-from aap_libreyolo_plugin.probe import run
+from yoao_libreyolo_plugin import assets, device, probe
+from yoao_libreyolo_plugin.probe import run
 
 
 def test_cpu_developer_probe_never_claims_gpu_qualification(tmp_path, monkeypatch):

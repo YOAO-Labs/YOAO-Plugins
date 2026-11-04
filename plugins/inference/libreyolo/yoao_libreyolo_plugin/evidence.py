@@ -3,4 +3,4 @@ import runpy
 
 
 def main():
-    runpy.run_module("aap_libreyolo_plugin.gpu_evidence", run_name="__main__")
+    runpy.run_module("yoao_libreyolo_plugin.gpu_evidence", run_name="__main__")
