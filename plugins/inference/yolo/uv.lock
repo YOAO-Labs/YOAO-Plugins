@@ -11,119 +11,6 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "aap-backend-runtime"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl" }
-dependencies = [
-    { name = "aap-lifecycle-contract" },
-    { name = "aap-protocol-v2" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "pillow" },
-]
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:5477efaba43eee794e29682b6e857a35f485d70326317db950a0407d14ca2649" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aap-lifecycle-contract" },
-    { name = "aap-protocol-v2" },
-    { name = "cryptography", specifier = ">=43.0.0" },
-    { name = "fastapi", specifier = ">=0.110" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "pillow", specifier = ">=10.0" },
-    { name = "pyjwt", marker = "extra == 'qualification'", specifier = ">=2.8,<3" },
-    { name = "pyjwt", marker = "extra == 'test'", specifier = ">=2.8,<3" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
-    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24" },
-    { name = "uvicorn", marker = "extra == 'qualification'", specifier = ">=0.29" },
-    { name = "uvicorn", marker = "extra == 'test'", specifier = ">=0.29" },
-]
-provides-extras = ["qualification", "test"]
-
-[[package]]
-name = "aap-inference-contract"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_inference_contract-0.1.0-py3-none-any.whl" }
-dependencies = [
-    { name = "aap-task-contract" },
-    { name = "pydantic" },
-]
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_inference_contract-0.1.0-py3-none-any.whl", hash = "sha256:1a99a7515a687f3fabed6906e7d6b49c2ed4adce9db25d81baa77dc4e3d100a2" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aap-task-contract" },
-    { name = "httpx", marker = "extra == 'client'", specifier = ">=0.28.0" },
-    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28.0" },
-    { name = "pydantic", specifier = ">=2.10.0" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.0" },
-    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24.0" },
-]
-provides-extras = ["client", "test"]
-
-[[package]]
-name = "aap-lifecycle-contract"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:8d0ac680cf3828889bb9598401b18086851bd257da51b474f0755adc35c2b0eb" },
-]
-
-[[package]]
-name = "aap-protocol-v2"
-version = "0.2.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" }
-dependencies = [
-    { name = "aap-task-contract" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "pydantic" },
-    { name = "pyjwt" },
-]
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:8163ae3fb137395960b9111037f9939679943120870d02e87d16f4bc225699e5" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aap-task-contract" },
-    { name = "cryptography", specifier = ">=43.0.0" },
-    { name = "fastapi", specifier = ">=0.110" },
-    { name = "numpy", marker = "extra == 'test'", specifier = ">=1.24" },
-    { name = "pydantic", specifier = ">=2.5" },
-    { name = "pyjwt", specifier = ">=2.10,<3" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
-]
-provides-extras = ["test"]
-
-[[package]]
-name = "aap-task-contract"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl" }
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:7f71b56a3cf6e1cd17049d077739b34784216fd45b13a1280d01acce07224637" },
-]
-
-[[package]]
-name = "aap-training-contract"
-version = "0.1.0"
-source = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_training_contract-0.1.0-py3-none-any.whl" }
-dependencies = [
-    { name = "aap-task-contract" },
-]
-wheels = [
-    { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_training_contract-0.1.0-py3-none-any.whl", hash = "sha256:c88373ba91c99366741c9aa91662e24616f6c49c82cfd0b3f03ee3ece58720b1" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "aap-task-contract" }]
-
-[[package]]
 name = "annotated-doc"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1955,15 +1842,124 @@ wheels = [
 ]
 
 [[package]]
-name = "yolo-backend"
+name = "yoao-backend-runtime"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pillow" },
+    { name = "yoao-lifecycle-contract" },
+    { name = "yoao-protocol-v2" },
+]
+wheels = [
+    { filename = "yoao_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:03cada7a9488086fa7a65ccb282c6f44571dfb983f5a6258a9de9c15ebc962e0" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = ">=43.0.0" },
+    { name = "fastapi", specifier = ">=0.110" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pillow", specifier = ">=10.0" },
+    { name = "pyjwt", marker = "extra == 'qualification'", specifier = ">=2.8,<3" },
+    { name = "pyjwt", marker = "extra == 'test'", specifier = ">=2.8,<3" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24" },
+    { name = "uvicorn", marker = "extra == 'qualification'", specifier = ">=0.29" },
+    { name = "uvicorn", marker = "extra == 'test'", specifier = ">=0.29" },
+    { name = "yoao-lifecycle-contract" },
+    { name = "yoao-protocol-v2" },
+]
+provides-extras = ["qualification", "test"]
+
+[[package]]
+name = "yoao-inference-contract"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_inference_contract-0.1.0-py3-none-any.whl" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "yoao-task-contract" },
+]
+wheels = [
+    { filename = "yoao_inference_contract-0.1.0-py3-none-any.whl", hash = "sha256:51b7c7708c3c68b07b7925612be284ebdd3b1e7ed34668a31aad981a168bd1e1" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", marker = "extra == 'client'", specifier = ">=0.28.0" },
+    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28.0" },
+    { name = "pydantic", specifier = ">=2.10.0" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24.0" },
+    { name = "yoao-task-contract" },
+]
+provides-extras = ["client", "test"]
+
+[[package]]
+name = "yoao-lifecycle-contract"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" }
+wheels = [
+    { filename = "yoao_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:e09eba4ae27c3b76b962b95724608a4be2f491102cb6bd6cee0661cf893fdcdd" },
+]
+
+[[package]]
+name = "yoao-protocol-v2"
+version = "0.2.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "pyjwt" },
+    { name = "yoao-task-contract" },
+]
+wheels = [
+    { filename = "yoao_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:b06ca5eacad3165a4dfe32f492f951b914eb6fa0226079586b78659e41b7e0e2" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = ">=43.0.0" },
+    { name = "fastapi", specifier = ">=0.110" },
+    { name = "numpy", marker = "extra == 'test'", specifier = ">=1.24" },
+    { name = "pydantic", specifier = ">=2.5" },
+    { name = "pyjwt", specifier = ">=2.10,<3" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24" },
+    { name = "yoao-task-contract" },
+]
+provides-extras = ["test"]
+
+[[package]]
+name = "yoao-task-contract"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
+wheels = [
+    { filename = "yoao_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:438ca14610facaec2217a1f0c15c2d59f77fff4aba695227e6aaffc2ee219dea" },
+]
+
+[[package]]
+name = "yoao-training-contract"
+version = "0.1.0"
+source = { path = "../../../.artifacts/python/first-party/yoao_training_contract-0.1.0-py3-none-any.whl" }
+dependencies = [
+    { name = "yoao-task-contract" },
+]
+wheels = [
+    { filename = "yoao_training_contract-0.1.0-py3-none-any.whl", hash = "sha256:ba16f3de36aa7395cf9d60442593a591527334200c789c53ca9300644ac16884" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "yoao-task-contract" }]
+
+[[package]]
+name = "yoao-yolo-plugin"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aap-backend-runtime" },
-    { name = "aap-lifecycle-contract" },
-    { name = "aap-protocol-v2" },
-    { name = "aap-task-contract" },
-    { name = "aap-training-contract" },
     { name = "clip" },
     { name = "cryptography" },
     { name = "fastapi" },
@@ -1983,23 +1979,22 @@ dependencies = [
     { name = "ultralytics" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "wheel" },
+    { name = "yoao-backend-runtime" },
+    { name = "yoao-lifecycle-contract" },
+    { name = "yoao-protocol-v2" },
+    { name = "yoao-task-contract" },
+    { name = "yoao-training-contract" },
 ]
 
 [package.optional-dependencies]
 dev = [
-    { name = "aap-inference-contract" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "yoao-inference-contract" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "aap-backend-runtime", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-1380d8a79814/aap_backend_runtime-0.1.0-py3-none-any.whl" },
-    { name = "aap-inference-contract", marker = "extra == 'dev'", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_inference_contract-0.1.0-py3-none-any.whl" },
-    { name = "aap-lifecycle-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_lifecycle_contract-0.1.0-py3-none-any.whl" },
-    { name = "aap-protocol-v2", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_protocol_v2-0.2.0-py3-none-any.whl" },
-    { name = "aap-task-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_task_contract-0.1.0-py3-none-any.whl" },
-    { name = "aap-training-contract", url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-906628f2619b/aap_training_contract-0.1.0-py3-none-any.whl" },
     { name = "clip", git = "https://github.com/ultralytics/CLIP.git?rev=7ffa84b3bfa40c42ecc1c77147a855e69cb2dd40" },
     { name = "cryptography", specifier = ">=43.0.0" },
     { name = "fastapi", specifier = ">=0.110" },
@@ -2021,5 +2016,11 @@ requires-dist = [
     { name = "ultralytics", specifier = "==8.4.183" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.27" },
     { name = "wheel" },
+    { name = "yoao-backend-runtime", path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" },
+    { name = "yoao-inference-contract", marker = "extra == 'dev'", path = "../../../.artifacts/python/first-party/yoao_inference_contract-0.1.0-py3-none-any.whl" },
+    { name = "yoao-lifecycle-contract", path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" },
+    { name = "yoao-protocol-v2", path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" },
+    { name = "yoao-task-contract", path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" },
+    { name = "yoao-training-contract", path = "../../../.artifacts/python/first-party/yoao_training_contract-0.1.0-py3-none-any.whl" },
 ]
 provides-extras = ["dev"]

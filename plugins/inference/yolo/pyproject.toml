@@ -56,6 +56,12 @@ include-package-data = true
 yolo_plugin = ["pretrained-assets.json"]
 
 [tool.uv.sources]
+yoao-backend-runtime = { path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" }
+yoao-inference-contract = { path = "../../../.artifacts/python/first-party/yoao_inference_contract-0.1.0-py3-none-any.whl" }
+yoao-lifecycle-contract = { path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" }
+yoao-protocol-v2 = { path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" }
+yoao-task-contract = { path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
+yoao-training-contract = { path = "../../../.artifacts/python/first-party/yoao_training_contract-0.1.0-py3-none-any.whl" }
 torch = { index = "pytorch-cu132" }
 torchvision = { index = "pytorch-cu132" }
 clip = { git = "https://github.com/ultralytics/CLIP.git", rev = "7ffa84b3bfa40c42ecc1c77147a855e69cb2dd40" }

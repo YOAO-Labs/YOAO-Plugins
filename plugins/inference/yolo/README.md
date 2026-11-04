@@ -4,6 +4,21 @@ The `yoao-yolo-plugin` distribution serves the existing protocol-v2 native backe
 
 ## Build and runtime
 
+Before using `uv sync --locked` or regenerating the local dependency locks, stage the exact candidate wheels from the two independently verified manifests. From the repository root, set `CONTRACT_MANIFEST`, `CONTRACT_MANIFEST_SHA256`, `SDK_MANIFEST` and `SDK_MANIFEST_SHA256` to the actual manifest paths or URLs and their approved SHA-256 values:
+
+```sh
+python3 scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" \
+  --sha256 "$CONTRACT_MANIFEST_SHA256" --output .artifacts/python/first-party \
+  --package yoao-task-contract --package yoao-lifecycle-contract \
+  --package yoao-protocol-v2 --package yoao-inference-contract \
+  --package yoao-training-contract
+python3 scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" \
+  --sha256 "$SDK_MANIFEST_SHA256" --output .artifacts/python/first-party \
+  --package yoao-backend-runtime
+```
+
+The relative `uv` sources refer to these verified wheels, not editable SDK checkouts or public release URLs. After changing candidate artifacts, run `uv lock` in this directory and `python3.11 export_requirements.py` (or use another supported Python); the latter exports the third-party hash lock used by the image. The candidate manifests and SDK artifacts are separate, even if their verified wheels share this local directory.
+
 The candidate image uses an explicit verified first-party artifact source; it does not assume that renamed packages have been published. Prepare a directory containing the actual contract `manifest.json`, its referenced wheels, and the candidate `yoao-backend-runtime` wheel. Set `CONTRACT_MANIFEST_SHA256`, `RUNTIME_SHA256` and `RUNTIME_WHEEL_NAME` to the exact values for those artifacts. From the repository root, with BuildKit enabled:
 
 ```sh
@@ -15,7 +30,7 @@ docker build --build-context first-party-inputs=/absolute/path/to/candidate-arti
   -f plugins/inference/yolo/Dockerfile -t local-yolo-plugin .
 ```
 
-`CONTRACT_MANIFEST` may instead be an explicit manifest URL; the named context still provides the runtime wheel. The fetcher verifies the manifest and each selected contract artifact. The image verifies the separately supplied runtime wheel digest. The exact contract subset is `yoao-task-contract`, `yoao-lifecycle-contract`, `yoao-protocol-v2`, `yoao-inference-contract`, and `yoao-training-contract`. Regenerate `uv.lock` and `requirements.lock` from actual candidate wheels before building; existing generated locks describe the previous package identities and are not candidate artifacts.
+`CONTRACT_MANIFEST` may instead be an explicit manifest URL; the named context still provides the runtime wheel. The fetcher verifies the manifest and each selected contract artifact. The image verifies the separately supplied runtime wheel digest. The exact contract subset is `yoao-task-contract`, `yoao-lifecycle-contract`, `yoao-protocol-v2`, `yoao-inference-contract`, and `yoao-training-contract`.
 
 The exec-form entrypoint is `uvicorn main:app --host 0.0.0.0 --port 8003 --workers 1`. Build `yoao-yolo-plugin==0.1.0` with `python -m build --wheel --sdist --no-isolation plugins/inference/yolo`, and install its wheel or sdist in an isolated compatible interpreter with the verified candidate dependencies. Flat modules (`main`, `schemas`, etc.) must not be co-installed with another flat backend in the same Python environment. The image uses a digest-pinned PyTorch/CUDA base, hash-locked third-party dependencies and the pinned Ultralytics CLIP git revision. No model weights are included. Candidate artifacts are not a publication; do not publish the image or dependencies without authorization and the necessary rights.
 
