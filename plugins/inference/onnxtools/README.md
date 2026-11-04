@@ -185,12 +185,22 @@ ONNX Runtime GPU 1.22.0、NumPy 2.2.6 和 headless contrib OpenCV。ORT GPU whee
 runtime wheel 使用 `requirements-firstparty.txt` 的实际制品哈希及显式 wheel 来源。
 
 候选 wheel／sdist 是待验收制品，不表示已公开发布；不要推送、发布或更改版本号。
-先用真实候选 contract/runtime wheel 建立本地 wheelhouse，并从其实际字节计算哈希；
-更新 `requirements-firstparty.txt` 为 `yoao-backend-runtime==0.1.0` 和对应 SHA-256。
-不得沿用旧发行名的 URL 或哈希。锁和导出由集成方从真实制品重新生成：
+在仓库根目录用明确的来源及摘要校验并暂存实际 SDK runtime 和 platform contract wheel；
+两者是独立制品。以下变量分别指向已有的 manifest 路径或 URL，摘要须来自可信交付记录：
 
 ```bash
-uv lock --find-links <candidate-wheelhouse>
+python3 scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" --sha256 "$SDK_MANIFEST_SHA256" \
+  --output .artifacts/python/first-party --package yoao-backend-runtime
+python3 scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" --sha256 "$CONTRACT_MANIFEST_SHA256" \
+  --output .artifacts/python/first-party --package yoao-task-contract \
+  --package yoao-protocol-v2 --package yoao-lifecycle-contract
+```
+
+`pyproject.toml` 的相对 wheel 路径指向此目录，不安装 SDK 源码。更换候选制品时须同步
+更新相对路径、实际 wheel 哈希和 `requirements-firstparty.txt`，随后在本目录重新生成：
+
+```bash
+uv lock
 uv export --locked --extra build --no-emit-local \
   --no-emit-package yoao-backend-runtime --no-emit-package yoao-lifecycle-contract \
   --no-emit-package yoao-protocol-v2 --no-emit-package yoao-task-contract \

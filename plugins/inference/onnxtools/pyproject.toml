@@ -38,5 +38,11 @@ py-modules = ["main", "predictor", "schemas", "attribute_schema", "handle_pool",
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# Tests use the same published contract wheels installed in the image.
+# Tests use the same verified contract wheels installed in the image.
 pythonpath = ["."]
+
+[tool.uv.sources]
+yoao-backend-runtime = { path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" }
+yoao-lifecycle-contract = { path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" }
+yoao-protocol-v2 = { path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" }
+yoao-task-contract = { path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
