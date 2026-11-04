@@ -1,4 +1,4 @@
-# rapidocr-backend
+# yoao-rapidocr-plugin
 
 RapidOCR（ONNX）ML backend，平台首个真实 OCR backend。把 RapidOCR 的 `det → cls → rec`
 三段拆为**原子能力 + 端到端编排**，对外自报三个 model：
@@ -37,13 +37,15 @@ cls（文本行方向 0/180）语言/版本无关，内化进 rec 与 e2e、不�
 `pyproject.toml` 将 CPU 与 CUDA 声明为互斥的运行时 extra：`cpu` 使用
 ONNX Runtime 1.23.2，`cuda` 使用 ONNX Runtime GPU 1.23.2 和 cuDNN 9.10.2。
 两者均使用 RapidOCR 3.9.0、NumPy 2.2.6、headless OpenCV 和共享包；
-CUDA/cuBLAS 由 GPU 基础镜像提供。共享 runtime 还依赖 `aap-lifecycle-contract`。
+CUDA/cuBLAS 由 GPU 基础镜像提供。共享 runtime 还依赖 `yoao-lifecycle-contract`。
 
 `uv.lock` 固定完整依赖图，`requirements-cpu.txt` 和
-`requirements-runtime.txt` 分别固定第三方 registry artifact 哈希。
-开发锁文件与镜像输入均使用 `Plugin-SDK` 的不可变公开 runtime 发布
-`python-sdk-0.1.0` 和契约发布 `contracts-3d6393e64630`；
-`build-inputs.py` 使用仓库的 `scripts/fetch-contracts.py` 校验契约 manifest 与 wheel 摘要，并校验 runtime wheel 摘要。
+`requirements-runtime.txt` 分别固定第三方 registry artifact 哈希。这些生成锁在名称切换后
+必须从真实候选制品重新生成，不能使用旧锁证明新发行包可安装。需要匹配本插件版本约束的
+`yoao-backend-runtime` wheel，以及含 `yoao-task-contract`、`yoao-protocol-v2`、
+`yoao-lifecycle-contract` wheel 和摘要的真实契约 manifest；`build-inputs.py` 使用仓库的
+`scripts/fetch-contracts.py` 校验 manifest 与所选 wheel，另行校验本地 runtime wheel 摘要。
+候选制品不是公开发布证明；本阶段不发布、不推送、不变更版本。
 
 镜像以 `--no-deps --require-hashes` 安装第三方锁文件，之后安装已校验第一方 wheel
 和独立构建的 backend wheel。RapidOCR metadata 要求 `opencv-python`，运行时有意只装
@@ -68,7 +70,10 @@ CUDA/cuBLAS 由 GPU 基础镜像提供。共享 runtime 还依赖 `aap-lifecycle
 在本插件仓库根目录运行；输出目录必须不存在，可移至不含平台 checkout 的主机：
 
 ```bash
-python3 plugins/inference/rapidocr/build-inputs.py /tmp/rapidocr-inputs
+python3 plugins/inference/rapidocr/build-inputs.py /tmp/rapidocr-inputs \
+  --manifest /path/to/manifest.json --manifest-sha256 "$CONTRACT_MANIFEST_SHA256" \
+  --runtime-wheel /path/to/yoao_backend_runtime-0.1.0-py3-none-any.whl \
+  --runtime-sha256 "$RUNTIME_WHEEL_SHA256"
 docker build -f /tmp/rapidocr-inputs/Dockerfile.cpu -t rapidocr-cpu /tmp/rapidocr-inputs
 docker build -f /tmp/rapidocr-inputs/Dockerfile -t rapidocr-gpu /tmp/rapidocr-inputs
 ```

@@ -1,15 +1,15 @@
 [project]
-name = "rapidocr-backend"
+name = "yoao-rapidocr-plugin"
 version = "0.1.0"
-description = "RapidOCR ML backend — OCR (det 原子 + rec 原子 + e2e composite) for ai-annotation-platform"
+description = "YOAO RapidOCR plugin — OCR detection, recognition and end-to-end composition"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 
 dependencies = [
-    "aap-backend-runtime==0.1.0",
-    "aap-lifecycle-contract",
-    "aap-protocol-v2==0.2.0",
-    "aap-task-contract==0.1.0",
+    "yoao-backend-runtime==0.1.0",
+    "yoao-lifecycle-contract",
+    "yoao-protocol-v2==0.2.0",
+    "yoao-task-contract==0.1.0",
     "cryptography>=43.0.0",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
@@ -45,8 +45,3 @@ pythonpath = ["."]
 [tool.uv]
 conflicts = [[{ extra = "cpu" }, { extra = "cuda" }]]
 
-[tool.uv.sources]
-aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" }
-aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
-aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" }
-aap-task-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" }

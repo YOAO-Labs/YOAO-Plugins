@@ -1,4 +1,4 @@
-"""rapidocr-backend 能力目录（SSOT）。
+"""RapidOCR plugin capability catalog (SSOT).
 
 单一来源同时驱动 `/setup` 自报（main.py）与 `/predict` 路由解析（predictor.py），
 避免两处漂移。详见 docs/plans/2026-06-29-v0.20.0-rapidocr-backend.md「能力分解」。

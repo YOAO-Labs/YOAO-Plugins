@@ -146,7 +146,7 @@ def test_qualification_rejects_mismatched_deployment_identity(qualification_iden
 async def test_operator_route_binding_enforces_real_admission(monkeypatch):
     import httpx
     from fastapi import FastAPI
-    from aap_protocol_v2.routing_runtime import install_backend_routing_controller
+    from yoao_protocol_v2.routing_runtime import install_backend_routing_controller
 
     registry = "12345678-1234-4234-8234-123456789abc"
     secret = "route-test-secret-" + "x" * 32
@@ -180,8 +180,8 @@ def test_generated_fixture_must_match_approved_digest(tmp_path):
 
 
 def test_produced_runtime_evidence_binds_observed_driver_to_native_plugin(qualification_identity, monkeypatch, tmp_path):
-    from aap_backend_runtime.plugin_service import plugin_verified_lifecycle
-    from aap_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
+    from yoao_backend_runtime.plugin_service import plugin_verified_lifecycle
+    from yoao_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
 
     registry = qualification_identity["VALIDATION_BACKEND_REGISTRY_ID"]
     resource = qualification_identity["VALIDATION_GPU_RESOURCE_ID"]

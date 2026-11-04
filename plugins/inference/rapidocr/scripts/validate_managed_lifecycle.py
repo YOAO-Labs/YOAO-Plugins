@@ -27,13 +27,13 @@ import httpx
 import jwt
 import uvicorn
 from PIL import Image, ImageDraw
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     artifact_evidence,
     build_managed_lifecycle_evidence,
     exercise_lifecycle_fault_matrix,
 )
-from aap_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
-from aap_protocol_v2.lifecycle import (
+from yoao_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     GPU_ADMISSION_TOKEN_HEADER,
@@ -41,7 +41,7 @@ from aap_protocol_v2.lifecycle import (
     encode_ed25519_public_key,
     sign_admission_token,
 )
-from aap_protocol_v2.routing import (
+from yoao_protocol_v2.routing import (
     ROUTE_ADMISSION_AUDIENCE,
     ROUTE_ADMISSION_HEADER,
     ROUTE_ADMISSION_PROTOCOL,

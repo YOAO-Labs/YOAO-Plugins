@@ -24,11 +24,11 @@ RUN python3 -m pip install --require-hashes --no-deps -r /build/requirements-bui
 
 COPY wheels/ /build/wheels/
 RUN python3 -m pip install --no-deps \
-        /build/wheels/aap_task_contract-*.whl \
-        /build/wheels/aap_protocol_v2-*.whl \
-        /build/wheels/aap_lifecycle_contract-*.whl \
-        /build/wheels/aap_backend_runtime-*.whl \
-        /build/wheels/rapidocr_backend-*.whl \
+        /build/wheels/yoao_task_contract-*.whl \
+        /build/wheels/yoao_protocol_v2-*.whl \
+        /build/wheels/yoao_lifecycle_contract-*.whl \
+        /build/wheels/yoao_backend_runtime-*.whl \
+        /build/wheels/yoao_rapidocr_plugin-*.whl \
     && rm -rf /build
 COPY validate_managed_lifecycle.py /app/scripts/
 

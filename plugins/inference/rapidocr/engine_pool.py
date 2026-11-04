@@ -15,7 +15,7 @@ from typing import Any
 
 from catalog import ResolvedEngine
 
-logger = logging.getLogger("rapidocr-backend.engine-pool")
+logger = logging.getLogger("yoao-rapidocr-plugin.engine-pool")
 UTC = timezone.utc
 
 GPU_PROVIDERS = frozenset({"CUDAExecutionProvider", "TensorrtExecutionProvider"})

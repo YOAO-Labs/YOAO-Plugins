@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
 import pytest
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     GPU_ADMISSION_TOKEN_HEADER,

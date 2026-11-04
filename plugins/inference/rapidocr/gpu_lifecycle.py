@@ -13,8 +13,8 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     AdmissionTokenError,
@@ -33,7 +33,7 @@ from aap_protocol_v2.lifecycle import (
     validate_canonical_positive_int64,
     verify_admission_token,
 )
-from aap_backend_runtime.gpu_lifecycle import TerminalDrainMixin
+from yoao_backend_runtime.gpu_lifecycle import TerminalDrainMixin
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from engine_pool import EnginePool

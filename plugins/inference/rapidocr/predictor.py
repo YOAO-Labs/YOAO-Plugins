@@ -1,4 +1,4 @@
-"""rapidocr-backend 推理器：RapidOCR 引擎池 + det/rec/e2e 三能力运行 → 协议 v2 result。
+"""RapidOCR plugin predictor: engine pool and det/rec/e2e protocol v2 results.
 
 引擎按 ``ResolvedEngine.pool_key``（det+cls+rec 三件套路径）懒加载、LRU 限容。一次调用：
 设 use_det/use_cls/use_rec 开关 → 走 RapidOCR 的 load→preprocess→run_ocr_steps→build_final_output。
@@ -28,14 +28,14 @@ from functools import partial
 from typing import Any
 
 import numpy as np
-from aap_backend_runtime import is_device_error
+from yoao_backend_runtime import is_device_error
 from rapidocr import OCRVersion, RapidOCR
 
 import catalog as catalog_mod
 from catalog import RUNTIME_PARAM_DEFAULTS, ResolvedEngine
 from engine_pool import EngineBuildArtifact, EnginePool
 
-logger = logging.getLogger("rapidocr-backend.predictor")
+logger = logging.getLogger("yoao-rapidocr-plugin.predictor")
 
 POLY_LABEL = "text"  # OCR 文本框无类别，用通用占位 label。
 

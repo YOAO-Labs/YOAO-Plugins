@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """RapidOCR onnx 权重下载器（自包含、幂等、SHA256 校验）。
 
-平台 rapidocr-backend 选用的 13 个 onnx 权重（det 5 + cls 2 + rec 6），来自 RapidOCR
-v3.9.0 的 ModelScope 仓库。权重不入 git（见 models/.gitignore）、由本脚本拉到
-``models/<版本>/<组件>/<文件>.onnx``、再经 docker-compose bind-mount 注入容器。
+The RapidOCR plugin uses 13 pinned ONNX weights (det 5 + cls 2 + rec 6)
+from RapidOCR v3.9.0's ModelScope repository. The weights are not committed
+(see models/.gitignore); this script downloads them to
+``models/<version>/<component>/<file>.onnx`` for a Docker bind mount.
 
 能力对应（详见 docs/plans/2026-06-29-v0.20.0-rapidocr-backend.md「锁定模型矩阵」）：
   det  原子（detection）：v5 mobile/server + v6 tiny/small/medium

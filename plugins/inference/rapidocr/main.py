@@ -1,4 +1,4 @@
-"""rapidocr-backend · RapidOCR OCR 任务族 + 受管 GPU 生命周期。
+"""RapidOCR plugin: OCR task family and managed GPU lifecycle.
 
 三个 det/rec/e2e 对外 model 共享按权重三件套分组的动态引擎池。每个池条目完整拥有
 det/cls/rec 三条 ORT session；single-flight builder、borrower、per-entry use lock 与
@@ -14,9 +14,9 @@ det/cls/rec 三条 ORT session；single-flight builder、borrower、per-entry us
 
 from __future__ import annotations
 
-from aap_protocol_v2.predict import normalize_context_task
-from aap_protocol_v2.routing_runtime import install_backend_routing_controller
-from aap_task_contract import normalize_task
+from yoao_protocol_v2.predict import normalize_context_task
+from yoao_protocol_v2.routing_runtime import install_backend_routing_controller
+from yoao_task_contract import normalize_task
 
 import asyncio
 import logging
@@ -28,21 +28,21 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     deployment_verified_flag,
     physical_gpu_identity,
     validate_single_gpu_device_set,
     versions_payload,
 )
-from aap_protocol_v2 import (
+from yoao_protocol_v2 import (
     COMPAT_PROTOCOL_VERSIONS,
     PROTOCOL_VERSION,
     BatchPredictResponse,
     PredictionResult,
     WarmupResponse,
 )
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     GPU_ADMISSION_TOKEN_HEADER,
     GPU_GENERATION_HEADER,
@@ -57,12 +57,12 @@ from aap_protocol_v2.lifecycle import (
     parse_gpu_admission_header_values,
     parse_gpu_control_token_header_values,
 )
-from aap_backend_runtime.backend_auth import install_backend_auth
-from aap_backend_runtime.gpu import (
+from yoao_backend_runtime.backend_auth import install_backend_auth
+from yoao_backend_runtime.gpu import (
     observed_cuda_runtime_version,
     observed_single_nvidia_gpu,
 )
-from aap_backend_runtime.plugin_service import (
+from yoao_backend_runtime.plugin_service import (
     install_plugin_service,
     plugin_lifecycle_options,
     plugin_setup_fields,
@@ -90,7 +90,7 @@ from predictor import (
 )
 from schemas import BatchPredictRequest
 
-logger = logging.getLogger("rapidocr-backend")
+logger = logging.getLogger("yoao-rapidocr-plugin")
 logging.basicConfig(
     level=os.environ.get("LOG_LEVEL", "INFO").upper(),
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
@@ -224,7 +224,7 @@ async def lifespan(_app: FastAPI):
     _strict_cuda_enforced = strict_cuda
     _idle_task = asyncio.create_task(_idle_watcher())
     logger.info(
-        "rapidocr-backend ready (lazy): model_dir=%s cap=%d configured_device=%s "
+        "yoao-rapidocr-plugin ready (lazy): model_dir=%s cap=%d configured_device=%s "
         "idle_unload=%.0fs managed_verified=%s",
         catalog.MODELS_DIR,
         POOL_CAP,
@@ -249,7 +249,7 @@ async def lifespan(_app: FastAPI):
             await _gpu_lifecycle.shutdown()
 
 
-app = FastAPI(title="rapidocr-backend", version=BACKEND_VERSION, lifespan=lifespan)
+app = FastAPI(title="yoao-rapidocr-plugin", version=BACKEND_VERSION, lifespan=lifespan)
 install_backend_routing_controller(app)
 
 if not install_plugin_service(app, lambda: _gpu_lifecycle):
