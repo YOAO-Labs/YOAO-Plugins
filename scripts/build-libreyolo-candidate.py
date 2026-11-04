@@ -23,18 +23,17 @@ import subprocess
 import sys
 import tempfile
 import zipfile
-from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ("plugins/inference/libreyolo/native",)
 PLUGIN = "plugins/inference/libreyolo"
 LOCK = "plugins/inference/libreyolo/third-party-requirements.lock"
-ASSETS = "plugins/inference/libreyolo/aap_libreyolo_plugin/controlled-model-assets.json"
-SDK_BASE = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/"
-SDK_WHEELS = {
-    "aap_backend_runtime-0.1.0-py3-none-any.whl": "96556de7d2cc56b3ddbd8f2b83178058a9cc4743d3a58f884f3b3a837e0478c4",
-    "aap_inference_plugin_sdk-0.1.0-py3-none-any.whl": "39e870ac3efc2c08cd39068bb266f05bd5aefdea1c58336878fcabfc63e95f5f",
-}
+ASSETS = "plugins/inference/libreyolo/yoao_libreyolo_plugin/controlled-model-assets.json"
+CONTRACT_PACKAGES = (
+    "yoao-task-contract", "yoao-protocol-v2", "yoao-lifecycle-contract",
+    "yoao-inference-contract", "yoao-training-contract",
+)
+SDK_PACKAGES = ("yoao-backend-runtime", "yoao-inference-plugin-sdk")
 
 
 def run(*args: str, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
@@ -76,6 +75,10 @@ def main() -> None:
         type=Path,
         help="optional reusable directory for downloaded, hash-verified wheels",
     )
+    parser.add_argument("--contracts-manifest", required=True, type=Path, help="local contract manifest or artifact directory")
+    parser.add_argument("--contracts-sha256", required=True, help="contract manifest SHA256")
+    parser.add_argument("--sdk-manifest", required=True, type=Path, help="local SDK manifest or artifact directory")
+    parser.add_argument("--sdk-sha256", required=True, help="SDK manifest SHA256")
     args = parser.parse_args()
     if (
         sys.version_info[:2] != (3, 11)
@@ -105,7 +108,7 @@ def main() -> None:
         ["git", "show", "-s", "--format=%ct", revision], cwd=ROOT, text=True
     ).strip()
     env = {**os.environ, "SOURCE_DATE_EPOCH": epoch, "PYTHONHASHSEED": "0"}
-    with tempfile.TemporaryDirectory(prefix="aap-candidate-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="yoao-candidate-") as tmp:
         temporary = Path(tmp)
         source = temporary / "source"
         source.mkdir()
@@ -136,16 +139,18 @@ def main() -> None:
             else temporary / "downloads"
         )
         downloads.mkdir(parents=True, exist_ok=True)
-        contracts = temporary / "contracts"
-        run(sys.executable, str(source / "scripts/fetch-contracts.py"), str(contracts))
-        for wheel in contracts.glob("*.whl"):
-            shutil.copyfile(wheel, wheelhouse / wheel.name)
-        for name, expected in SDK_WHEELS.items():
-            with urlopen(SDK_BASE + name, timeout=120) as response:
-                data = response.read()
-            if hashlib.sha256(data).hexdigest() != expected:
-                raise ValueError(f"SDK artifact hash mismatch: {name}")
-            (wheelhouse / name).write_bytes(data)
+        for manifest, digest, packages in (
+            (args.contracts_manifest, args.contracts_sha256, CONTRACT_PACKAGES),
+            (args.sdk_manifest, args.sdk_sha256, SDK_PACKAGES),
+        ):
+            manifest = manifest.resolve(strict=True)
+            if manifest.is_dir():
+                manifest = manifest / "manifest.json"
+            run(
+                sys.executable, str(source / "scripts/fetch-contracts.py"),
+                "--manifest", str(manifest), "--sha256", digest, "--output", str(wheelhouse),
+                *(argument for package in packages for argument in ("--package", package)),
+            )
         run(
             sys.executable,
             "-m",
@@ -227,9 +232,9 @@ def main() -> None:
                 }
             )
         if (
-            "aap-libreyolo-plugin" not in seen
-            or "aap-inference-plugin-sdk" not in seen
-            or "ai-annotation-sdk" in seen
+            "yoao-libreyolo-plugin" not in seen
+            or "yoao-inference-plugin-sdk" not in seen
+            or "yoao-sdk" in seen
             or "ultralytics" in seen
         ):
             raise ValueError("unexpected candidate distribution set")

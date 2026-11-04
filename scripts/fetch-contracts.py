@@ -1,39 +1,77 @@
 #!/usr/bin/env python3
-"""Fetch immutable platform contract wheels; pretrained catalogs belong to plugins."""
+"""Copy verified wheels from an explicitly identified artifact manifest."""
 import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
+from urllib.parse import urljoin, urlsplit
 from urllib.request import urlopen
 
-BASE = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/"
-MANIFEST_SHA256 = "d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec"
-REVISION = "3d6393e64630fdeb6ff699b13c2d1f9e198a1a06"
+
+HEX = re.compile(r"[0-9a-f]{64}\Z")
 
 
-def get(name, expected):
-    if Path(name).name != name:
-        raise ValueError("invalid contract artifact filename")
-    with urlopen(BASE + name, timeout=120) as response:
-        data = response.read()
+def canonical(name):
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def checked(data, expected, label):
+    if not isinstance(expected, str) or not HEX.fullmatch(expected):
+        raise ValueError(f"invalid SHA256 for {label}")
     if hashlib.sha256(data).hexdigest() != expected:
-        raise ValueError(f"contract artifact hash mismatch: {name}")
+        raise ValueError(f"artifact hash mismatch: {label}")
     return data
 
 
-def fetch(output):
-    manifest = json.loads(get("manifest.json", MANIFEST_SHA256))
-    if manifest["source_revision"] != REVISION:
-        raise ValueError("contract source revision mismatch")
+def fetch(manifest, sha256, output, packages=()):
+    parsed = urlsplit(manifest)
+    if parsed.scheme in ("http", "https", "file"):
+        def read_artifact(name=None):
+            url = urljoin(manifest, name) if name else manifest
+            with urlopen(url, timeout=120) as response:
+                return response.read()
+    elif not parsed.scheme:
+        source = Path(manifest)
+        def read_artifact(name=None):
+            return (source.parent / name if name else source).read_bytes()
+    else:
+        raise ValueError(f"unsupported manifest URL scheme: {parsed.scheme}")
+
+    document = json.loads(checked(read_artifact(), sha256, "manifest"))
+    wanted = {canonical(name) for name in packages}
+    selected = {}
+    for item in document["files"]:
+        name = item["file"]
+        if not isinstance(name, str) or Path(name).name != name or "\\" in name or name in ("", ".", ".."):
+            raise ValueError("invalid artifact filename")
+        if not name.endswith(".whl"):
+            continue
+        parts = name[:-4].split("-")
+        if len(parts) < 5:
+            raise ValueError(f"invalid wheel filename: {name}")
+        distribution = canonical(parts[0])
+        if wanted and distribution not in wanted:
+            continue
+        if distribution in selected:
+            raise ValueError(f"multiple wheels for {distribution}")
+        selected[distribution] = (name, item["sha256"])
+    missing = wanted - selected.keys()
+    if missing:
+        raise ValueError(f"requested wheels absent from manifest: {sorted(missing)}")
+    if not selected:
+        raise ValueError("manifest contains no selected wheels")
+    verified = [(name, checked(read_artifact(name), digest, name)) for name, digest in selected.values()]
     output.mkdir(parents=True, exist_ok=True)
-    files = [item for item in manifest["files"] if item["file"].endswith(".whl")]
-    if len(files) != 5:
-        raise ValueError("unexpected contract artifact inventory")
-    for item in files:
-        (output / item["file"]).write_bytes(get(item["file"], item["sha256"]))
+    for name, data in verified:
+        (output / name).write_bytes(data)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("output", type=Path)
-    fetch(parser.parse_args().output)
+    parser.add_argument("--manifest", required=True, help="manifest path or URL; artifacts must be alongside it")
+    parser.add_argument("--sha256", required=True, help="SHA256 of the manifest bytes")
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--package", action="append", default=[], help="distribution to fetch; repeat to select several")
+    args = parser.parse_args()
+    fetch(args.manifest, args.sha256, args.output, args.package)

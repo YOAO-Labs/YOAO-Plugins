@@ -16,12 +16,12 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ("plugins/inference/libreyolo/native",)
 PLUGINS = ("libreyolo", "yolo", "rapidocr", "onnxtools", "grounded-sam2", "sam3")
 CATALOGS = {
-    "libreyolo": ("aap_libreyolo_plugin", "aap_libreyolo_plugin/controlled-model-assets.json"),
-    "yolo": ("yolo_backend", "yolo_plugin/pretrained-assets.json"),
-    "rapidocr": ("rapidocr_backend", None),
-    "onnxtools": ("onnxtools_backend", "/share/onnxtools-backend/pretrained-model-assets.json"),
-    "grounded-sam2": ("grounded_sam2_backend", "grounded_sam2_plugin/pretrained-assets.json"),
-    "sam3": ("sam3_backend", "sam3_plugin/pretrained-assets.json"),
+    "libreyolo": ("yoao_libreyolo_plugin", "yoao_libreyolo_plugin/controlled-model-assets.json"),
+    "yolo": ("yoao_yolo_plugin", "yolo_plugin/pretrained-assets.json"),
+    "rapidocr": ("yoao_rapidocr_plugin", None),
+    "onnxtools": ("yoao_onnxtools_plugin", "/share/yoao-onnxtools-plugin/pretrained-model-assets.json"),
+    "grounded-sam2": ("yoao_grounded_sam2_plugin", "grounded_sam2_plugin/pretrained-assets.json"),
+    "sam3": ("yoao_sam3_plugin", "sam3_plugin/pretrained-assets.json"),
 }
 
 

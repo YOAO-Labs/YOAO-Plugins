@@ -34,7 +34,7 @@ def asset(root, metadata, path):
 
 def selections_libreyolo(root):
     sys.path.insert(0, str(ROOT / "plugins/inference/libreyolo"))
-    from aap_libreyolo_plugin.assets import assets
+    from yoao_libreyolo_plugin.assets import assets
     return [
         ("detect", {"series": "yolov9", "size": size}, [asset(root, item, "assets/" + item["filename"])])
         for size, item in assets().items()

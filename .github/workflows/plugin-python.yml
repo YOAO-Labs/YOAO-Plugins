@@ -7,6 +7,12 @@ on:
 
 permissions:
   contents: read
+env:
+  CONTRACT_MANIFEST: ${{ vars.YOAO_CONTRACT_MANIFEST }}
+  CONTRACT_MANIFEST_SHA256: ${{ vars.YOAO_CONTRACT_MANIFEST_SHA256 }}
+  SDK_MANIFEST: ${{ vars.YOAO_SDK_MANIFEST }}
+  SDK_MANIFEST_SHA256: ${{ vars.YOAO_SDK_MANIFEST_SHA256 }}
+
 
 jobs:
   libreyolo-python311:
@@ -23,16 +29,27 @@ jobs:
           version: '0.11.29'
       - run: python -m pip install 'build==1.3.0' 'setuptools==80.9.0' 'wheel==0.45.1' 'hatchling==1.27.0' 'pytest>=8' 'pytest-asyncio>=0.24'
       - name: Build public publisher inputs from committed source
-        run: python scripts/build-plugin-artifacts.py --revision "$GITHUB_SHA" --output "$RUNNER_TEMP/publisher" --plugin libreyolo --plugin yolo --plugin rapidocr --plugin onnxtools
+        run: python scripts/build-plugin-artifacts.py --revision "$GITHUB_SHA" --output "$RUNNER_TEMP/publisher" --plugin libreyolo
+      - name: Prepare verified local candidate inputs
+        run: |
+          : "${CONTRACT_MANIFEST:?Set YOAO_CONTRACT_MANIFEST}" "${CONTRACT_MANIFEST_SHA256:?Set YOAO_CONTRACT_MANIFEST_SHA256}"
+          : "${SDK_MANIFEST:?Set YOAO_SDK_MANIFEST}" "${SDK_MANIFEST_SHA256:?Set YOAO_SDK_MANIFEST_SHA256}"
+          python scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" --sha256 "$CONTRACT_MANIFEST_SHA256" --output "$RUNNER_TEMP/contracts"
+          python scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" --sha256 "$SDK_MANIFEST_SHA256" --output "$RUNNER_TEMP/sdk" --package yoao-backend-runtime --package yoao-inference-plugin-sdk
+          curl --fail --silent --show-error --location "$CONTRACT_MANIFEST" -o "$RUNNER_TEMP/contracts/manifest.json"
+          curl --fail --silent --show-error --location "$SDK_MANIFEST" -o "$RUNNER_TEMP/sdk/manifest.json"
       - name: Build private hash-locked CPU candidate
-        run: python scripts/build-libreyolo-candidate.py --revision "$GITHUB_SHA" --output "$RUNNER_TEMP/candidate.tar"
+        run: |
+          python scripts/build-libreyolo-candidate.py --revision "$GITHUB_SHA" --output "$RUNNER_TEMP/candidate.tar" \
+            --contracts-manifest "$RUNNER_TEMP/contracts" --contracts-sha256 "$CONTRACT_MANIFEST_SHA256" \
+            --sdk-manifest "$RUNNER_TEMP/sdk" --sdk-sha256 "$SDK_MANIFEST_SHA256"
       - name: Install candidate and run CPU tests
         run: |
           mkdir "$RUNNER_TEMP/candidate"
           tar -xf "$RUNNER_TEMP/candidate.tar" -C "$RUNNER_TEMP/candidate"
           python -m pip install --no-index --find-links "$RUNNER_TEMP/candidate/wheelhouse" --only-binary=:all: --require-hashes -r "$RUNNER_TEMP/candidate/requirements.lock"
           python -m pip check
-          python -m pytest -q plugins/inference/libreyolo/tests scripts/test_build_libreyolo_candidate.py
+          python -m pytest -q plugins/inference/libreyolo/tests scripts/test_build_libreyolo_candidate.py scripts/test_fetch_contracts.py
 
   yolo-python312:
     name: Plugin YOLO Python 3.12 CPU
@@ -57,6 +74,11 @@ jobs:
           version: '0.11.29'
           enable-cache: true
           cache-dependency-glob: plugins/inference/yolo/uv.lock
+      - name: Build YOLO publisher inputs
+        working-directory: .
+        run: |
+          python -m pip install 'build==1.3.0' 'setuptools==80.9.0' 'wheel==0.45.1'
+          python scripts/build-plugin-artifacts.py --revision "$GITHUB_SHA" --output "$RUNNER_TEMP/yolo-publisher" --plugin yolo
       - name: Install locked development environment
         run: uv sync --locked --extra dev
       - name: Run complete YOLO CPU suite
@@ -80,16 +102,28 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.11.29'
+      - name: Build RapidOCR publisher inputs
+        run: |
+          python -m pip install 'build==1.3.0' 'setuptools==80.9.0' 'wheel==0.45.1'
+          python scripts/build-plugin-artifacts.py --revision "$GITHUB_SHA" --output "$RUNNER_TEMP/rapidocr-publisher" --plugin rapidocr
       - name: Prepare verified standalone inputs
-        run: python plugins/inference/rapidocr/build-inputs.py "$RUNNER_TEMP/rapidocr-inputs"
+        run: |
+          : "${CONTRACT_MANIFEST:?Set YOAO_CONTRACT_MANIFEST}" "${CONTRACT_MANIFEST_SHA256:?Set YOAO_CONTRACT_MANIFEST_SHA256}"
+          : "${SDK_MANIFEST:?Set YOAO_SDK_MANIFEST}" "${SDK_MANIFEST_SHA256:?Set YOAO_SDK_MANIFEST_SHA256}"
+          python scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" --sha256 "$SDK_MANIFEST_SHA256" --output "$RUNNER_TEMP/rapidocr-sdk" --package yoao-backend-runtime
+          runtime=$(printf '%s\n' "$RUNNER_TEMP/rapidocr-sdk"/yoao_backend_runtime-*.whl)
+          runtime_sha=$(sha256sum "$runtime" | cut -d ' ' -f1)
+          python plugins/inference/rapidocr/build-inputs.py "$RUNNER_TEMP/rapidocr-inputs" \
+            --manifest "$CONTRACT_MANIFEST" --manifest-sha256 "$CONTRACT_MANIFEST_SHA256" \
+            --runtime-wheel "$runtime" --runtime-sha256 "$runtime_sha"
       - name: Install locked headless CPU runtime and verified contracts
         run: |
           uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/rapidocr/requirements-cpu.txt
           uv pip install --python "$(command -v python)" --no-deps \
-            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_backend_runtime-*.whl \
-            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_task_contract-*.whl \
-            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_protocol_v2-*.whl \
-            "$RUNNER_TEMP/rapidocr-inputs/wheels"/aap_lifecycle_contract-*.whl
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/yoao_backend_runtime-*.whl \
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/yoao_task_contract-*.whl \
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/yoao_protocol_v2-*.whl \
+            "$RUNNER_TEMP/rapidocr-inputs/wheels"/yoao_lifecycle_contract-*.whl
           uv pip install --python "$(command -v python)" 'pytest>=8' 'pytest-asyncio>=0.23'
       - name: Run complete RapidOCR CPU suite
         run: python -m pytest -q -p no:cacheprovider plugins/inference/rapidocr/tests
@@ -111,18 +145,27 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           version: '0.11.29'
+      - name: Build ONNXTools publisher inputs
+        run: |
+          python -m pip install 'build==1.3.0' 'setuptools==80.9.0' 'wheel==0.45.1'
+          python scripts/build-plugin-artifacts.py --revision "$GITHUB_SHA" --output "$RUNNER_TEMP/onnxtools-publisher" --plugin onnxtools
       - name: Fetch verified portable contracts
-        run: python scripts/fetch-contracts.py "$RUNNER_TEMP/onnxtools-contracts"
+        run: |
+          : "${CONTRACT_MANIFEST:?Set YOAO_CONTRACT_MANIFEST}" "${CONTRACT_MANIFEST_SHA256:?Set YOAO_CONTRACT_MANIFEST_SHA256}"
+          python scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" --sha256 "$CONTRACT_MANIFEST_SHA256" --output "$RUNNER_TEMP/onnxtools-contracts" \
+            --package yoao-task-contract --package yoao-protocol-v2 --package yoao-lifecycle-contract
+          : "${SDK_MANIFEST:?Set YOAO_SDK_MANIFEST}" "${SDK_MANIFEST_SHA256:?Set YOAO_SDK_MANIFEST_SHA256}"
+          python scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" --sha256 "$SDK_MANIFEST_SHA256" --output "$RUNNER_TEMP/onnxtools-sdk" --package yoao-backend-runtime
       - name: Install locked headless runtime and verified contracts
         run: |
           uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/onnxtools/requirements-build.txt
           uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/onnxtools/requirements-runtime.txt
           uv pip install --python "$(command -v python)" --no-deps --no-build-isolation -r plugins/inference/onnxtools/requirements-vcs.txt
           uv pip install --python "$(command -v python)" --no-deps \
-            "$RUNNER_TEMP/onnxtools-contracts"/aap_task_contract-*.whl \
-            "$RUNNER_TEMP/onnxtools-contracts"/aap_protocol_v2-*.whl \
-            "$RUNNER_TEMP/onnxtools-contracts"/aap_lifecycle_contract-*.whl
-          uv pip install --python "$(command -v python)" --no-deps --require-hashes -r plugins/inference/onnxtools/requirements-firstparty.txt
+            "$RUNNER_TEMP/onnxtools-contracts"/yoao_task_contract-*.whl \
+            "$RUNNER_TEMP/onnxtools-contracts"/yoao_protocol_v2-*.whl \
+            "$RUNNER_TEMP/onnxtools-contracts"/yoao_lifecycle_contract-*.whl
+          uv pip install --python "$(command -v python)" --no-index --find-links "$RUNNER_TEMP/onnxtools-sdk" --no-deps --require-hashes -r plugins/inference/onnxtools/requirements-firstparty.txt
           uv pip install --python "$(command -v python)" 'pytest>=8' 'pytest-asyncio>=0.23'
       - name: Run complete ONNXTools CPU suite
         run: python -m pytest -q -p no:cacheprovider plugins/inference/onnxtools/tests
