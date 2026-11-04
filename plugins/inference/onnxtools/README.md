@@ -1,4 +1,4 @@
-# onnxtools-backend
+# yoao-onnxtools-plugin
 
 二阶段车辆属性预标注 ML backend：RT-DETR 检测后，对机动车 ROI 执行车型与颜色分类，并把属性写回检测框。实现基于 [onnxtools](https://github.com/yyq19990828/onnxtools)。
 本服务源代码依仓库 MIT 许可证分发；上游 `onnxtools` 固定到
@@ -10,14 +10,14 @@
 此描述不是下载、使用或重新分发许可。管理员必须独立核查权利并批准资产、项目授权和
 存储位置，用户训练的 checkpoint 仍由平台管理。仓库及镜像均不包含这些权重。
 
-管理员可在 Python 3.11+ 环境用 wheel 安装的 `share/onnxtools-backend/create_plugin_manifest.py`
-和公开 `aap-inference-contract` wheel 为已检查且具有唯一 repository digest 的实际镜像生成原生安装意图；
+管理员可在 Python 3.11+ 环境用候选 wheel 安装的 `share/yoao-onnxtools-plugin/create_plugin_manifest.py`
+和匹配的 `yoao-inference-contract` wheel 为已检查且具有唯一 repository digest 的实际镜像生成原生安装意图；
 工具默认读取同目录安装的资产描述（在源码树运行时通过 `--asset-manifest` 指定路径），计算其
 SHA-256，拒绝不同的镜像入口，且不添加未验证的资产下载来源。它不创建权重审批或 CUDA
 验收，必须使用平台独立核验的镜像摘要、许可声明和资源预算。例如：
 
 ```bash
-python <venv>/share/onnxtools-backend/create_plugin_manifest.py <inspected-digest-image> \
+python <venv>/share/yoao-onnxtools-plugin/create_plugin_manifest.py <inspected-digest-image> \
   --publisher <publisher> \
   --license <plugin-license> --device cpu --memory-mb <budget> --output <private-manifest.json>
 ```
@@ -127,7 +127,7 @@ jq -e '.passed == true and .runtime_ephemera_clean == true' \
 
 验收器使用只读挂载的插件业务凭据，并仅在本机临时创建独立的 GPU 签名和 route-control 验收密钥；它们不是平台执行凭据。通过验收后，实际安装仍须使用平台凭据、经批准的报告和独立的激活验证。
 
-wheel 亦将同一验收器安装至 `share/onnxtools-backend/validate_managed_lifecycle.py`；
+wheel 亦将同一验收器安装至 `share/yoao-onnxtools-plugin/validate_managed_lifecycle.py`；
 镜像中的路径为 `/app/scripts/validate_managed_lifecycle.py`。
 
 设备日志包含每轮每个真实 ORT session 的 provider 链、逻辑 device ID 与显存样本；失败报告保留已经完成的周期和观测事实，不补造缺失数据。日志需与 JSON 报告和授权卡 UUID 一起保存在私有验收目录；GPU 准入仍由平台校验证明，而不是由日志自行授予。
@@ -153,11 +153,20 @@ wheel 亦将同一验收器安装至 `share/onnxtools-backend/validate_managed_l
 
 ## 模型放置与启动
 
-构建上下文是 YOAO-plugins 仓库根目录，无需平台源码：
+构建上下文是 YOAO-Plugins 仓库根目录，无需平台源码。构建前须取得实际候选
+contract manifest、其 SHA-256、对应 wheel 及匹配的 runtime wheel，并按下节重新生成锁文件。
+本地制品可放在构建上下文内；BuildKit 在 `/source` 下只读挂载该上下文：
 
 ```bash
-docker build -f plugins/inference/onnxtools/Dockerfile -t onnxtools-backend:local .
+docker build -f plugins/inference/onnxtools/Dockerfile \
+  --build-arg CONTRACT_MANIFEST=/source/<artifact-dir>/manifest.json \
+  --build-arg CONTRACT_MANIFEST_SHA256=<actual-manifest-sha256> \
+  --build-arg FIRSTPARTY_FIND_LINKS=/source/<runtime-wheel-dir> \
+  -t onnxtools-backend:local .
 ```
+
+`CONTRACT_MANIFEST` 也可指定可访问的 manifest URL，`FIRSTPARTY_FIND_LINKS`
+可指定 wheel 索引或目录 URL。不能使用未验证的摘要，也不能把源码 checkout 当作已发布制品。
 
 模型不打进镜像；只从已授权的私有位置只读挂载模型。CPU 验证须使用
 `--runtime=runc`，不请求 GPU，显式设置 `CUDA_VISIBLE_DEVICES=""` 和
@@ -168,23 +177,23 @@ CPU 健康检查或推理不构成 CUDA 验收。
 
 ## Python 依赖与镜像构建
 
-`pyproject.toml` 声明 Plugin-SDK contracts release `contracts-3d6393e64630` 和
-runtime release `python-sdk-0.1.0`，以及固定提交的 `onnxtools[inference]`、
-ONNX Runtime GPU 1.22.0、NumPy 2.2.6 和 headless contrib OpenCV。
-ORT GPU wheel 也可在 CPU 上运行。镜像通过仓库 `scripts/fetch-contracts.py`
-验证 manifest、源码修订和每个 contract wheel 的 SHA-256；runtime wheel 的
-SHA-256 固定在 `requirements-firstparty.txt`。
+`pyproject.toml` 声明 `yoao-backend-runtime`、`yoao-lifecycle-contract`、
+`yoao-protocol-v2` 和 `yoao-task-contract`，以及固定提交的 `onnxtools[inference]`、
+ONNX Runtime GPU 1.22.0、NumPy 2.2.6 和 headless contrib OpenCV。ORT GPU wheel
+也可在 CPU 上运行。镜像通过 `scripts/fetch-contracts.py` 验证显式指定的 manifest
+和 wheel SHA-256，仅选取上述三个 contract，避免向 Python 3.10 镜像安装不兼容的其他 contract。
+runtime wheel 使用 `requirements-firstparty.txt` 的实际制品哈希及显式 wheel 来源。
 
-`uv.lock` 记录依赖图和 registry artifact 哈希，`requirements-runtime.txt` 是镜像使用的
-hash-locked 导出，`requirements-build.txt` 固定构建工具 wheel。`requirements-vcs.txt`
-记录从 lock 导出的不可变 Git commit（Git 依赖不能用 pip 的 artifact hash 模式安装）。
-更新后在本目录运行：
+候选 wheel／sdist 是待验收制品，不表示已公开发布；不要推送、发布或更改版本号。
+先用真实候选 contract/runtime wheel 建立本地 wheelhouse，并从其实际字节计算哈希；
+更新 `requirements-firstparty.txt` 为 `yoao-backend-runtime==0.1.0` 和对应 SHA-256。
+不得沿用旧发行名的 URL 或哈希。锁和导出由集成方从真实制品重新生成：
 
 ```bash
-uv lock
+uv lock --find-links <candidate-wheelhouse>
 uv export --locked --extra build --no-emit-local \
-  --no-emit-package aap-backend-runtime --no-emit-package aap-lifecycle-contract \
-  --no-emit-package aap-protocol-v2 --no-emit-package aap-task-contract \
+  --no-emit-package yoao-backend-runtime --no-emit-package yoao-lifecycle-contract \
+  --no-emit-package yoao-protocol-v2 --no-emit-package yoao-task-contract \
   --no-emit-package opencv-python --no-emit-package opencv-contrib-python \
   --no-emit-package onnxtools --output-file requirements-runtime.txt
 uv export --locked --extra build --no-emit-local --no-hashes --no-annotate \
@@ -193,7 +202,7 @@ uv export --locked --extra build --no-emit-local --no-hashes --no-annotate \
 ```
 
 镜像以 `--no-deps --require-hashes` 安装 registry 导出，再以 `--no-deps` 安装固定提交、
-经验证的公开 contract/runtime wheel 和本 backend。上游 inference extra 要求 `opencv-contrib-python`，
+经验证的候选 contract/runtime wheel 和本插件。上游 inference extra 要求 `opencv-contrib-python`，
 `supervision` 要求 `opencv-python`；运行时刻意用唯一的 `opencv-contrib-python-headless`
 替代两者。原始 metadata 不因此改变，`pip check` 会报告 GUI 包缺失；普通 `pip install`
 或 `uv sync` 不保证此布局。不要再安装 GUI OpenCV，它们会覆盖同一个 `cv2` 文件。

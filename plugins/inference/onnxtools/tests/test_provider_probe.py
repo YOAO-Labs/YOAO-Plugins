@@ -200,7 +200,7 @@ async def test_plugin_profile_reports_factory_topology_and_enforces_device(
     monkeypatch, tmp_path, device
 ):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from aap_protocol_v2.lifecycle import encode_ed25519_public_key
+    from yoao_protocol_v2.lifecycle import encode_ed25519_public_key
 
     registry = "bf7fcc5e-3be5-4ab0-a1d8-d009b4b2baaa"
     gpu_uuid = "GPU-78f02e07-08db-42cc-8758-68942a54443f"

@@ -21,7 +21,7 @@ from typing import Any
 
 import cv2
 import numpy as np
-from aap_backend_runtime import fetch_image
+from yoao_backend_runtime import fetch_image
 
 from handle_pool import HANDLE_SESSION_COUNTS
 
@@ -44,7 +44,7 @@ def load_image_bgr(file_path: str, *, http_timeout: float = 10.0) -> np.ndarray:
     """加载图像为 BGR ndarray（VehicleAttributePipeline 期望 cv2 BGR 输入）。
 
     下载/解码（``data:`` base64 / ``http(s)://`` presigned URL / 本地绝对路径）复用共享
-    :func:`aap_backend_runtime.fetch_image`（出 RGB ``PIL.Image``）, 再转 cv2 BGR。
+    :func:`yoao_backend_runtime.fetch_image`（出 RGB ``PIL.Image``）, 再转 cv2 BGR。
 
     Args:
         file_path: 图像来源。

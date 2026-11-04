@@ -1,7 +1,7 @@
 """Create a native installation intent only for an inspected digest-pinned image.
 
-Requires the published aap-inference-contract and its dependencies. This emits
-no approval: the platform must authorize both the installation and its assets.
+Requires yoao-inference-contract and its dependencies. This emits no approval:
+the platform must authorize both the installation and its assets.
 """
 import argparse
 import hashlib
@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 
-from aap_inference_contract.plugin import PluginManifest
+from yoao_inference_contract.plugin import PluginManifest
 
 ENTRYPOINT = ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8004", "--workers", "1"]
 

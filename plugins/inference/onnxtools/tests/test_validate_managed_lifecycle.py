@@ -253,7 +253,7 @@ def test_failure_path_emits_strict_nonpassing_evidence() -> None:
 
 
 def test_failed_memory_gate_preserves_completed_cycle_evidence() -> None:
-    from aap_lifecycle_contract import memory_cycle_evidence
+    from yoao_lifecycle_contract import memory_cycle_evidence
 
     progress = validator._initial_evidence()
     progress["stage"] = "memory_recovery"

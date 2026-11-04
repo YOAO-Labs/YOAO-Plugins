@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # CUDA 12.8 + cuDNN 9 runtime, no Torch dependency. Build context: repository root.
 FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
 
@@ -23,22 +24,31 @@ RUN python3 -m pip install --require-hashes --no-deps -r /build/requirements-bui
     && python3 -m pip install --require-hashes --no-deps --no-build-isolation -r /build/requirements-runtime.txt \
     && python3 -m pip install --no-deps --no-build-isolation -r /build/requirements-vcs.txt
 
-# Fetch the manifest and wheels with the shared trusted hash verifier; never
-# build contracts from a neighbouring checkout.
+# The manifest identity is supplied by the builder; only the Python 3.10
+# compatible contracts used by this plugin are selected.
+ARG CONTRACT_MANIFEST
+ARG CONTRACT_MANIFEST_SHA256
+ARG FIRSTPARTY_FIND_LINKS
 COPY scripts/fetch-contracts.py /build/fetch-contracts.py
-RUN python3 /build/fetch-contracts.py /build/contracts \
+RUN --mount=type=bind,source=.,target=/source,readonly \
+    python3 /build/fetch-contracts.py \
+        --manifest "$CONTRACT_MANIFEST" --sha256 "$CONTRACT_MANIFEST_SHA256" \
+        --output /build/contracts \
+        --package yoao-task-contract --package yoao-protocol-v2 \
+        --package yoao-lifecycle-contract \
     && python3 -m pip install --no-deps \
-        /build/contracts/aap_task_contract-0.1.0-py3-none-any.whl \
-        /build/contracts/aap_protocol_v2-0.2.0-py3-none-any.whl \
-        /build/contracts/aap_lifecycle_contract-0.1.0-py3-none-any.whl \
-    && python3 -m pip install --no-deps --require-hashes -r /build/requirements-firstparty.txt
+        /build/contracts/yoao_task_contract-0.1.0-py3-none-any.whl \
+        /build/contracts/yoao_protocol_v2-0.2.0-py3-none-any.whl \
+        /build/contracts/yoao_lifecycle_contract-0.1.0-py3-none-any.whl \
+    && python3 -m pip install --no-deps --require-hashes \
+        --find-links "$FIRSTPARTY_FIND_LINKS" -r /build/requirements-firstparty.txt
 COPY plugins/inference/onnxtools/pyproject.toml plugins/inference/onnxtools/LICENSE plugins/inference/onnxtools/main.py \
      plugins/inference/onnxtools/predictor.py plugins/inference/onnxtools/schemas.py plugins/inference/onnxtools/attribute_schema.py \
-     plugins/inference/onnxtools/handle_pool.py plugins/inference/onnxtools/gpu_lifecycle.py /build/onnxtools-backend/
-COPY plugins/inference/onnxtools/pretrained-model-assets.json /build/onnxtools-backend/
-COPY plugins/inference/onnxtools/scripts/create_plugin_manifest.py /build/onnxtools-backend/scripts/
-COPY plugins/inference/onnxtools/scripts/validate_managed_lifecycle.py /build/onnxtools-backend/scripts/
-RUN python3 -m pip install --no-build-isolation --no-deps /build/onnxtools-backend \
+     plugins/inference/onnxtools/handle_pool.py plugins/inference/onnxtools/gpu_lifecycle.py /build/yoao-onnxtools-plugin/
+COPY plugins/inference/onnxtools/pretrained-model-assets.json /build/yoao-onnxtools-plugin/
+COPY plugins/inference/onnxtools/scripts/create_plugin_manifest.py /build/yoao-onnxtools-plugin/scripts/
+COPY plugins/inference/onnxtools/scripts/validate_managed_lifecycle.py /build/yoao-onnxtools-plugin/scripts/
+RUN python3 -m pip install --no-build-isolation --no-deps /build/yoao-onnxtools-plugin \
     && rm -rf /build
 COPY plugins/inference/onnxtools/scripts/validate_managed_lifecycle.py /app/scripts/
 RUN mkdir -p /app/models

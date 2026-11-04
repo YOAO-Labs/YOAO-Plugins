@@ -1,15 +1,15 @@
 [project]
-name = "onnxtools-backend"
+name = "yoao-onnxtools-plugin"
 version = "0.3.0"
-description = "onnxtools (rtdetr + vehicle-attribute) ML backend — two-stage vehicle attribute pre-annotation for ai-annotation-platform"
+description = "ONNXTools two-stage vehicle attribute inference plugin for YOAO"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 
 dependencies = [
-    "aap-backend-runtime==0.1.0",
-    "aap-lifecycle-contract",
-    "aap-protocol-v2==0.2.0",
-    "aap-task-contract==0.1.0",
+    "yoao-backend-runtime==0.1.0",
+    "yoao-lifecycle-contract",
+    "yoao-protocol-v2==0.2.0",
+    "yoao-task-contract==0.1.0",
     "cryptography>=43.0.0",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
@@ -34,15 +34,9 @@ build-backend = "setuptools.build_meta"
 py-modules = ["main", "predictor", "schemas", "attribute_schema", "handle_pool", "gpu_lifecycle"]
 
 [tool.setuptools.data-files]
-"share/onnxtools-backend" = ["pretrained-model-assets.json", "scripts/validate_managed_lifecycle.py", "scripts/create_plugin_manifest.py"]
+"share/yoao-onnxtools-plugin" = ["pretrained-model-assets.json", "scripts/validate_managed_lifecycle.py", "scripts/create_plugin_manifest.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Tests use the same published contract wheels installed in the image.
 pythonpath = ["."]
-
-[tool.uv.sources]
-aap-backend-runtime = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/python-sdk-0.1.0/aap_backend_runtime-0.1.0-py3-none-any.whl" }
-aap-lifecycle-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_lifecycle_contract-0.1.0-py3-none-any.whl" }
-aap-protocol-v2 = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_protocol_v2-0.2.0-py3-none-any.whl" }
-aap-task-contract = { url = "https://github.com/YOAO-Labs/Plugin-SDK/releases/download/contracts-3d6393e64630/aap_task_contract-0.1.0-py3-none-any.whl" }

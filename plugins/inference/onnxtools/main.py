@@ -21,8 +21,8 @@ single-flight builder、borrower/use-lock、受管全池清理与取消安全 ex
 
 from __future__ import annotations
 
-from aap_protocol_v2.predict import normalize_context_task
-from aap_protocol_v2.routing_runtime import install_backend_routing_controller
+from yoao_protocol_v2.predict import normalize_context_task
+from yoao_protocol_v2.routing_runtime import install_backend_routing_controller
 
 import asyncio
 import gc
@@ -34,32 +34,32 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     artifact_evidence,
     deployment_verified_flag,
     physical_gpu_identity,
     validate_single_gpu_device_set,
     versions_payload,
 )
-from aap_backend_runtime.gpu import (
+from yoao_backend_runtime.gpu import (
     observed_cuda_runtime_version,
     observed_single_nvidia_gpu,
 )
-from aap_backend_runtime.plugin_service import (
+from yoao_backend_runtime.plugin_service import (
     install_plugin_service,
     plugin_lifecycle_options,
     plugin_setup_fields,
     plugin_verified_lifecycle,
 )
-from aap_protocol_v2 import (
+from yoao_protocol_v2 import (
     COMPAT_PROTOCOL_VERSIONS,
     PROTOCOL_VERSION,
     BatchPredictResponse,
     PredictionResult,
     WarmupResponse,
 )
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     GPU_ADMISSION_TOKEN_HEADER,
     GPU_GENERATION_HEADER,
@@ -74,7 +74,7 @@ from aap_protocol_v2.lifecycle import (
     parse_gpu_admission_header_values,
     parse_gpu_control_token_header_values,
 )
-from aap_backend_runtime.backend_auth import install_backend_auth
+from yoao_backend_runtime.backend_auth import install_backend_auth
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from pydantic import ValidationError
 
