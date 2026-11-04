@@ -4,6 +4,11 @@
 **/.pytest_cache
 **/.cache
 **/.artifacts
+!.artifacts
+.artifacts/*
+!.artifacts/python
+.artifacts/python/*
+!.artifacts/python/first-party
 **/dist
 **/build
 **/*.egg-info

@@ -1,4 +1,5 @@
 """Export hash-pinned third-party dependencies from uv.lock (Python 3.11+)."""
+import hashlib
 from pathlib import Path
 import tomllib
 
@@ -21,3 +22,18 @@ for package in lock["package"]:
     marker = " ; " + " or ".join(f"({value})" for value in markers) if markers else ""
     lines.append(f"{name}=={package['version']}{marker} " + " ".join(f"--hash={value}" for value in hashes))
 (root / "requirements.lock").write_text("\n".join(lines) + "\n")
+
+first_party = {"yoao-backend-runtime", "yoao-mask-utils"}
+selected = {package["name"]: package for package in lock["package"] if package["name"] in first_party}
+if selected.keys() != first_party:
+    raise ValueError("Missing first-party packages in uv.lock")
+lines = ["# Generated from uv.lock; wheels are staged with scripts/fetch-contracts.py."]
+for name in sorted(first_party):
+    package = selected[name]
+    wheel, = package["wheels"]
+    filename = wheel["filename"]
+    path = (root / package["source"]["path"]).resolve()
+    if path.name != filename or hashlib.sha256(path.read_bytes()).hexdigest() != wheel["hash"].removeprefix("sha256:"):
+        raise ValueError(f"Staged wheel differs from uv.lock: {name}")
+    lines.append(f"file:///mnt/build-context/.artifacts/python/first-party/{filename} --hash={wheel['hash']}")
+(root / "first-party-requirements.lock").write_text("\n".join(lines) + "\n")

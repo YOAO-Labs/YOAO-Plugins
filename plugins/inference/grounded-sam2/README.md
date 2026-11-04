@@ -20,7 +20,16 @@ Persistent tracker state belongs to the exact video model-pool entry that opened
 
 ## Build and validation
 
-The root-context Dockerfile pins the CUDA development base image by digest and installs locked Python inputs, the checked-out vendor source, and the plugin wheel. It does not provision model assets. Regenerate `uv.lock` for Python 3.10 with a find-links source containing the five actual candidate first-party wheels, then export `requirements.lock` using `export_requirements.py`. Regenerate `first-party-requirements.lock` with immutable wheel URLs and SHA256 hashes for exactly `yoao-backend-runtime==0.1.0` and `yoao-mask-utils==0.1.0`; it must not contain the contract wheels. Local wheel URLs can use `file:///mnt/build-context/` followed by a path in the repository-root build context. The base image provides Torch and torchvision.
+Before resolving or building, stage verified wheel artifacts from the two separately supplied candidate manifests at the repository root. The manifest digests must come from the artifact provider, not from a guessed release URL:
+
+```sh
+python3 scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" --sha256 "$SDK_MANIFEST_SHA256" \
+  --output .artifacts/python/first-party --package yoao-backend-runtime --package yoao-mask-utils
+python3 scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" --sha256 "$CONTRACT_MANIFEST_SHA256" \
+  --output .artifacts/python/first-party --package yoao-lifecycle-contract --package yoao-protocol-v2 --package yoao-task-contract
+```
+
+The relative wheel registrations in `pyproject.toml` and `uv.lock` require those exact staged files; these are non-editable artifacts, not source checkouts. In this directory, `uv lock --python 3.10` resolves the plugin and `python3.11 export_requirements.py` regenerates both Docker requirement locks, verifying the staged runtime and mask wheels against `uv.lock`. `build-requirements.lock` pins the build tools. The root-context Dockerfile pins the CUDA development base image by digest and installs the locked Python inputs, checked-out vendor source, and plugin wheel; the base provides Torch and torchvision. It does not provision model assets.
 
 Provide a real contract manifest and its SHA256 as `CONTRACT_MANIFEST` and `CONTRACT_MANIFEST_SHA256` build arguments. The manifest is a URL or a path relative to the repository-root build context; local manifest and referenced wheels must be available in that context and not excluded by `Dockerfile.dockerignore`. The fetcher verifies the manifest and selected wheel hashes and installs only `yoao-lifecycle-contract==0.1.0`, `yoao-protocol-v2==0.2.0`, and `yoao-task-contract==0.1.0`; `pip check` enforces the plugin's versions. No editable platform checkout is required. Candidate wheel and sdist artifacts must be built and validated against these real inputs before any separately authorized publication; the renamed distributions are not assumed to have been published.
 
