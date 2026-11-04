@@ -10,6 +10,7 @@ dependencies = [
   "yoao-inference-contract==0.1.0",
   "yoao-lifecycle-contract==0.1.0",
   "yoao-training-contract==0.1.0",
+  "yoao-task-contract==0.1.0",
   "yoao-protocol-v2==0.2.0",
   "httpx>=0.27,<1",
   "uvicorn>=0.30,<1",
@@ -28,4 +29,21 @@ include = ["yoao_libreyolo_plugin", "yoao_libreyolo_plugin.*"]
 
 [tool.setuptools.package-data]
 yoao_libreyolo_plugin = ["controlled-model-assets.json"]
+
+[tool.uv.sources]
+yoao-libreyolo-native = { path = "native", editable = false }
+yoao-inference-plugin-sdk = { path = "../../../.artifacts/python/first-party/yoao_inference_plugin_sdk-0.1.0-py3-none-any.whl" }
+yoao-backend-runtime = { path = "../../../.artifacts/python/first-party/yoao_backend_runtime-0.1.0-py3-none-any.whl" }
+yoao-inference-contract = { path = "../../../.artifacts/python/first-party/yoao_inference_contract-0.1.0-py3-none-any.whl" }
+yoao-lifecycle-contract = { path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" }
+yoao-training-contract = { path = "../../../.artifacts/python/first-party/yoao_training_contract-0.1.0-py3-none-any.whl" }
+yoao-task-contract = { path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
+yoao-protocol-v2 = { path = "../../../.artifacts/python/first-party/yoao_protocol_v2-0.2.0-py3-none-any.whl" }
+torch = { index = "pytorch-cu132" }
+torchvision = { index = "pytorch-cu132" }
+
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+explicit = true
 

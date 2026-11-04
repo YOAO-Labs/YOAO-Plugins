@@ -3,13 +3,15 @@ name = "yoao-libreyolo-native"
 version = "0.1.0"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
-dependencies = ["yoao-training-contract", "numpy", "libreyolo==1.6.0", "torch==2.14.1+cu132", "torchvision==0.29.1+cu132"]
+dependencies = ["yoao-training-contract", "yoao-task-contract", "numpy", "libreyolo==1.6.0", "torch==2.14.1+cu132", "torchvision==0.29.1+cu132"]
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv.sources]
+yoao-training-contract = { path = "../../../../.artifacts/python/first-party/yoao_training_contract-0.1.0-py3-none-any.whl" }
+yoao-task-contract = { path = "../../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
 torch = { index = "pytorch-cu132" }
 torchvision = { index = "pytorch-cu132" }
 

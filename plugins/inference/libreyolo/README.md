@@ -6,6 +6,18 @@ This service uses the native LibreYOLO 1.6.0 loader, not Ultralytics, and the ex
 
 从插件仓库的指定提交构建私有 Linux x86-64 glibc / CPython 3.11 候选包。隔离构建环境需包含 `pip`、`build==1.3.0`、`setuptools==80.9.0`、`wheel==0.45.1`、`hatchling==1.27.0`、`git` 和 GNU `tar`。构建从 PyPI 和 PyTorch cu132 索引下载哈希锁定依赖；即使在 CPU 上推理，也包含 CUDA 链接的 Torch 和 NVIDIA 运行时 wheel。提供实际候选契约和 SDK 制品的本地 manifest 或包含 `manifest.json` 和 wheel 的目录，以及通过可信独立渠道获取的 manifest SHA-256；不能假定新名称的公开发布制品已经存在。构建器校验 manifest 和选定 wheel 的摘要。
 
+开发者使用 `uv` 解析插件或 `native/` 依赖前，先在仓库根目录将两个已验证的制品集暂存到本仓库忽略的 `.artifacts/python/first-party/`。使用实际 manifest 路径及独立取得的可信 SHA-256；wheel 必须与各自的 manifest 位于同一目录：
+
+```sh
+python scripts/fetch-contracts.py --manifest /private/contracts/manifest.json --sha256 <trusted-contracts-sha256> \
+  --output .artifacts/python/first-party --package yoao-task-contract --package yoao-protocol-v2 \
+  --package yoao-lifecycle-contract --package yoao-inference-contract --package yoao-training-contract
+python scripts/fetch-contracts.py --manifest /private/sdk/manifest.json --sha256 <trusted-sdk-sha256> \
+  --output .artifacts/python/first-party --package yoao-backend-runtime --package yoao-inference-plugin-sdk
+```
+
+`uv` 将本仓库的 `native/` 作为非 editable 依赖，并从暂存 wheel 读取第一方契约与 SDK；不从源码 checkout 或未经验证的公开发布源替代这些 wheel。候选归档的第三方依赖单独由 `third-party-requirements.lock` 锁定。
+
 ```sh
 python scripts/build-libreyolo-candidate.py --revision <commit> --output /private/candidate.tar \
   --contracts-manifest /private/contracts/manifest.json --contracts-sha256 <trusted-contracts-sha256> \
