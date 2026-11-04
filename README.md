@@ -42,7 +42,20 @@ uv sync --python 3.11 --frozen --no-index --find-links /private/complete-wheelho
 
 ## CPU 验证
 
-[Plugin Python acceptance](.github/workflows/plugin-python.yml) 为六个插件定义独立 CPU 作业，隔离各自的 Python 环境和依赖。YOLO 与有状态插件使用各自的开发锁文件；SAM3 作业初始化固定 vendor 并应用请求级 autocast 补丁。RapidOCR 与 ONNX Tools 使用镜像的哈希锁定 headless 依赖及已校验的 Python 3.10 兼容契约 wheel，不引入平台 checkout。CI 需要仓库变量 `YOAO_CONTRACT_MANIFEST`、`YOAO_CONTRACT_MANIFEST_SHA256`、`YOAO_SDK_MANIFEST` 和 `YOAO_SDK_MANIFEST_SHA256` 指向实际可访问的制品及其摘要；改名后的锁文件必须先依据真实制品重新生成。模型权重和私有 fixture 不进入 CI。
+[Plugin Python acceptance](.github/workflows/plugin-python.yml) 为六个插件定义独立 CPU 作业，隔离各自的 Python 环境和依赖。作业先按所需子集校验两份 manifest 和 wheel，再将 wheel 放入仓库内 `.artifacts/python/first-party/`，供各插件的相对路径依赖和锁文件使用。YOLO 与有状态插件使用各自的开发锁文件；SAM3 作业初始化固定 vendor 并应用请求级 autocast 补丁。RapidOCR 与 ONNX Tools 使用哈希锁定的 headless 依赖。每个作业还安装所构建的插件 wheel，在源码目录外检查安装后的入口和目录资源。RapidOCR 的模拟 provider 测试保留默认设备策略，CI 仅隐藏 GPU。
+
+CI 需要仓库变量 `YOAO_CONTRACT_MANIFEST`、`YOAO_CONTRACT_MANIFEST_SHA256`、`YOAO_SDK_MANIFEST` 和 `YOAO_SDK_MANIFEST_SHA256` 指向实际可访问的制品及其摘要；缺失时作业失败。锁文件记录具体候选 wheel 的身份，提供不同制品时需由维护者核对并重新生成相应锁。模型权重和私有 fixture 不进入 CI；目录资源和开发元数据不代表模型已加载或通过资格验证。
+
+本地从仓库根目录准备锁文件或同步环境时，也须使用实际提供的两份 manifest、摘要和兼容子集，例如：
+
+```sh
+python scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" --sha256 "$CONTRACT_MANIFEST_SHA256" \
+  --output .artifacts/python/first-party --package yoao-task-contract --package yoao-protocol-v2 --package yoao-lifecycle-contract
+python scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" --sha256 "$SDK_MANIFEST_SHA256" \
+  --output .artifacts/python/first-party --package yoao-backend-runtime
+```
+
+这是 RapidOCR 和 ONNX Tools 的 Python 3.10 子集；Grounded-SAM2 还需要 `yoao-mask-utils`。SAM3 使用相同的五个第一方 wheel，但运行于独立的 Python 3.12 环境。YOLO 还需要 `yoao-inference-contract` 和 `yoao-training-contract`；LibreYOLO 候选还需要这两个契约及 `yoao-inference-plugin-sdk`。后面三个包要求 Python 3.11 或更新版本，不应安装到 Python 3.10 插件环境。
 
 CPU 测试不授予 CUDA 资格。真实模型推理、逐 session provider、显存回收及平台安装／退役，仍须在获授权的输入和独占设备上验证具体镜像摘要。
 
