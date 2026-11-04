@@ -32,7 +32,7 @@ import cv2  # opencv-python-headless, 已在镜像内
 import numpy as np
 import torch
 
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     DeviceUnavailableError,
     free_gpu_memory,
     is_device_error,

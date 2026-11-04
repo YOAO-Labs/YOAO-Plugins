@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from aap_protocol_v2 import decode_low_res_mask
+from yoao_protocol_v2 import decode_low_res_mask
 from predictor import _maybe_encode_low_res, _resolve_mask_input
 
 

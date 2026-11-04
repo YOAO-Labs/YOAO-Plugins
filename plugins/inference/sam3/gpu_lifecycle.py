@@ -14,9 +14,9 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Mapping
 
-from aap_backend_runtime.gpu_lifecycle import TerminalDrainMixin
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_backend_runtime.gpu_lifecycle import TerminalDrainMixin
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     AdmissionTokenError,

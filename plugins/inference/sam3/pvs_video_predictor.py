@@ -28,13 +28,13 @@ from typing import Any
 import numpy as np
 import torch
 
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     DeviceUnavailableError,
     free_gpu_memory,
     is_device_error,
     require_gpu_device,
 )
-from aap_protocol_v2 import MaskPromptPayload
+from yoao_protocol_v2 import MaskPromptPayload
 from mask_utils import decode_coco_rle
 from sam3_plugin.runtime_config import checkpoint_dir, configured_device
 

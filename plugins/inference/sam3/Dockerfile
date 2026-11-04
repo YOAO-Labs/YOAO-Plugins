@@ -28,14 +28,16 @@ RUN python3.12 -m pip install --no-deps --require-hashes -r /tmp/build-requireme
     && python3.12 -m pip install --no-deps --require-hashes -r /tmp/cuda-requirements.lock \
     && python3.12 -m pip install --no-build-isolation --no-deps --require-hashes -r /tmp/requirements.lock \
     && python3.12 -m pip install --no-build-isolation --no-deps --require-hashes -r /tmp/fairscale-requirements.lock
-COPY plugins/inference/sam3/first-party-requirements.lock /tmp/
-RUN python3.12 -m pip install --no-deps --require-hashes -r /tmp/first-party-requirements.lock
+# The named build context contains candidate wheels and a hash-pinned lock.
+COPY --from=first-party / /tmp/first-party/
+RUN python3.12 -m pip install --no-deps --no-index --find-links=/tmp/first-party \
+    --require-hashes -r /tmp/first-party/requirements.lock
 COPY plugins/inference/sam3/ /tmp/sam3-plugin/
 RUN test -f /tmp/sam3-plugin/vendor/sam3/pyproject.toml \
     && patch --batch --forward --fuzz=0 -d /tmp/sam3-plugin/vendor/sam3 -p1 < /tmp/sam3-plugin/patches/0001-request-scoped-autocast.patch \
     && python -m pip install --no-deps --no-build-isolation /tmp/sam3-plugin/vendor/sam3 \
     && python -m pip wheel --no-deps --no-build-isolation -w /tmp/wheels /tmp/sam3-plugin \
-    && python -m pip install --no-deps /tmp/wheels/sam3_backend-*.whl \
+    && python -m pip install --no-deps /tmp/wheels/yoao_sam3_plugin-*.whl \
     && python -c "import sys,torch,torchvision; assert sys.version_info[:2] == (3, 12); assert torch.__version__.split('+')[0] == '2.7.1'; assert torchvision.__version__.split('+')[0] == '0.22.1'" \
     && mkdir -p /app/checkpoints /app/scripts \
     && cp /tmp/sam3-plugin/scripts/* /app/scripts/ \

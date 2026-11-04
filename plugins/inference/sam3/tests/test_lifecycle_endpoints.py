@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     GPU_ADMISSION_TOKEN_HEADER,
     GPU_GENERATION_HEADER,
     GPU_HEALTH_CHALLENGE_HEADER,
@@ -269,7 +269,7 @@ def test_cancelled_image_inference_holds_lease_until_thread_finishes(
     monkeypatch,
 ) -> None:
     main = _load_main()
-    from aap_backend_runtime import BuildArtifact, ManagedLruPool, ManagedPoolBusyError
+    from yoao_backend_runtime import BuildArtifact, ManagedLruPool, ManagedPoolBusyError
 
     started = threading.Event()
     release = threading.Event()
@@ -324,7 +324,7 @@ def test_cancelled_video_keeps_source_and_borrower_until_thread_finishes(
     kind: str,
 ) -> None:
     main = _load_main()
-    from aap_backend_runtime import BuildArtifact, ManagedLruPool, ManagedPoolBusyError
+    from yoao_backend_runtime import BuildArtifact, ManagedLruPool, ManagedPoolBusyError
 
     started = threading.Event()
     release = threading.Event()
@@ -411,7 +411,7 @@ def test_deployment_gate_controls_declaration_and_rejects_invalid_value(
 
 @pytest.mark.parametrize("evict", [False, True])
 def test_pvs_session_windows_release_borrow_and_retire_state(monkeypatch, evict):
-    from aap_backend_runtime import BuildArtifact, ManagedLruPool, TrackerSessionManager
+    from yoao_backend_runtime import BuildArtifact, ManagedLruPool, TrackerSessionManager
     from fastapi import HTTPException
 
     main = _load_main()

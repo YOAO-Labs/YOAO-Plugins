@@ -29,14 +29,14 @@ import cv2
 import httpx
 import numpy as np
 from PIL import Image, ImageDraw
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     artifact_evidence,
     build_managed_lifecycle_evidence,
     exercise_lifecycle_fault_matrix,
 )
-from aap_backend_runtime.qualification_http import bind_operator_routes, http_client
-from aap_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
-from aap_protocol_v2.lifecycle import (
+from yoao_backend_runtime.qualification_http import bind_operator_routes, http_client
+from yoao_lifecycle_contract import REQUIRED_CONTRACT_CHECKS, memory_cycle_evidence
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     GPU_ADMISSION_TOKEN_HEADER,

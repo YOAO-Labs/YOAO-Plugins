@@ -512,7 +512,7 @@ def test_interactive_box_pixel_scaling(predictor_with_mocks, fake_image):
 
 def test_interactive_mask_input_decoded_and_passed(predictor_with_mocks, fake_image):
     """context.mask_input 解码后适配 SAM3 的 288×288 prompt 输入。"""
-    from aap_protocol_v2 import encode_low_res_mask
+    from yoao_protocol_v2 import encode_low_res_mask
 
     inst = predictor_with_mocks
     inst._processor.set_image = MagicMock(return_value=_fake_state_after_set_image())
@@ -664,7 +664,7 @@ def test_interactive_box_native_mask_output(predictor_with_mocks, fake_image):
 
 @pytest.mark.parametrize("output", ["mask", "both"])
 def test_exemplars_native_mask_output(predictor_with_mocks, fake_image, output):
-    from aap_protocol_v2 import CocoRlePayload, native_mask_candidate_id
+    from yoao_protocol_v2 import CocoRlePayload, native_mask_candidate_id
     from mask_utils import decode_coco_rle
 
     inst = predictor_with_mocks

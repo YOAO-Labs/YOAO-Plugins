@@ -10,8 +10,8 @@ from contextlib import asynccontextmanager
 from unittest.mock import MagicMock
 
 import pytest
-from aap_protocol_v2.errors import LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     AdmissionTokenClaims,
     LifecycleModeRequest,
@@ -32,7 +32,7 @@ class _Model:
 
 def _domain(*, free_gpu_memory=None, **lifecycle_options):
     from gpu_lifecycle import Sam3GpuLifecycle
-    from aap_backend_runtime import BuildArtifact, ManagedLruPool
+    from yoao_backend_runtime import BuildArtifact, ManagedLruPool
     from pool_domain import Sam3Pools
 
     private_key = Ed25519PrivateKey.generate()
@@ -160,7 +160,7 @@ async def _session_borrow(pool):
 
 @pytest.mark.asyncio
 async def test_idle_unload_retires_owned_pvs_session() -> None:
-    from aap_backend_runtime import TrackerSessionLost, TrackerSessionManager
+    from yoao_backend_runtime import TrackerSessionLost, TrackerSessionManager
 
     sessions = TrackerSessionManager(ttl_seconds=300)
     lifecycle, _pool, _key = _domain(retire_sessions=sessions.shutdown)
@@ -192,7 +192,7 @@ async def test_idle_unload_retires_owned_pvs_session() -> None:
 
 @pytest.mark.asyncio
 async def test_terminal_drain_retires_idle_session_only_after_active_work_finishes() -> None:
-    from aap_backend_runtime import TrackerSessionManager
+    from yoao_backend_runtime import TrackerSessionManager
 
     sessions = TrackerSessionManager(ttl_seconds=0)
     lifecycle, _pool, key = _domain(
@@ -247,7 +247,7 @@ async def test_terminal_drain_retires_idle_session_only_after_active_work_finish
 
 @pytest.mark.asyncio
 async def test_terminal_drain_waits_for_a_start_already_admitted() -> None:
-    from aap_backend_runtime import TrackerSessionManager
+    from yoao_backend_runtime import TrackerSessionManager
 
     sessions = TrackerSessionManager(ttl_seconds=0)
     lifecycle, _pool, key = _domain(
@@ -298,7 +298,7 @@ async def test_terminal_drain_waits_for_a_start_already_admitted() -> None:
 
 @pytest.mark.asyncio
 async def test_terminal_drain_preserves_uncertain_session_cleanup() -> None:
-    from aap_backend_runtime import TrackerSessionManager
+    from yoao_backend_runtime import TrackerSessionManager
 
     sessions = TrackerSessionManager(ttl_seconds=0)
     lifecycle, _pool, key = _domain(
@@ -916,7 +916,7 @@ async def test_cancelled_close_still_releases_active_operation() -> None:
 @pytest.mark.asyncio
 async def test_cancelled_legacy_unload_owner_recovers_without_keyring() -> None:
     from gpu_lifecycle import Sam3GpuLifecycle
-    from aap_backend_runtime import BuildArtifact, ManagedLruPool
+    from yoao_backend_runtime import BuildArtifact, ManagedLruPool
     from pool_domain import Sam3Pools
 
     cleanup_started = threading.Event()

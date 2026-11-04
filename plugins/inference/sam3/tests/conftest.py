@@ -9,7 +9,7 @@ import pytest
 def authenticated_backend_clients(monkeypatch):
     import httpx
     from starlette.testclient import TestClient
-    from aap_backend_runtime import backend_auth
+    from yoao_backend_runtime import backend_auth
 
     token = "backend-source-test-credential-" + "x" * 40
     monkeypatch.setattr(backend_auth, "backend_credential", lambda _provider: token)

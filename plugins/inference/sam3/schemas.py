@@ -18,13 +18,13 @@ sam3-backend main.py 收到 type=point 时返回 400. /setup.supported_prompts �
 
 from __future__ import annotations
 
-from aap_task_contract import Task as VisualTaskName
-from aap_protocol_v2.predict import normalize_context_task
+from yoao_task_contract import Task as VisualTaskName
+from yoao_protocol_v2.predict import normalize_context_task
 
 import math
 from typing import Any, Literal
 
-from aap_protocol_v2 import (
+from yoao_protocol_v2 import (
     BatchPredictResponse,
     MAX_LOW_RES_MASK_INPUT_CHARS,
     MAX_SCRIBBLE_STROKES,

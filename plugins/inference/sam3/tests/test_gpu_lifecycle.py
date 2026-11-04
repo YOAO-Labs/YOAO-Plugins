@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import Any
 
 import pytest
-from aap_protocol_v2.lifecycle import AdmissionScope, LifecycleState
+from yoao_protocol_v2.lifecycle import AdmissionScope, LifecycleState
 
 from gpu_lifecycle import Sam3GpuLifecycle
 from pool_domain import Sam3Pools

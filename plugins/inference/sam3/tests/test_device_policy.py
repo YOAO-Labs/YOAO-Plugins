@@ -13,7 +13,7 @@ import pytest
 import predictor as image_module
 import pvs_video_predictor as pvs_module
 import video_predictor as multiplex_module
-from aap_backend_runtime import DeviceUnavailableError
+from yoao_backend_runtime import DeviceUnavailableError
 
 
 def _run(coro):
@@ -152,7 +152,7 @@ def test_pvs_builder_device_failure_cleans_up_without_cpu_retry(monkeypatch) -> 
 def test_health_reports_unknown_until_a_cuda_pool_is_loaded(monkeypatch) -> None:
     import main as main_module  # noqa: PLC0415
     from gpu_lifecycle import Sam3GpuLifecycle  # noqa: PLC0415
-    from aap_backend_runtime import BuildArtifact, ManagedLruPool  # noqa: PLC0415
+    from yoao_backend_runtime import BuildArtifact, ManagedLruPool  # noqa: PLC0415
     from pool_domain import Sam3Pools  # noqa: PLC0415
 
     monkeypatch.setattr(main_module.torch.cuda, "is_available", lambda: False)
@@ -209,7 +209,7 @@ def test_gpu_unavailable_is_translated_to_protocol_503(
     model_key,
 ) -> None:
     import main as main_module  # noqa: PLC0415
-    from aap_backend_runtime import ManagedLruPool  # noqa: PLC0415
+    from yoao_backend_runtime import ManagedLruPool  # noqa: PLC0415
 
     def fail_build(_key):
         raise DeviceUnavailableError("CUDA unavailable")

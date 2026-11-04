@@ -30,8 +30,8 @@ Idle Unload (双 backend 并存场景的显存让渡机制):
 
 from __future__ import annotations
 
-from aap_protocol_v2.predict import normalize_context_task
-from aap_protocol_v2.routing_runtime import install_backend_routing_controller
+from yoao_protocol_v2.predict import normalize_context_task
+from yoao_protocol_v2.routing_runtime import install_backend_routing_controller
 
 import asyncio
 import functools
@@ -48,7 +48,7 @@ from typing import Any, Callable
 
 import httpx
 import torch
-from aap_backend_runtime import (
+from yoao_backend_runtime import (
     BuildArtifact,
     DeviceUnavailableError,
     ManagedBuildTimeout,
@@ -63,7 +63,7 @@ from aap_backend_runtime import (
     versions_payload,
     validate_single_gpu_device_set,
 )
-from aap_protocol_v2 import (
+from yoao_protocol_v2 import (
     COMPAT_PROTOCOL_VERSIONS,
     CorrectionFramePrompt,
     PROTOCOL_VERSION,
@@ -76,8 +76,8 @@ from aap_protocol_v2 import (
     log_deprecated_model_variant_fields,
     normalize_context_model_variants,
 )
-from aap_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
-from aap_protocol_v2.lifecycle import (
+from yoao_protocol_v2.errors import LifecycleErrorCode, LifecycleHTTPError
+from yoao_protocol_v2.lifecycle import (
     AdmissionScope,
     GPU_ADMISSION_TOKEN_HEADER,
     GPU_GENERATION_HEADER,
@@ -92,9 +92,9 @@ from aap_protocol_v2.lifecycle import (
     parse_gpu_admission_header_values,
     parse_gpu_control_token_header_values,
 )
-from aap_backend_runtime.backend_auth import install_backend_auth
-from aap_backend_runtime.gpu import observed_cuda_runtime_version, observed_single_nvidia_gpu
-from aap_backend_runtime.plugin_service import (
+from yoao_backend_runtime.backend_auth import install_backend_auth
+from yoao_backend_runtime.gpu import observed_cuda_runtime_version, observed_single_nvidia_gpu
+from yoao_backend_runtime.plugin_service import (
     install_plugin_service,
     plugin_lifecycle_options,
     plugin_setup_fields,
@@ -224,9 +224,8 @@ app.router.route_class = _ManagedAdmissionRoute
 
 @app.exception_handler(ValueError)
 async def _value_error_to_400(_request: Request, exc: ValueError):
-    # aap_backend_runtime.fetch_image 对 unsupported scheme 抛 ValueError;此 handler
-    # 把它包成 HTTPException(400) 的等价响应,恢复抽取前 _fetch_image 的 400 语义,并防止
-    # 原生 traceback / 内部路径泄露到响应体。
+    # The shared image fetcher raises ValueError for unsupported schemes.
+    # Preserve its HTTP 400 response without exposing internal paths.
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
@@ -260,7 +259,7 @@ def _plugin_runtime_versions() -> dict[str, str]:
 def _qualification_weights(*, required: bool = False) -> list[dict[str, Any]]:
     if not required and not os.environ.get("AAP_PLUGIN_QUALIFICATION_FILE"):
         return []
-    from aap_backend_runtime import artifact_evidence
+    from yoao_backend_runtime import artifact_evidence
     from sam3_plugin.catalog import descriptor
 
     root = Path(os.environ["AAP_PLUGIN_DATA_DIR"]).resolve(strict=True)
