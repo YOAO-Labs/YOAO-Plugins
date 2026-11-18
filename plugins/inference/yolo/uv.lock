@@ -1854,7 +1854,7 @@ dependencies = [
     { name = "yoao-protocol-v2" },
 ]
 wheels = [
-    { filename = "yoao_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:03cada7a9488086fa7a65ccb282c6f44571dfb983f5a6258a9de9c15ebc962e0" },
+    { filename = "yoao_backend_runtime-0.1.0-py3-none-any.whl", hash = "sha256:96b10ea815c56eec1fe5fa747101226a283ea06781ca6649f92ac54c72d439f2" },
 ]
 
 [package.metadata]
@@ -1883,7 +1883,7 @@ dependencies = [
     { name = "yoao-task-contract" },
 ]
 wheels = [
-    { filename = "yoao_inference_contract-0.1.0-py3-none-any.whl", hash = "sha256:51b7c7708c3c68b07b7925612be284ebdd3b1e7ed34668a31aad981a168bd1e1" },
+    { filename = "yoao_inference_contract-0.1.0-py3-none-any.whl", hash = "sha256:fdfa90533c548c63b713200675464c07f533e698c70f749a774add21fdea2904" },
 ]
 
 [package.metadata]
@@ -1902,7 +1902,7 @@ name = "yoao-lifecycle-contract"
 version = "0.1.0"
 source = { path = "../../../.artifacts/python/first-party/yoao_lifecycle_contract-0.1.0-py3-none-any.whl" }
 wheels = [
-    { filename = "yoao_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:e09eba4ae27c3b76b962b95724608a4be2f491102cb6bd6cee0661cf893fdcdd" },
+    { filename = "yoao_lifecycle_contract-0.1.0-py3-none-any.whl", hash = "sha256:d8047859a72cb22c83c187bb81ed5e49d67c78df2f8f5a9b5852b226ebb5c7ed" },
 ]
 
 [[package]]
@@ -1917,7 +1917,7 @@ dependencies = [
     { name = "yoao-task-contract" },
 ]
 wheels = [
-    { filename = "yoao_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:b06ca5eacad3165a4dfe32f492f951b914eb6fa0226079586b78659e41b7e0e2" },
+    { filename = "yoao_protocol_v2-0.2.0-py3-none-any.whl", hash = "sha256:128281a63d363fa0b597d89f0636d824615a737378e5954ae642c19dd26b87d7" },
 ]
 
 [package.metadata]
@@ -1938,7 +1938,7 @@ name = "yoao-task-contract"
 version = "0.1.0"
 source = { path = "../../../.artifacts/python/first-party/yoao_task_contract-0.1.0-py3-none-any.whl" }
 wheels = [
-    { filename = "yoao_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:438ca14610facaec2217a1f0c15c2d59f77fff4aba695227e6aaffc2ee219dea" },
+    { filename = "yoao_task_contract-0.1.0-py3-none-any.whl", hash = "sha256:fa625a5b6b100c41f1dd478f471b67950ab8857ac5fa6e0baa083974fc1ecdb3" },
 ]
 
 [[package]]
@@ -1949,7 +1949,7 @@ dependencies = [
     { name = "yoao-task-contract" },
 ]
 wheels = [
-    { filename = "yoao_training_contract-0.1.0-py3-none-any.whl", hash = "sha256:ba16f3de36aa7395cf9d60442593a591527334200c789c53ca9300644ac16884" },
+    { filename = "yoao_training_contract-0.1.0-py3-none-any.whl", hash = "sha256:e6dbe37e5ed6528f31ceed04720abc4467aff115973261dc023209e1b50795d8" },
 ]
 
 [package.metadata]
