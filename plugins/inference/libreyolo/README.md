@@ -84,10 +84,12 @@ The installed CLI requires the publisher and license declaration explicitly; rev
 
 原生 CPU 回归用例位于 `tests/test_native.py`；在安装了候选 wheelhouse 和 pytest 的干净 CPython 3.11 环境中运行。测试无需下载权重，会构造并重新加载真实的 t/s/m/c 模型。
 
-For a local-exclusive developer check, use known real images (one yielding multiple detections and one yielding none):
+For a local-exclusive developer check, activate the verified candidate environment and use known real images (one yielding multiple detections and one yielding none). Scope the loader path to this command: a host with its own cuDNN may otherwise load a different engine library and fail with `CUDNN_STATUS_SUBLIBRARY_LOADING_FAILED`. Do not replace system libraries.
 
 ```sh
-yoao-libreyolo probe --device cuda:0 --gpu-uuid GPU-... --asset-dir /private/libreyolo/assets --multi-image /private/multiple.jpg --empty-image /private/empty.jpg --output /private/local-probe.json
+nvidia_libs="$(python -c 'import sysconfig; print(sysconfig.get_path("purelib") + "/nvidia")')"
+LD_LIBRARY_PATH="$nvidia_libs/cudnn/lib:$nvidia_libs/cu13/lib" \
+  yoao-libreyolo probe --device cuda:0 --gpu-uuid GPU-... --asset-dir /private/libreyolo/assets --multi-image /private/multiple.jpg --empty-image /private/empty.jpg --output /private/local-probe.json
 ```
 
 The probe verifies actual native input/model tensor placement and FP32 execution, rejects a missing asset and a nonexistent CUDA ordinal, and measures two real model load/inference/release cycles. It samples other GPU compute processes and fails closed if attribution is unavailable or the selected card is in use. It does not acquire a platform GPU lease; its report explicitly says `local-isolated` and cannot qualify a managed installation.
