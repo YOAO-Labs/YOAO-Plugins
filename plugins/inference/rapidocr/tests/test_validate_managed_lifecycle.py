@@ -151,7 +151,9 @@ async def test_operator_route_binding_enforces_real_admission(monkeypatch):
     registry = "12345678-1234-4234-8234-123456789abc"
     secret = "route-test-secret-" + "x" * 32
     monkeypatch.setenv("AAP_ROUTE_REGISTRY_ID", registry)
-    monkeypatch.setenv("AAP_ROUTE_CONTROL_TOKEN", secret)
+    monkeypatch.setenv("ROUTE_CONTROL_TOKEN", secret)
+    monkeypatch.delenv("ROUTE_CONTROL_TOKEN_FILE", raising=False)
+    monkeypatch.delenv("AAP_ROUTE_CONTROL_TOKEN", raising=False)
     monkeypatch.delenv("AAP_ROUTE_CONTROL_TOKEN_FILE", raising=False)
     app = FastAPI()
     install_backend_routing_controller(app)

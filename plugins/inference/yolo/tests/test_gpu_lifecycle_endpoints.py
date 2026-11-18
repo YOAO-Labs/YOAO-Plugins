@@ -95,7 +95,7 @@ def _promote(client, private_key: Ed25519PrivateKey) -> str:
     response = client.post(
         "/lifecycle/mode",
         headers={
-            "X-AAP-GPU-Admission-Token": _token(
+            "X-YOAO-GPU-Admission-Token": _token(
                 private_key,
                 boot_id,
                 AdmissionScope.MODE,
@@ -118,8 +118,8 @@ def _workload_headers(
     jti: str,
 ) -> dict[str, str]:
     return {
-        "X-AAP-GPU-Generation": generation,
-        "X-AAP-GPU-Admission-Token": _token(
+        "X-YOAO-GPU-Generation": generation,
+        "X-YOAO-GPU-Admission-Token": _token(
             private_key,
             boot_id,
             scope,
@@ -299,8 +299,8 @@ def test_warmup_drain_unload_happy_path_and_tombstone(managed_client) -> None:
     drain = client.post(
         "/drain",
         headers={
-            "X-AAP-GPU-Generation": "2",
-            "X-AAP-GPU-Admission-Token": _token(
+            "X-YOAO-GPU-Generation": "2",
+            "X-YOAO-GPU-Admission-Token": _token(
                 private_key,
                 boot_id,
                 AdmissionScope.DRAIN,
@@ -318,8 +318,8 @@ def test_warmup_drain_unload_happy_path_and_tombstone(managed_client) -> None:
     unload = client.post(
         "/unload",
         headers={
-            "X-AAP-GPU-Generation": "2",
-            "X-AAP-GPU-Admission-Token": _token(
+            "X-YOAO-GPU-Generation": "2",
+            "X-YOAO-GPU-Admission-Token": _token(
                 private_key,
                 boot_id,
                 AdmissionScope.UNLOAD,

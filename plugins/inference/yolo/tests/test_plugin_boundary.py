@@ -24,7 +24,24 @@ def test_plugin_auth_managed_access_and_terminal_drain(tmp_path):
         CUDA_VISIBLE_DEVICES="-1",
         NVIDIA_VISIBLE_DEVICES="none",
     )
-    for name in ("AAP_PLUGIN_GPU_RESOURCE_ID", "AAP_PLUGIN_GPU_UUID", "AAP_PLUGIN_QUALIFICATION_FILE", "AAP_PLUGIN_QUALIFICATION_SHA256", "AAP_ROUTE_CONTROL_TOKEN", "AAP_ROUTE_CONTROL_TOKEN_FILE", "AAP_BACKEND_AUTH_TOKEN", "YOLO_MANAGED_MODELS_TOKEN"):
+    for name in (
+        "AAP_PLUGIN_GPU_RESOURCE_ID",
+        "AAP_PLUGIN_GPU_UUID",
+        "AAP_PLUGIN_QUALIFICATION_FILE",
+        "AAP_PLUGIN_QUALIFICATION_SHA256",
+        # Sanctioned unprefixed backend env plus its retired AAP_-prefixed spelling:
+        # the subprocess must not inherit either route-control or device authority.
+        "ROUTE_CONTROL_TOKEN",
+        "ROUTE_CONTROL_TOKEN_FILE",
+        "GPU_PHYSICAL_DEVICE_TOKEN",
+        "BACKEND_AUTH_DIR",
+        "AAP_ROUTE_CONTROL_TOKEN",
+        "AAP_ROUTE_CONTROL_TOKEN_FILE",
+        "AAP_GPU_PHYSICAL_DEVICE_TOKEN",
+        "AAP_BACKEND_AUTH_DIR",
+        "AAP_BACKEND_AUTH_TOKEN",
+        "YOLO_MANAGED_MODELS_TOKEN",
+    ):
         env.pop(name, None)
     script = textwrap.dedent('''
         from pathlib import Path

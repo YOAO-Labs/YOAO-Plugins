@@ -11,7 +11,19 @@ def test_cpu_plugin_http_and_terminal_retirement(tmp_path):
     data = tmp_path / "data"
     data.mkdir()
     registry = "12345678-1234-4234-8234-123456789abc"
-    env = {key: value for key, value in os.environ.items() if not key.startswith(("AAP_", "GPU_LIFECYCLE_"))}
+    # The subprocess must inherit no plugin, lifecycle or backend authority: the
+    # sanctioned backend env is unprefixed, so filter those names explicitly.
+    isolated = {
+        "BACKEND_AUTH_DIR",
+        "GPU_PHYSICAL_DEVICE_TOKEN",
+        "ROUTE_CONTROL_TOKEN",
+        "ROUTE_CONTROL_TOKEN_FILE",
+    }
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("AAP_", "GPU_LIFECYCLE_")) and key not in isolated
+    }
     env.update(
         AAP_PLUGIN_TOKEN_FILE=str(token_file), AAP_PLUGIN_DATA_DIR=str(data),
         AAP_PLUGIN_DEVICE="cpu", AAP_PLUGIN_ID="grounded-sam2",

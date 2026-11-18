@@ -616,7 +616,7 @@ async def _run_with_authority(
     )
     route_file.chmod(0o600)
     keyring_file.chmod(0o600)
-    os.environ["AAP_ROUTE_CONTROL_TOKEN_FILE"] = str(route_file)
+    os.environ["ROUTE_CONTROL_TOKEN_FILE"] = str(route_file)
     os.environ["AAP_PLUGIN_GPU_KEYRING_FILE"] = str(keyring_file)
     os.environ["ONNXTOOLS_IDLE_UNLOAD_SECONDS"] = "0"
     os.environ["ONNXTOOLS_BUILD_TIMEOUT"] = "300"

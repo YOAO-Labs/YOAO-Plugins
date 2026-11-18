@@ -293,7 +293,7 @@ async def _run() -> dict[str, Any]:
     route_file.write_text(route_secret)
     route_file.chmod(0o600)
     os.environ["AAP_PLUGIN_GPU_KEYRING_FILE"] = str(keyring_file)
-    os.environ["AAP_ROUTE_CONTROL_TOKEN_FILE"] = str(route_file)
+    os.environ["ROUTE_CONTROL_TOKEN_FILE"] = str(route_file)
     os.environ["YOLO_IDLE_UNLOAD_SECONDS"] = "0"
     os.environ["YOLO_BUILD_TIMEOUT"] = "300"
     os.environ["YOLO_STRICT_OFFLINE"] = "1"

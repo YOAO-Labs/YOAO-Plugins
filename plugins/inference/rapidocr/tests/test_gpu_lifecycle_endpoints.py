@@ -108,7 +108,7 @@ def _promote(client, private_key: Ed25519PrivateKey) -> str:
     response = client.post(
         "/lifecycle/mode",
         headers={
-            "X-AAP-GPU-Admission-Token": _token(
+            "X-YOAO-GPU-Admission-Token": _token(
                 private_key,
                 boot_id,
                 AdmissionScope.MODE,
@@ -147,7 +147,8 @@ def test_health_echoes_only_exact_gpu_challenge(managed_client) -> None:
 
 def test_health_reports_physical_gpu_selection(managed_client, monkeypatch) -> None:
     _, client, _ = managed_client
-    monkeypatch.setenv("AAP_GPU_PHYSICAL_DEVICE_TOKEN", "index:1")
+    monkeypatch.delenv("AAP_GPU_PHYSICAL_DEVICE_TOKEN", raising=False)
+    monkeypatch.setenv("GPU_PHYSICAL_DEVICE_TOKEN", "index:1")
     monkeypatch.setenv("NVIDIA_VISIBLE_DEVICES", "void")
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0")
 
@@ -166,8 +167,8 @@ def _workload_headers(
     jti: str,
 ) -> dict[str, str]:
     return {
-        "X-AAP-GPU-Generation": generation,
-        "X-AAP-GPU-Admission-Token": _token(
+        "X-YOAO-GPU-Generation": generation,
+        "X-YOAO-GPU-Admission-Token": _token(
             private_key,
             boot_id,
             scope,
@@ -381,8 +382,8 @@ def test_warmup_drain_unload_and_generation_tombstone(managed_client) -> None:
     drain = client.post(
         "/drain",
         headers={
-            "X-AAP-GPU-Generation": "2",
-            "X-AAP-GPU-Admission-Token": _token(
+            "X-YOAO-GPU-Generation": "2",
+            "X-YOAO-GPU-Admission-Token": _token(
                 private_key,
                 boot_id,
                 AdmissionScope.DRAIN,
@@ -400,8 +401,8 @@ def test_warmup_drain_unload_and_generation_tombstone(managed_client) -> None:
     unloaded = client.post(
         "/unload",
         headers={
-            "X-AAP-GPU-Generation": "2",
-            "X-AAP-GPU-Admission-Token": _token(
+            "X-YOAO-GPU-Generation": "2",
+            "X-YOAO-GPU-Admission-Token": _token(
                 private_key,
                 boot_id,
                 AdmissionScope.UNLOAD,
