@@ -1,6 +1,6 @@
 # YOAO Plugins
 
-本仓库仅持有官方推理实现：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md)、[ONNX Tools](plugins/inference/onnxtools/README.md)、[Grounded-SAM2](plugins/inference/grounded-sam2/README.md) 和 [SAM3](plugins/inference/sam3/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。第一方代码采用 [MIT](LICENSE)；第三方代码、模型权重与容器依赖继续适用各自的许可。模型权重、训练产物、数据集和凭据不提交到本仓库。
+YOAO（**You Only Annotate Once**）的六个官方推理插件在本仓库维护：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md)、[ONNX Tools](plugins/inference/onnxtools/README.md)、[Grounded-SAM2](plugins/inference/grounded-sam2/README.md) 和 [SAM3](plugins/inference/sam3/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。第一方代码采用 [MIT](LICENSE)；第三方代码、模型权重与容器依赖继续适用各自的许可。模型权重、训练产物、数据集和凭据不提交到本仓库。
 
 插件开发 SDK、共享推理运行时和 mask 工具由 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK) 持有；平台 API SDK、业务 owner、权限与持久化规则由平台持有。新的候选构建使用明确提供的契约及 SDK 制品 manifest 和 SHA256，不依赖平台 checkout，也不预设新版本发布地址。历史 YOLO 锁固定 [`contracts-906628f2619b`](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/contracts-906628f2619b)，manifest SHA256 为 `5c26a3829073324bf6f9cc29521457d296920424e5b1b3c34d672408aa956663`；历史 ONNX Tools 与 RapidOCR 锁固定 `contracts-3d6393e64630`，manifest SHA256 为 `d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec`。这些已发布事实不表示新命名制品已经发布，也不改变既有镜像的依赖。
 
@@ -21,17 +21,17 @@ python scripts/generate-selection-descriptor.py --plugin rapidocr --version 0.1.
 
 工具只描述具有完整发布身份的组合；本地缺少权重不等于无资产需求。LibreYOLO 声明原生 `yolov9` 系列四种尺寸与 `assets/` 路径，已有安装也须显式批准；RapidOCR 每个引擎都声明全部三个 session 的资产，包含尚未安装的组合；ONNX Tools 区分检测、分类和组合流水线；YOLO 两种跟踪算法共享检测器权重，World 与 YOLOE 文本任务分别需要对应编码器，视觉示例任务不需要文本编码器。目录描述不授予使用权。平台继续管理审批、可用性、本地文件核验、项目授权及存储；未确认许可的权重不得公开分发。
 
-Grounded-SAM2 的图像池同时构造 SAM、GroundingDINO 和 BERT，因此图像选择必须包含两个变体轴及全部依赖；视频 tracker 只选择 SAM。SAM3 区分图像／PVS 的 `sam3.pt` 与 multiplex 的 `sam3.1_multiplex.pt`，两者的访问和许可分别审批。两个目录模块均只依赖标准库。安装清单摘要必须取已发布 wheel 内 `pretrained-assets.json` 的原始字节，不对 JSON 重新序列化后计算。
+Grounded-SAM2 的图像池同时构造 SAM、GroundingDINO 和 BERT，因此图像选择必须包含两个变体轴及全部依赖；视频 tracker 只选择 SAM。SAM3 区分图像／PVS 的 `sam3.pt` 与 multiplex 的 `sam3.1_multiplex.pt`，两者的访问和许可分别审批。两个目录模块均只依赖标准库。安装清单摘要取与镜像匹配且经核验的 wheel 内 `pretrained-assets.json` 的原始字节，不对 JSON 重新序列化后计算。
 
 ## 已安装环境下的插件开发
 
-使用经校验的 SDK、运行时和契约候选 wheel 及其完整哈希锁安装开发环境；当前改名不代表这些候选已公开发布。制品生成和安装边界见 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK#portable-contracts-and-local-development)。SDK 的通用入口为 `yoao-plugin`：
+先核验 SDK 和平台契约各自的 manifest 及 wheel，再按 SDK manifest 的 `source_revision` 阅读该修订的 `packages/inference/sdk/README.md`。公开旧版的 `aap-inference-plugin` 不能用于当前候选。自定义检测插件使用作者命令 `yoao-plugin`，不是管理员的 `yoao plugins`。在独立的 Python 3.11 环境准备完整 wheelhouse 和可信哈希锁，锁中也要包含 `build`、`setuptools>=68` 和 `wheel`：
 
 ```sh
+python -m pip install --no-index --find-links="$WHEELHOUSE" --require-hashes -r "$REQUIREMENTS_LOCK"
 yoao-plugin init my-plugin
-cd my-plugin
-uv lock --python 3.11 --no-index --find-links /private/complete-wheelhouse
-uv sync --python 3.11 --frozen --no-index --find-links /private/complete-wheelhouse
+yoao-plugin build my-plugin
+python -m pip install --no-index --no-deps my-plugin/dist/*.whl
 ```
 
 通用 SDK 不准备 LibreYOLO 权重。需要官方 LibreYOLO 模型时，请先审查模型许可，然后使用 [LibreYOLO 文档](plugins/inference/libreyolo/README.md)中的 `yoao-libreyolo prepare-assets`。本地开发 token 不是平台管理员凭据，本地预检不等于受管平台部署资格。
@@ -104,5 +104,4 @@ python3.11 scripts/build-libreyolo-candidate.py --revision HEAD --output /privat
 
 构建器校验 manifest 和选中 wheel 的摘要，结合第三方哈希锁组装 wheelhouse 与 `requirements.lock`；第三方依赖获取仍需网络。`--dependency-cache` 可省略，源码目录不会作为 editable 运行依赖。候选包不上传，制品生成、安装成功或 CPU 测试均不构成公开发布或模型／GPU 资格。
 
-
-构建器不会上传制品，也不包含 SDK、运行时或 mask 源码、模型权重或第三方 wheel。独立的私有哈希锁定候选包与 OCI 流程见各插件文档；公开第一方制品不等于获准公开第三方模型镜像或权重。
+第一方发布输入（`build-plugin-artifacts.py`）不含第三方 wheel；私有离线候选（`build-libreyolo-candidate.py`）会装入匹配环境的依赖 wheel，但不包含模型权重。两种构建均不上传制品，也不授予 OCI 镜像或权重的再分发许可。

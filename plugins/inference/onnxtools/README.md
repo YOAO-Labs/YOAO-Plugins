@@ -1,6 +1,6 @@
 # yoao-onnxtools-plugin
 
-二阶段车辆属性预标注 ML backend：RT-DETR 检测后，对机动车 ROI 执行车型与颜色分类，并把属性写回检测框。实现基于 [onnxtools](https://github.com/yyq19990828/onnxtools)。
+ONNX Tools 是 YOAO 的官方推理插件：先用 RT-DETR 检测车辆，再对机动车 ROI 分类，将车型和颜色写回检测框。实现基于 [onnxtools](https://github.com/yyq19990828/onnxtools)。
 本服务源代码依仓库 MIT 许可证分发；上游 `onnxtools` 固定到
 `102fcfeb08fc00f865c334a181bfd0bb518e5ed8`，其代码和全部第三方依赖遵循各自许可证。
 模型、验收图、第三方 wheel 和 OCI 镜像未获授权公开再分发；镜像不包含权重。
@@ -56,7 +56,7 @@ python <venv>/share/yoao-onnxtools-plugin/create_plugin_manifest.py <inspected-d
 - 所有已加载 session 都可确认只使用 CPU，`gpu_loaded=false`。
 - 私有 session 路径不可读、构建/清理状态不确定或清理失败时返回 `null`。
 
-Dockerfile 固定到已审计的 onnxtools commit，避免 `_onnx_session` ownership 契约随上游 `main` 漂移。内置服务在真实 GPU 全池卸载验证完成前必须保持 `ONNXTOOLS_MANAGED_LIFECYCLE_VERIFIED=0`；CUDA 插件只能使用已批准且与镜像、资源、模型和实际 runtime 匹配的验收报告，不能用这个内置服务开关替代报告。
+Dockerfile 固定到已审计的 onnxtools commit，避免 `_onnx_session` 所有权契约随上游 `main` 漂移。以独立服务部署（非原生插件安装）时，在真实 GPU 全池卸载验证完成前保持 `ONNXTOOLS_MANAGED_LIFECYCLE_VERIFIED=0`。原生 CUDA 插件必须使用与镜像、资源、模型和实际运行时匹配的批准报告；独立部署开关不能替代报告。
 
 验收器会在加载 CUDA 前校验两个模型和三张验收图的批准 SHA-256 与审批引用，不允许用未批准模型或图片代替业务资产。使用实际已注册的插件、registry、资源与镜像身份，在获准独占验收卡上执行：
 
@@ -82,8 +82,7 @@ export AAP_PLUGIN_MANAGED_MODEL_COMPATIBILITY='<registered-compatibility-json>'
 export AAP_PLUGIN_TOKEN_FILE=/absolute/path/to/private-plugin-token
 export VALIDATION_IMAGE=<local-qualified-image-tag>
 export VALIDATION_GIT_COMMIT=$(git rev-parse HEAD)
-export EVIDENCE_DIR=/tmp/aap-gpu-acceptance
-install -d -m 700 "$EVIDENCE_DIR"
+export EVIDENCE_DIR="$(mktemp -d)"
 set -o pipefail
 
 docker run --rm --gpus "device=$VALIDATION_GPU_UUID" --entrypoint python3 \
@@ -140,7 +139,7 @@ wheel 亦将同一验收器安装至 `share/yoao-onnxtools-plugin/validate_manag
 
 | 变量                                   | 默认                     | 说明                                                    |
 | -------------------------------------- | ------------------------ | ------------------------------------------------------- |
-| `ONNXTOOLS_MODEL_DIR`                  | `/app/models`            | 内置服务模型目录；插件使用 `AAP_PLUGIN_DATA_DIR/models` |
+| `ONNXTOOLS_MODEL_DIR`                  | `/app/models`            | 独立部署的模型目录；原生插件使用 `AAP_PLUGIN_DATA_DIR/models` |
 | `ONNXTOOLS_DET_MODEL`                  | `rtdetr-2024080100.onnx` | 检测模型文件名                                          |
 | `ONNXTOOLS_VA_MODEL`                   | `va_260612.onnx`         | 属性分类模型文件名                                      |
 | `ONNXTOOLS_CONF_THRES`                 | `0.5`                    | 检测置信度阈值                                          |
@@ -173,7 +172,7 @@ docker build -f plugins/inference/onnxtools/Dockerfile \
 `NVIDIA_VISIBLE_DEVICES=void`，并使用现有插件治理注入的私有 token 和配置。
 CPU 健康检查或推理不构成 CUDA 验收。
 
-内置服务的 ONNX Runtime 在缺少可用 GPU provider 时可退回 CPU；严格 CUDA 插件拒绝将整个业务 session 退回 CPU。`compute` 报告实际 primary provider，`residency` 独立表达 GPU session 是否仍可能驻留。
+独立部署时，ONNX Runtime 在没有可用 GPU provider 时可退回 CPU。原生 CUDA 插件拒绝将整个业务 session 退回 CPU；原生 CPU 插件显式使用 CPU provider。`compute` 报告实际 primary provider，`residency` 独立表达 GPU session 是否仍可能驻留。
 
 ## Python 依赖与镜像构建
 
