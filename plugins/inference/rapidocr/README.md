@@ -1,7 +1,9 @@
 # yoao-rapidocr-plugin
 
-RapidOCR（ONNX）ML backend，平台首个真实 OCR backend。把 RapidOCR 的 `det → cls → rec`
-三段拆为**原子能力 + 端到端编排**，对外自报三个 model：
+## 能力与编排
+
+RapidOCR（ONNX）将 `det → cls → rec` 三段拆为**原子能力 + 端到端编排**，
+通过 `/setup` 声明三个模型：
 
 | model_id  | 任务        | 输入 → 输出                                     | composition                 |
 | --------- | ----------- | ----------------------------------------------- | --------------------------- |

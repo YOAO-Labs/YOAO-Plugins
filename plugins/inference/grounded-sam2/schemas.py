@@ -1,4 +1,6 @@
-"""Request / response Pydantic schemas, aligned with docs-site/dev/ml-backend-protocol.md §2.
+"""Pydantic request and response schemas for the platform's ML backend protocol (POST /predict).
+
+See docs-site/dev/reference/ml-backend-protocol.md §2 in the platform repository.
 
 通用部分 (TaskItem / PredictionResult / BatchPredictResponse) 来自
 `apps/_shared/protocol_v2/` 共享包, 单一来源避免与 sam3-backend / yolo-backend 之间

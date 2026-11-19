@@ -1,6 +1,6 @@
 # SAM3 inference plugin
 
-Independent `yoao-sam3-plugin` 0.10.0 distribution. The HTTP service retains the platform's complete `/setup`, `/predict`, image and video sessions, lifecycle, admission, cancellation and drain contracts. It uses Python 3.12, PyTorch 2.7.1, torchvision 0.22.1 and CUDA 12.8. SAM3 inference is CUDA-only: a CPU is not a fallback.
+`yoao-sam3-plugin` serves `/setup`, `/predict`, image and video sessions, and the platform's lifecycle, admission, cancellation and drain contracts. It uses Python 3.12, PyTorch 2.7.1, torchvision 0.22.1 and CUDA 12.8. SAM3 requires CUDA and does not fall back to CPU.
 
 The configured logical CUDA device is used for image model placement and for the
 vendor's implicit CUDA operations in image and video construction and inference.

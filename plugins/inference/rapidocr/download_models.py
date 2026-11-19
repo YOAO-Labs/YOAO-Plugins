@@ -6,7 +6,7 @@ from RapidOCR v3.9.0's ModelScope repository. The weights are not committed
 (see models/.gitignore); this script downloads them to
 ``models/<version>/<component>/<file>.onnx`` for a Docker bind mount.
 
-能力对应（详见 docs/plans/2026-06-29-v0.20.0-rapidocr-backend.md「锁定模型矩阵」）：
+组件与变体对应关系（参见本插件 README.md 的「变体（version × size × lang）」一节）：
   det  原子（detection）：v5 mobile/server + v6 tiny/small/medium
   cls  内化共享（方向，语言/版本无关）：mobile/server
   rec  原子（ocr）：通用(中英) v5 mobile/server + v6 tiny/small/medium、英文 v5 mobile

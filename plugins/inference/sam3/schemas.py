@@ -1,15 +1,8 @@
 """Request / response Pydantic schemas, aligned with docs-site/dev/reference/ml-backend-protocol.md §2.
 
-`Context.type` 在 grounded-sam2 的 point/bbox/polygon/text 基础上新增
-`"exemplar"`: 取图中已有一个 bbox 作为视觉示例, 由 SAM 3 PCS 一步出全图相似实例的 masks.
-
-`exemplar` 复用 `bbox` 字段承载 [x1, y1, x2, y2] (归一化 [0,1]), 语义靠 `type` 区分,
-避免协议字段爆炸; apps/api 仅在项目挂了 sam3-backend 时才允许前端发起 exemplar 请求.
-
-⚠️ sam3-backend 实际只实现 bbox/text/exemplar 三种 (放弃 point).
-`Literal` 保留 "point" 是为了协议层一致性 (apps/api 同一 schema 跨多个 backend);
-sam3-backend main.py 收到 type=point 时返回 400. /setup.supported_prompts 也明确
-不含 "point", 前端按此动态启用工具.
+点和交互框分别使用 `type="point"` 与 `type="interactive_box"` 进行单实例分割。
+`type="exemplar"` 将视觉示例交给 SAM3 PCS，在整张图中查找相似实例。交互框和单个
+视觉示例均可用 `bbox` 传入归一化 xyxy 坐标；多个正负示例通过 `exemplars` 传入。
 
 通用部分 (TaskItem / PredictionResult / BatchPredictResponse) 来自
 `apps/_shared/protocol_v2/` 共享包, 单一来源避免与 grounded-sam2-backend / yolo-backend
@@ -85,8 +78,8 @@ class Context(BaseModel):
     def canonical_task_fields(cls, value):
         return normalize_context_task(value) if isinstance(value, dict) else value
 
-    # "interactive_box" = SAM-style 单框单 mask (开 inst 后); "bbox" 为纯几何形状,
-    # 不再作交互 prompt (PCS 全图相似统一走 "exemplar"). "point" 升级为 inst 单实例点交互 (累加).
+    # interactive_box 是单框单 mask，point 支持累加点提示；全图相似实例使用 exemplar。
+    # bbox 是几何字段，不是交互提示类型。
     type: Literal[
         "point",
         "interactive_box",

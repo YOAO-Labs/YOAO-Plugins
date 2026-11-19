@@ -1,4 +1,4 @@
-"""v0.14.15 protocol v2.1 model_variant contract tests."""
+"""Protocol v2.1 model_variant contract tests."""
 
 from __future__ import annotations
 

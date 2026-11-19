@@ -439,14 +439,14 @@ def test_setup_conf_description_task_neutral(setup_dict: dict) -> None:
 
 
 def test_setup_closed_set_conf_default_unchanged(setup_dict: dict) -> None:
-    """闭集四 task conf 默认值逐字节不变 (零回归: 仍 0.25)。"""
+    """闭集四个任务的默认置信度阈值均为 0.25。"""
     for mid in CLOSED_IDS:
         m = next(x for x in setup_dict["models"] if x["id"] == mid)
         assert m["params"]["properties"]["conf"]["default"] == 0.25, mid
 
 
 def test_setup_openvocab_conf_default_and_desc(setup_dict: dict) -> None:
-    """开集文本三 model 默认仍 0.25 (本版无实测证据下调), 文案点明开集语义。"""
+    """三个开集文本模型的默认阈值是 0.25，描述说明开集匹配语义。"""
     for mid in OPENVOCAB_DETECT_IDS | OPENVOCAB_SEGMENT_IDS:
         m = next(x for x in setup_dict["models"] if x["id"] == mid)
         conf = m["params"]["properties"]["conf"]

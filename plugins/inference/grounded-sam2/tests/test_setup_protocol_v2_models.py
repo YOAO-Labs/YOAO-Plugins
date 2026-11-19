@@ -1,8 +1,7 @@
-"""v0.14.11 · gsam2 协议 v2 多模型目录测试.
+"""Grounded-SAM2 协议 v2 多模型目录测试。
 
-验证 /setup 的 models[] 把 gsam2 的 4 条实际能力 (detection / segmentation /
-tracker / interactive_seg) 各拆成独立 model 条目, 让平台「协议能力目录」按 task
-正确归类。
+验证 /setup 的 models[] 将文本检测、文本分割、视频追踪、交互分割和批量框分割
+各声明为独立模型，供平台协议能力目录按任务归类。
 """
 
 from __future__ import annotations
@@ -41,14 +40,14 @@ def test_setup_protocol_version_v22():
 
 
 def test_setup_exposes_five_models():
-    """v0.18.12 起新增 box-seg 原子, 共 5 个 model。"""
+    """目录声明五个模型，包括批量框分割原子。"""
     data = setup()
     assert isinstance(data["models"], list)
     assert len(data["models"]) == 5
 
 
 def test_box_seg_model_is_public_non_interactive_atom():
-    """v0.18.12 · 框→mask 批量分割原子: public(无 visibility)、非交互、composition=atom、bbox→polygon。"""
+    """批量框分割是公开、非交互的原子能力，输入 bbox 并输出 polygon。"""
     data = setup()
     box_seg = next(m for m in data["models"] if m["id"] == "grounded-sam2-box-seg")
     assert box_seg["task"] == "segment"
@@ -61,7 +60,7 @@ def test_box_seg_model_is_public_non_interactive_atom():
 
 
 def test_composition_annotations():
-    """v0.18.12 · 各 model 显式标 composition(原子 vs 内部编排)。"""
+    """各模型在 composition 中声明原子能力或内部编排。"""
     by_id = {m["id"]: m for m in setup()["models"]}
     assert by_id["grounded-sam2-detection"]["composition"] == "atom"
     assert by_id["grounded-sam2-segmentation"]["composition"] == "composite"
@@ -77,7 +76,7 @@ def test_setup_models_cover_protocol_tasks():
 
 
 def test_setup_models_declare_supported_inputs():
-    """v0.18.16 · 各 model 显式声明 supported_inputs (一等输入契约)。"""
+    """各模型在 supported_inputs 中显式声明输入契约。"""
     by_id = {m["id"]: m for m in setup()["models"]}
     assert by_id["grounded-sam2-detection"]["supported_inputs"] == [
         "full_image",
@@ -107,7 +106,7 @@ def test_setup_models_declare_supported_inputs():
 
 
 def test_setup_models_declare_output_attribute_types():
-    """v0.18.16 · 文本检测/分割自报类别; 交互/追踪/框→mask 不自产属性 (留空)。score 不入属性。"""
+    """文本检测和文本分割声明类别；交互、追踪和批量框分割不声明自产属性。score 不计入属性。"""
     by_id = {m["id"]: m for m in setup()["models"]}
     assert by_id["grounded-sam2-detection"]["output_attribute_types"] == ["class"]
     assert by_id["grounded-sam2-segmentation"]["output_attribute_types"] == ["class"]
@@ -118,7 +117,7 @@ def test_setup_models_declare_output_attribute_types():
 
 
 def test_setup_models_declare_resource_profile():
-    """v0.18.16 · 资源画像: 批量模型 batchable=True, 交互/视频追踪逐次 batchable=False (不填 vram)。"""
+    """批量模型声明 batchable=True，交互和视频追踪逐次运行；均不声明显存。"""
     by_id = {m["id"]: m for m in setup()["models"]}
     assert by_id["grounded-sam2-detection"]["resource_profile"] == {
         "device": "gpu",
@@ -167,7 +166,7 @@ def test_segmentation_model_text_to_polygon():
 def test_interactive_seg_model_point_box_to_native_mask():
     data = setup()
     inter = next(m for m in data["models"] if m["task"] == "interactive_seg")
-    # v0.18.17 · bbox→interactive_box (图像交互单框单 mask).
+    # 图像交互使用 interactive_box，单框生成单个 mask。
     assert set(inter["supported_prompts"]) == {
         "point",
         "interactive_box",
@@ -215,7 +214,7 @@ def test_tracker_preserves_validated_correction_frame_seed():
 def test_top_level_back_compat_fields_unchanged():
     """顶层 supported_prompts / supported_trackers 保留, 供未升级平台合成隐式单 model."""
     data = setup()
-    # v0.18.17 · bbox→interactive_box (图像交互); tracker/box-seg 的 bbox 不在顶层 prompts.
+    # 图像交互框为 interactive_box；追踪和批量框分割的 bbox 不在顶层声明。
     assert set(data["supported_prompts"]) == {
         "point",
         "interactive_box",

@@ -1,4 +1,4 @@
-"""v0.14.11 · SAM 3 协议 v2 多模型目录测试.
+"""SAM3 协议 v2 多模型目录测试。
 
 验证 /setup 的 models[] 暴露 detection / segmentation / interactive_seg /
 tracker 四条能力。
@@ -56,7 +56,7 @@ def test_setup_each_model_carries_infra_pytorch(setup_fn):
 
 
 def test_setup_models_declare_supported_inputs(setup_fn):
-    """v0.18.16 · 各 model 显式声明 supported_inputs (一等输入契约)。"""
+    """各模型在 supported_inputs 中显式声明输入契约。"""
     by_id = {m["id"]: m for m in setup_fn()["models"]}
     assert by_id["sam3-detection"]["supported_inputs"] == ["full_image", "crop"]
     assert by_id["sam3-segmentation"]["supported_inputs"] == ["full_image", "crop"]
@@ -80,7 +80,7 @@ def test_setup_models_declare_supported_inputs(setup_fn):
 
 
 def test_setup_models_declare_output_attribute_types(setup_fn):
-    """v0.18.16 · 检测/分割自报类别; 交互分割不自产属性 (留空)。score 不入属性。"""
+    """检测和文本分割声明类别；交互分割不声明自产属性。score 不计入属性。"""
     by_id = {m["id"]: m for m in setup_fn()["models"]}
     assert by_id["sam3-detection"]["output_attribute_types"] == ["class"]
     assert by_id["sam3-segmentation"]["output_attribute_types"] == ["class"]
@@ -88,7 +88,7 @@ def test_setup_models_declare_output_attribute_types(setup_fn):
 
 
 def test_setup_models_declare_resource_profile(setup_fn):
-    """v0.18.16 · 资源画像: 批量模型 batchable=True, 交互分割逐次 batchable=False (不填 vram)。"""
+    """批量模型声明 batchable=True，交互分割逐次运行；均不声明显存。"""
     by_id = {m["id"]: m for m in setup_fn()["models"]}
     assert by_id["sam3-detection"]["resource_profile"] == {
         "device": "gpu",
@@ -130,7 +130,7 @@ def test_tracker_models_declare_each_sam3_video_mode(setup_fn):
 
 
 def test_interactive_seg_model_prompts(setup_fn):
-    """v0.18.17 · 交互分割含 SAM-style point/interactive_box (inst) + exemplar (PCS)."""
+    """实例分割接收点、交互框、Mask 和笔迹提示；PCS 接收视觉示例。"""
     data = setup_fn()
     inter = next(m for m in data["models"] if m["task"] == "interactive_seg")
     assert inter["supported_prompts"] == [
@@ -173,7 +173,7 @@ def test_only_pvs_advertises_mask_correction_seed(setup_fn):
 
 
 def test_models_carry_composition_dimension(setup_fn):
-    """v0.18.12 · composition 维度: 检测/交互分割=atom, 文本分割(内置 检测→分割)=composite."""
+    """检测和交互分割是原子能力；文本分割在内部编排检测与分割。"""
     data = setup_fn()
     comp = {m["task"]: m.get("composition") for m in data["models"]}
     assert comp["detect"] == "atom"
@@ -182,7 +182,7 @@ def test_models_carry_composition_dimension(setup_fn):
 
 
 def test_top_level_back_compat_fields_unchanged(setup_fn):
-    """v0.18.17 · 顶层 supported_prompts: point/interactive_box/text/exemplar (bbox 已退役)."""
+    """顶层兼容字段包含交互、文本和视觉示例提示，但不把几何 bbox 作为提示。"""
     data = setup_fn()
     assert set(data["supported_prompts"]) == {
         "point",

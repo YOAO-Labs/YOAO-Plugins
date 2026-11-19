@@ -1,6 +1,6 @@
 """Grounded-SAM-2 ML Backend — FastAPI 入口.
 
-实现 docs-site/dev/ml-backend-protocol.md 规定的 4 个端点 + 2 个观测端点:
+平台协议见平台仓库 docs-site/dev/reference/ml-backend-protocol.md。主要端点和观测端点：
     GET  /health        探活
     GET  /setup         模型配置
     GET  /versions      可用版本
@@ -10,10 +10,9 @@
 
 prompt 类型:
     - context.type == "point"           → SAM 直接出 mask (正/负点累加; multimask 候选)
-    - context.type == "interactive_box" → SAM 单框单 mask (旧 "bbox" 改名)
+    - context.type == "interactive_box" → SAM 单框单 mask
     - context.type == "text"            → GroundingDINO 出 boxes → SAM 出 mask（可批量）
-    注: "bbox" 已退出交互 prompt 命名空间 (旧 type=bbox 落 422); tracker / box-seg 的 bbox
-    是几何输入/追踪种子, 走 geometry-prompt 批量路径, 与此无关.
+    注: 交互请求中的 type=bbox 返回 422；tracker 的追踪种子和 box-seg 的批量几何输入仍使用 bbox。
 
 SAM 2 image embedding LRU 缓存:
     cache_key = sha1(url_path|sam_variant); 同图二次操作跳过 ~1.5s 的 image encoder.

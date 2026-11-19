@@ -1,7 +1,7 @@
 """RapidOCR plugin capability catalog (SSOT).
 
-单一来源同时驱动 `/setup` 自报（main.py）与 `/predict` 路由解析（predictor.py），
-避免两处漂移。详见 docs/plans/2026-06-29-v0.20.0-rapidocr-backend.md「能力分解」。
+同一目录驱动 `/setup` 的能力声明（main.py）和 `/predict` 的路由解析（predictor.py）。
+参见本插件 README.md 的「能力与编排」一节。
 
 三个对外 model（映射平台现成任务族）：
 - ``ocr-det`` 文本检测（detection，原子）：full_image → polygon 文本框，无属性。

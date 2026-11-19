@@ -10,8 +10,10 @@ YOAO（**You Only Annotate Once**）的六个官方推理插件在本仓库维�
 
 `scripts/generate-selection-descriptor.py` 为固定摘要的原生部署生成独立的规范 JSON 文件，描述每个模型／变体预期使用的资产。它不替换安装的 `asset_manifest_sha256`，也不读取权重内容、下载、批准或启用模型。使用与镜像匹配的源码和插件发布清单；YOLO 的源码侧工具环境还需安装插件锁文件固定的 `yoao-task-contract` 和 `yoao-training-contract` wheel，LibreYOLO 使用其锁定的 `httpx` 依赖读取现有资产描述模块。
 
+将 `PLUGIN_VERSION` 设为该安装清单中的插件版本。
+
 ```sh
-python scripts/generate-selection-descriptor.py --plugin rapidocr --version 0.1.0 \
+python scripts/generate-selection-descriptor.py --plugin rapidocr --version "$PLUGIN_VERSION" \
   --artifact 'registry.example/rapidocr@sha256:<64-hex-digest>' \
   --asset-manifest-sha256 '<64-hex-installation-manifest-digest>' \
   --data-dir /private/plugin-data --output /private/rapidocr-selections.json

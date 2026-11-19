@@ -1,4 +1,4 @@
-"""v0.14.15 protocol v2.1 variant normalization and error contract tests."""
+"""Protocol v2.1 variant normalization and error contract tests."""
 
 from __future__ import annotations
 

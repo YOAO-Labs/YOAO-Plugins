@@ -1,6 +1,8 @@
 # Grounded-SAM-2 plugin
 
-Distribution `yoao-grounded-sam2-plugin` 0.10.1 retains the platform backend's protocol 2.2 service, its distinct image and video model pools, and its stateful tracker sessions. The runtime baseline is Python 3.10, PyTorch 2.3.1, torchvision 0.18.1 and CUDA 12.1. Its pinned third-party source submodule is IDEA-Research/Grounded-SAM-2 at `b7a9c29f196edff0eb54dbe14588d7ae5e3dde28`; initialize recursively before a Docker build. SAM 2 and GroundingDINO source retain their upstream Apache-2.0 licenses and notices; the first-party MIT license does not override third-party source or model terms.
+`yoao-grounded-sam2-plugin` serves ML Backend protocol v2.2 with separate image and video model pools and stateful tracker sessions. The runtime baseline is Python 3.10, PyTorch 2.3.1, torchvision 0.18.1 and CUDA 12.1.
+
+Initialize the pinned IDEA-Research/Grounded-SAM-2 submodule at `b7a9c29f196edff0eb54dbe14588d7ae5e3dde28` recursively before building the Docker image. SAM 2 and GroundingDINO source retain their upstream Apache-2.0 licenses and notices; the first-party MIT license does not override third-party source or model terms.
 
 The image retains upstream license files under `/usr/share/licenses/grounded-sam2-vendor`, including the BSD-3-Clause cctorch notice. The submodule remains the authoritative source and license inventory.
 

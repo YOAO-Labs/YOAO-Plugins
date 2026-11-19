@@ -662,7 +662,7 @@ def _build_params_schema(
     return schema
 
 
-# 闭集四 task + 顶层 hint 共用基础默认 (等价改造前, 零回归)。
+# 闭集四个任务和顶层参数提示共用基础默认值。
 _PARAMS_SCHEMA = _build_params_schema()
 
 # obb: iou 仍走 NMS 但是旋转 (probiou) 版本, 阈值语义不变; 文案补一句说明。conf/max_det 同基础。
@@ -671,8 +671,8 @@ _OBB_PARAMS_SCHEMA = _build_params_schema(
     "调高保留更多重叠框, 调低更严格去重.",
 )
 
-# 开集文本 (detect-world / detect-yoloe / segment-yoloe): conf 是文本匹配置信度。默认仍取 0.25
-# (与闭集同值)——本版无 GPU 实测证据下调, 不盲改 (校准依据见计划 §3); 仅文案点明开集语义。
+# 开集文本（detect-world / detect-yoloe / segment-yoloe）的 conf 是文本匹配置信度。
+# 默认值与闭集相同（0.25）；调整阈值前需进行 GPU 实测标定。
 _OPENVOCAB_PARAMS_SCHEMA = _build_params_schema(
     conf_desc="保留文本匹配置信度高于此值的结果. YOLOE/World 开集打分偏保守, "
     "调高=更少更准, 调低=更多但含噪.",
