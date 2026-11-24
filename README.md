@@ -1,6 +1,11 @@
 # YOAO Plugins
 
-YOAO（**You Only Annotate Once**）的六个官方推理插件在本仓库维护：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md)、[ONNX Tools](plugins/inference/onnxtools/README.md)、[Grounded-SAM2](plugins/inference/grounded-sam2/README.md) 和 [SAM3](plugins/inference/sam3/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。第一方代码采用 [MIT](LICENSE)；第三方代码、模型权重与容器依赖继续适用各自的许可。模型权重、训练产物、数据集和凭据不提交到本仓库。
+YOAO（**You Only Annotate Once**）的六个官方推理插件与官方通知渠道插件在本仓库维护：
+
+- **推理插件（`plugins/inference/`）**：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md)、[ONNX Tools](plugins/inference/onnxtools/README.md)、[Grounded-SAM2](plugins/inference/grounded-sam2/README.md) 和 [SAM3](plugins/inference/sam3/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。
+- **通知渠道插件（`plugins/notification-channel/`）**：[飞书私信（Feishu DM）](plugins/notification-channel/feishu-dm/README.md)（零依赖 Node.js 20+ ESM 参考实现，遵循 `yoao-notification-channel/v1` 与 `yoao-extension-manifest/v1`，支持直连档裸进程与非 root 只读 OCI 容器两种形态）。
+
+第一方代码采用 [MIT](LICENSE)；第三方代码、模型权重与容器依赖继续适用各自的许可。模型权重、训练产物、数据集和凭据不提交到本仓库。
 
 插件开发 SDK、共享推理运行时和 mask 工具由 [Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK) 持有；平台 API SDK、业务 owner、权限与持久化规则由平台持有。新的候选构建使用明确提供的契约及 SDK 制品 manifest 和 SHA256，不依赖平台 checkout，也不预设新版本发布地址。历史 YOLO 锁固定 [`contracts-906628f2619b`](https://github.com/YOAO-Labs/Plugin-SDK/releases/tag/contracts-906628f2619b)，manifest SHA256 为 `5c26a3829073324bf6f9cc29521457d296920424e5b1b3c34d672408aa956663`；历史 ONNX Tools 与 RapidOCR 锁固定 `contracts-3d6393e64630`，manifest SHA256 为 `d3749d2a7429da60c02e222c65e9c4a5ec545b050b797422263d5a3bcb02ddec`。这些已发布事实不表示新命名制品已经发布，也不改变既有镜像的依赖。
 

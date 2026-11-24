@@ -1,0 +1,15 @@
+{
+  "name": "yoao-feishu-dm-channel-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Zero-dependency Node.js Feishu DM notification channel plugin for YOAO (yoao-notification-channel/v1).",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}

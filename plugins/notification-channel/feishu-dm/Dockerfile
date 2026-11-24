@@ -1,0 +1,16 @@
+FROM node:22-alpine
+
+LABEL io.yoao.plugin.manifest='{"manifest_schema":"yoao-extension-manifest/v1","extension_point":"notification_channel","plugin_id":"yoao-feishu-dm","version":"1.0.0","display_name":"飞书私信","description":"通过飞书自建应用向已绑定 open_id 的平台成员发送脱敏任务与作业卡片通知。","homepage":"https://github.com/YOAO-Labs/YOAO-Plugins/tree/main/plugins/notification-channel/feishu-dm","publisher":"yoao","license":"MIT","protocol_version":"yoao-notification-channel/v1","entrypoint":["node","/app/src/server.mjs"],"capabilities":["deliver","verify_address"],"resource":{"memory_mb":128},"extension":{"channel_id":"feishu_dm","address_schema":{"type":"object","title":"飞书接收地址","description":"在飞书开放平台或企业通讯录获取的用户 open_id。","properties":{"open_id":{"type":"string","title":"飞书 Open ID","description":"以 ou_ 开头的飞书用户 open_id","minLength":4,"maxLength":128}},"required":["open_id"],"additionalProperties":false},"allowed_egress_hosts":["open.feishu.cn"]}}'
+
+WORKDIR /app
+COPY package.json manifest.json ./
+COPY src ./src
+
+ENV NODE_ENV=production \
+    YOAO_CHANNEL_HOST=0.0.0.0 \
+    YOAO_CHANNEL_PORT=8090
+
+USER node
+EXPOSE 8090
+
+ENTRYPOINT ["node", "/app/src/server.mjs"]

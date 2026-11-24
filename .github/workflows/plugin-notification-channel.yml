@@ -1,0 +1,22 @@
+name: Plugin notification channel acceptance
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  feishu-dm-node20:
+    name: Plugin Feishu DM Node 20
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run Feishu DM plugin unit and manifest tests
+        run: node --test plugins/notification-channel/feishu-dm/test/plugin.test.mjs
