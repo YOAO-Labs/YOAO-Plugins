@@ -1,0 +1,22 @@
+name: Plugin format adapter acceptance
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  labelme-json-node20:
+    name: Plugin LabelMe JSON Node 20
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run LabelMe JSON plugin unit and manifest tests
+        run: node --test plugins/format-adapter/labelme-json/test/plugin.test.mjs

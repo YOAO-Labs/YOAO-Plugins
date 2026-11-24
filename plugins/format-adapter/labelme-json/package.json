@@ -1,0 +1,15 @@
+{
+  "name": "@yoao/format-adapter-labelme-json",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zero-dependency Node.js LabelMe JSON format adapter plugin for YOAO (yoao-format-adapter/v1).",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test test/plugin.test.mjs"
+  }
+}
