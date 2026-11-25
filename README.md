@@ -12,6 +12,18 @@ YOAO（**You Only Annotate Once**）的官方推理插件、通知渠道插件�
 
 各插件拥有其预训练模型目录（固定来源、摘要和许可信息）；平台独立管理审批、存储、缓存准备和用户 checkpoint。目录可见不代表允许下载、启用或重新分发。容器与真实业务资格独立于源码公开和 Python 包发布。
 
+## 推理插件独立 Compose 配置
+
+除通过平台 `yoao plugins install`（受管容器档）或非容器直连档（`direct`）接入外，官方推理插件的独立 Docker Compose 参考配置统一随各插件维护在对应目录，不再滞留于平台主仓库根目录：
+
+- `plugins/inference/grounded-sam2/docker-compose.yml`（profile `gpu`）
+- `plugins/inference/sam3/docker-compose.yml`（profile `gpu-sam3`）
+- `plugins/inference/yolo/docker-compose.yml`（profile `gpu-yolo`，自带 `yolo_checkpoints` 命名卷）
+- `plugins/inference/onnxtools/docker-compose.yml`（profile `gpu-onnxtools`）
+- `plugins/inference/rapidocr/docker-compose.yml`（profile `gpu-rapidocr`）
+
+与平台根 Compose 叠加使用时显式传入 `--project-directory <platform-root>` 及本仓对应插件的 `-f <yoao-plugins>/plugins/inference/<plugin>/docker-compose.yml`，并仅针对目标插件服务执行 `up -d <plugin-service>`（不要借插件叠加文件重建平台 Celery worker，以保持宿主机开发重启标签整洁）；平台主仓库中的宿主机维护脚本 `scripts/ml-backend-runner.py` 需配合 `--plugins-root <yoao-plugins>` 指向本仓库。
+
 ## 部署资产选择描述
 
 `scripts/generate-selection-descriptor.py` 为固定摘要的原生部署生成独立的规范 JSON 文件，描述每个模型／变体预期使用的资产。它不替换安装的 `asset_manifest_sha256`，也不读取权重内容、下载、批准或启用模型。使用与镜像匹配的源码和插件发布清单；YOLO 的源码侧工具环境还需安装插件锁文件固定的 `yoao-task-contract` 和 `yoao-training-contract` wheel，LibreYOLO 使用其锁定的 `httpx` 依赖读取现有资产描述模块。
