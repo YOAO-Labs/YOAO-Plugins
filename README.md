@@ -1,8 +1,9 @@
 # YOAO Plugins
 
-YOAO（**You Only Annotate Once**）的官方推理插件、通知渠道插件与格式适配器插件在本仓库维护：
+YOAO（**You Only Annotate Once**）的官方推理插件、训练器插件、通知渠道插件与格式适配器插件在本仓库维护：
 
 - **推理插件（`plugins/inference/`）**：[LibreYOLO](plugins/inference/libreyolo/README.md)、[YOLO](plugins/inference/yolo/README.md)、[RapidOCR](plugins/inference/rapidocr/README.md)、[ONNX Tools](plugins/inference/onnxtools/README.md)、[Grounded-SAM2](plugins/inference/grounded-sam2/README.md) 和 [SAM3](plugins/inference/sam3/README.md)。LibreYOLO 原生适配器位于 `plugins/inference/libreyolo/native`。
+- **训练器插件（`plugins/trainer/`）**：[Ultralytics YOLO](plugins/trainer/ultralytics/README.md)（AGPL-3.0-only，遵循 `yoao-trainer/v1` 与 `yoao-extension-manifest/v1`，支持检测 / 实例分割 / RLE 桥接与离线 CPU 增强预览）与 [LibreYOLO](plugins/trainer/libreyolo/README.md)（MIT，零 Ultralytics 依赖，支持 LibreYOLO9 检测训练、安全检查点恢复与输入成员回执）。
 - **通知渠道插件（`plugins/notification-channel/`）**：[飞书私信（Feishu DM）](plugins/notification-channel/feishu-dm/README.md)（零依赖 Node.js 20+ ESM 参考实现，遵循 `yoao-notification-channel/v1` 与 `yoao-extension-manifest/v1`，支持直连档裸进程与非 root 只读 OCI 容器两种形态）。
 - **格式适配器插件（`plugins/format-adapter/`）**：[LabelMe JSON](plugins/format-adapter/labelme-json/README.md)（零依赖 Node.js 20+ ESM 参考实现，遵循 `yoao-format-adapter/v1` 与 `yoao-extension-manifest/v1`，支持 `rectangle` / `polygon` 导入导出及直连档裸进程与非 root 只读 OCI 容器两种形态）。
 
