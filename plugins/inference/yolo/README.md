@@ -1,82 +1,61 @@
-# Ultralytics YOLO plugin
+# Ultralytics YOLO Inference Plugin
 
-The `yoao-yolo-plugin` distribution serves the existing protocol-v2 native backend, not a detection-only SDK adapter. `/setup` exposes detection, instance segmentation, pose, oriented boxes, YOLO-World and YOLOE text detection, YOLOE text segmentation, YOLOE exemplar interaction, and ByteTrack/BoT-SORT video tracking. Supported series and size combinations are defined by `model_registry.py`; unsupported combinations remain errors. Managed Ultralytics detection and segmentation installations retain their immutable receipts, evaluation requests and native segmentation RLE. The platform owns task state, model approval and annotation writes.
+English | [简体中文](README.zh-CN.md)
 
-## Build and runtime
+`yoao-yolo-plugin` is a multi-task inference plugin for YOAO built on Ultralytics YOLO `8.4.183` and the pinned Ultralytics CLIP fork. It implements YOAO ML Backend protocol v2.2 with a pooled PyTorch runtime and supports both stock pretrained models and managed trained checkpoints.
 
-Before using `uv sync --locked` or regenerating the local dependency locks, stage the exact candidate wheels from the two independently verified manifests. From the repository root, set `CONTRACT_MANIFEST`, `CONTRACT_MANIFEST_SHA256`, `SDK_MANIFEST` and `SDK_MANIFEST_SHA256` to the actual manifest paths or URLs and their approved SHA-256 values:
+## Capabilities and models
 
-```sh
-python3 scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" \
-  --sha256 "$CONTRACT_MANIFEST_SHA256" --output .artifacts/python/first-party \
-  --package yoao-task-contract --package yoao-lifecycle-contract \
-  --package yoao-protocol-v2 --package yoao-inference-contract \
-  --package yoao-training-contract
-python3 scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" \
-  --sha256 "$SDK_MANIFEST_SHA256" --output .artifacts/python/first-party \
-  --package yoao-backend-runtime
-```
+| `/setup` model ID | Task | Prompt | Inputs | Outputs | Supported series and sizes |
+| --- | --- | --- | --- | --- | --- |
+| `detect` | `detect` | `none` | `full_image`, `crop` | `bbox` | `yolov8` (`n/s/m/l/x`), `yolov9` (`t/s/m/c/e`), `yolov10` (`n/s/m/b/l/x`), `yolo11` (`n/s/m/l/x`, default `yolo11`/`s`), `yolo12` (`n/s/m/l/x`), `yolo26` (`n/s/m/l/x`), `rtdetr` (`l/x`) |
+| `segment` | `segment` | `none` | `full_image`, `crop` | `polygon` (native RLE for managed models) | `yolov8` (`n/s/m/l/x`), `yolov9` (`c/e`), `yolo11` (`n/s/m/l/x`, default `yolo11`/`s`), `yolo26` (`n/s/m/l/x`) |
+| `pose` | `pose` | `none` | `full_image`, `crop` | `keypoint` | `yolov8`, `yolo11` (default `yolo11`/`s`), `yolo26` (`n/s/m/l/x`) |
+| `obb` | `obb` | `none` | `full_image`, `crop` | `rotated_bbox` | `yolov8`, `yolo11` (default `yolo11`/`s`), `yolo26` (`n/s/m/l/x`) |
+| `detect-world` | `detect` | `text` | `full_image`, `crop` | `bbox` | `yolo-worldv2` (default `s`), `yolo-world` (`s/m/l/x`) |
+| `detect-yoloe` | `detect` | `text` | `full_image`, `crop` | `bbox` | `yoloe-v8` (`s/m/l`), `yoloe-11` (default `s`, `s/m/l`), `yoloe-26` (`n/s/m/l/x`) |
+| `segment-yoloe` | `segment` | `text` | `full_image`, `crop` | `polygon` (`mask` / `both`) | `yoloe-v8` (`s/m/l`), `yoloe-11` (default `s`, `s/m/l`), `yoloe-26` (`n/s/m/l/x`) |
+| `exemplar-yoloe` | `interactive_seg` | `exemplar` | `full_image` | `bbox`, `polygon` | `yoloe-v8` (`s/m/l`), `yoloe-11` (default `s`, `s/m/l`), `yoloe-26` (`n/s/m/l/x`); multi-box positive prompts only |
+| `track` | `tracker` | `none` | `video` | `bbox` with `track_id` | Reuses `detect` series and sizes with `bytetrack` or `botsort` (stock BoT-SORT has ReID disabled) |
 
-The relative `uv` sources refer to these verified wheels, not editable SDK checkouts or public release URLs. After changing candidate artifacts, run `uv lock` in this directory and `python3.11 export_requirements.py` (or use another supported Python); the latter exports the third-party hash lock used by the image. The candidate manifests and SDK artifacts are separate, even if their verified wheels share this local directory.
+- Supported series and size combinations are defined in `model_registry.py`; unsupported combinations return an error.
+- Managed Ultralytics detection and segmentation checkpoints are verified against their immutable training receipts and support platform evaluation requests.
 
-The candidate image uses an explicit verified first-party artifact source; it does not assume that renamed packages have been published. Prepare a directory containing the actual contract `manifest.json`, its referenced wheels, and the candidate `yoao-backend-runtime` wheel. Set `CONTRACT_MANIFEST_SHA256`, `RUNTIME_SHA256` and `RUNTIME_WHEEL_NAME` to the exact values for those artifacts. From the repository root, with BuildKit enabled:
+## Model weights and assets
 
-```sh
-docker build --build-context first-party-inputs=/absolute/path/to/candidate-artifacts \
-  --build-arg CONTRACT_MANIFEST=/first-party-inputs/manifest.json \
-  --build-arg CONTRACT_MANIFEST_SHA256="$CONTRACT_MANIFEST_SHA256" \
-  --build-arg RUNTIME_WHEEL="/first-party-inputs/$RUNTIME_WHEEL_NAME" \
-  --build-arg RUNTIME_SHA256="$RUNTIME_SHA256" \
-  -f plugins/inference/yolo/Dockerfile -t local-yolo-plugin .
-```
+No model weights are bundled in this repository or built images. `yolo_plugin/pretrained-assets.json` lists 30 controlled detection and segmentation base models (`yolov8`, `yolo11`, `yolo26` across `n/s/m/l/x`) plus 6 inference and text-encoder assets (`yolo11s-pose.pt`, `yolo11s-obb.pt`, `yolov8s-worldv2.pt`, `yoloe-11s-seg.pt`, `ViT-B-32.pt`, `mobileclip_blt.ts`).
 
-`CONTRACT_MANIFEST` may instead be an explicit manifest URL; the named context still provides the runtime wheel. The fetcher verifies the manifest and each selected contract artifact. The image verifies the separately supplied runtime wheel digest. The exact contract subset is `yoao-task-contract`, `yoao-lifecycle-contract`, `yoao-protocol-v2`, `yoao-inference-contract`, and `yoao-training-contract`.
+- In plugin mode (`AAP_PLUGIN_TOKEN_FILE` set), mutable checkpoints and receipts live under `AAP_PLUGIN_DATA_DIR/checkpoints`, and verified controlled assets live under `AAP_PLUGIN_DATA_DIR/model-assets`.
+- In standalone mode, weights default to `YOLO_CHECKPOINTS_DIR` (`/app/checkpoints`).
+- Explicit preparation helpers are available for operators: `python -m scripts.prepare_assets` (stages controlled assets from local approved files) and `python -m scripts.download_weights` (downloads selected closed-set stock weights).
+- Set `YOLO_STRICT_OFFLINE=1` to forbid Ultralytics network weight downloads. Open-vocabulary text encoders still require local encoder files and network isolation in offline environments.
 
-The exec-form entrypoint is `uvicorn main:app --host 0.0.0.0 --port 8003 --workers 1`. Build the `yoao-yolo-plugin` wheel and sdist with `python -m build --wheel --sdist --no-isolation plugins/inference/yolo`, and install either artifact in an isolated compatible interpreter with the verified candidate dependencies. Flat modules (`main`, `schemas`, etc.) must not be co-installed with another flat backend in the same Python environment. The image uses a digest-pinned PyTorch/CUDA base, hash-locked third-party dependencies and the pinned Ultralytics CLIP git revision. No model weights are included. Candidate artifacts are not a publication; do not publish the image or dependencies without authorization and the necessary rights.
+## Configuration
 
-The image explicitly sets `CUDA_VERSION=13.2` to match its pinned base and packaged CUDA runtime; that base does not export the variable. Managed startup verifies this metadata against the actual runtime and driver. Qualification runners must not inject a missing image declaration or bypass those checks.
+The container entrypoint is `uvicorn main:app --host 0.0.0.0 --port 8003 --workers 1`.
 
-Plugin mode is selected by `AAP_PLUGIN_TOKEN_FILE`. Supply an independent, private Bearer token file (at least 32 characters), `AAP_PLUGIN_ID`, `AAP_PLUGIN_VERSION`, `AAP_PLUGIN_DATA_DIR`, `AAP_PLUGIN_DEVICE` (`cpu` or `cuda:0`), `AAP_PLUGIN_REGISTRY_ID` and matching `AAP_ROUTE_REGISTRY_ID`. The platform supplies its separate route-control credentials. `/health` is unauthenticated; `/setup`, model endpoints and CPU terminal drain require the plugin Bearer token. Managed installation and evaluation use that same plugin token, never the platform's first-party provider credential. Mutable checkpoints and receipts are under `AAP_PLUGIN_DATA_DIR/checkpoints`; prepared controlled assets are under `AAP_PLUGIN_DATA_DIR/model-assets`.
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AAP_PLUGIN_TOKEN_FILE` | Empty | Enables plugin mode when set; path to private Bearer token file (at least 32 characters) |
+| `AAP_PLUGIN_DEVICE` / `YOLO_DEVICE` | `cuda:0` | Target device (`cpu` or `cuda:0`); plugin mode reads `AAP_PLUGIN_DEVICE` |
+| `AAP_PLUGIN_DATA_DIR` / `YOLO_CHECKPOINTS_DIR` | `/app/checkpoints` | Asset root; plugin mode uses `AAP_PLUGIN_DATA_DIR` |
+| `YOLO_MODEL_POOL_CAP` | `2` | Maximum resident models in the model pool |
+| `YOLO_BUILD_TIMEOUT` | `30` | Cold-start build wait timeout in seconds |
+| `YOLO_IDLE_UNLOAD_SECONDS` | `600` | Idle model pool unload threshold in seconds (`<=0` disables) |
+| `YOLO_IDLE_CHECK_INTERVAL` | `60` | Idle check interval in seconds |
+| `YOLO_STRICT_OFFLINE` | `0` | Set to `1` to disable network weight downloads |
+| `YOLO_TRACKER_MAX_FRAMES` | `900` | Maximum frames per video tracking request |
+| `LOG_LEVEL` | `INFO` | Python logging level |
 
-For a CPU-only disposable run, disable GPU visibility explicitly, use `--runtime=runc`, mount private token and data directories, and bind an unused loopback port. Set `YOLO_STRICT_OFFLINE=1` when network model downloads are forbidden. An empty data directory suffices for health and catalog discovery; it does not prove inference. Never start a GPU container or validator without an explicit allocation and acceptance window.
+Plugin mode also consumes `AAP_PLUGIN_ID`, `AAP_PLUGIN_VERSION`, `AAP_PLUGIN_REGISTRY_ID`, and `AAP_ROUTE_REGISTRY_ID`. Managed CUDA deployments additionally require `AAP_PLUGIN_GPU_RESOURCE_ID`, `AAP_PLUGIN_GPU_UUID`, `AAP_PLUGIN_GPU_KEYRING_FILE`, and `CUDA_VERSION=13.2` (set by the image); managed GPU lifecycle is advertised only when approved qualification evidence (`AAP_PLUGIN_QUALIFICATION_FILE` and `AAP_PLUGIN_QUALIFICATION_SHA256`) matches the deployment.
 
-`/setup` model resource profiles reflect the configured device until inference resolves a device, then the latched runtime device; CPU size variants report zero VRAM. Discovery does not probe or allocate CUDA.
+## Runtime requirements
 
-`YOLO_MODEL_POOL_CAP`, `YOLO_BUILD_TIMEOUT`, `YOLO_IDLE_UNLOAD_SECONDS`, `YOLO_IDLE_CHECK_INTERVAL` and `YOLO_STRICT_OFFLINE` retain their backend meanings. A CPU plugin advertises `/lifecycle/terminal-drain`, which is identity-bound and irreversible for that process. CUDA plugins require a bound GPU resource, physical GPU UUID and `AAP_PLUGIN_GPU_KEYRING_FILE`; they reject CPU fallback. They do not advertise managed GPU lifecycle until the installed image's approved evidence matches the actual installation, hardware, weights, runtime and pool topology. The legacy `YOLO_MANAGED_LIFECYCLE_VERIFIED` flag cannot qualify plugin mode.
+- **Python**: `>=3.11,<3.14`
+- **ML stack**: `ultralytics==8.4.183`, pinned Ultralytics CLIP fork, `torch==2.14.1+cu132`, `torchvision==0.29.1+cu132`, CUDA `13.2`
+- **Device policy**: supports both CPU and CUDA. Managed CUDA plugin mode rejects CPU fallback.
+- **Environment isolation**: flat top-level modules (`main`, `schemas`, `predictor`) must be installed in an isolated Python environment.
 
-## Asset preparation
+## License
 
-The installed resource `yolo_plugin/pretrained-assets.json` is this plugin's versioned pretrained descriptor catalog; use `yolo_plugin.catalog.catalog_bytes()` and `catalog_sha256()` to consume its exact bytes and identity. Its `assets` array contains the 30 controlled Ultralytics detection and segmentation base models, not the entire stock inference matrix; `inference_assets` separately describes selected pose, OBB, open-vocabulary models and their text-encoder dependencies without declaring encoders to be trainable checkpoints. The controlled models' file names, sizes, SHA-256 digests and upstream locations derive from the historical contracts-0a21bc402432 manifest; inference asset identities are pinned to the listed sources. Weight licenses are unverified. Catalog visibility does not grant download, enablement or redistribution rights. The platform independently records approval and availability and derives its own storage keys.
-
-After obtaining explicit approval and local bytes, prepare selected models with:
-
-```sh
-python -m scripts.prepare_assets --source-dir /secure/reviewed-weights \
-  --target-dir /secure/plugin-data/model-assets --model yolo11n
-```
-
-The tool reads the installed catalog, verifies bytes and atomically prepares the digest cache; it never uploads or accesses object storage. The platform administrator owns S3 publication. `--model` may be repeated; omitting it selects all catalog entries. Stock weights outside this catalog can be prepared separately with `python -m scripts.download_weights --series yolo11 --target-dir /secure/plugin-data/checkpoints`; `--task`, `--size`, and `--all` select supported closed-set variants. These are explicit operator actions, not catalog-driven downloads. An existing controlled mapping that is missing or corrupt never falls back to an uncontrolled same-named file.
-
-## Qualification and tests
-
-Run `pytest tests/ -q` from `plugins/inference/yolo` in an isolated environment populated with the verified candidate dependencies and dev extras. Tests that replace model builders are not real model qualification. A real GPU lifecycle report must be collected against the exact candidate image, plugin identity, asset manifest, registry, GPU resource and physical card by the operator with an exclusive approved GPU window. `python -m scripts.validate_managed_lifecycle` uses a private ephemeral operator authority, real loopback HTTP, the original multi-task/tracker load, World and YOLOE text and exemplar requests in both cycles, and two-cycle unload checks. Controlled detection or segmentation fixtures add their immutable installation, native output and cold-reload checks. Required identity and stock inputs include `VALIDATION_GIT_COMMIT`, `VALIDATION_IMAGE_ID`, `VALIDATION_BACKEND_REGISTRY_ID`, `VALIDATION_GPU_RESOURCE_ID`, `VALIDATION_GPU_UUID`, `VALIDATION_MODEL_APPROVAL_REF`, `VALIDATION_FIXTURE_APPROVAL_REF`, and `VALIDATION_WEIGHT_SHA256_JSON` mapping the four tested stock filenames to their approved digests. The matching `AAP_PLUGIN_*` identity, token, image ID and manifest digest must be supplied.
-
-Before qualification, the operator selects approved local weight files under `AAP_PLUGIN_DATA_DIR` with `python -m yolo_plugin.qualification_inventory --data-dir "$AAP_PLUGIN_DATA_DIR" --weight checkpoints/yolo11s.pt --weight checkpoints/yolo11s-seg.pt --weight checkpoints/yolo11s-pose.pt --weight checkpoints/yolo11s-obb.pt --weight checkpoints/yolov8s-worldv2.pt --weight checkpoints/yoloe-11s-seg.pt --weight checkpoints/mobileclip_blt.ts --weight checkpoints/weights/clip/ViT-B-32.pt`. Add a separate controlled checkpoint path when it is not one of these files. This records `qualification-weights.json` from actual bytes; startup and the validator independently recheck containment, size and SHA-256. The report's exact weight set must equal the independently selected inventory. The operator must obtain approval and stage each asset before running this command; neither this inventory nor catalog visibility grants approval.
-
-Open-vocabulary qualification requires `VALIDATION_OPEN_IMAGE`, `VALIDATION_OPEN_WORLD_BASELINE`, `VALIDATION_OPEN_YOLOE_BASELINE`, `VALIDATION_OPEN_EXEMPLAR_BASELINE`, and `VALIDATION_OPEN_FIXTURE_SHA256_JSON` mapping `image`, `world`, `yoloe`, and `exemplar` to the approved frozen input digests. Baselines contain independent positive native outputs frozen before plugin comparison. `VALIDATION_OPEN_WEIGHT_SHA256_JSON` maps `yolov8s-worldv2.pt`, `yoloe-11s-seg.pt`, `mobileclip_blt.ts`, and `ViT-B-32.pt` to approved digests; `VALIDATION_OPEN_APPROVAL_REF` identifies their approval. Place these at the checkpoint paths listed above. The validator checks positive classes, geometry, encoder execution devices and model residency in both measured cycles and records actual outputs and approved artifacts. Use a network fence: upstream text encoders may otherwise download missing files independently of `YOLO_STRICT_OFFLINE`.
-
-Positive tracking qualification requires `VALIDATION_TRACKER_VIDEO`, `VALIDATION_TRACKER_BYTETRACK_BASELINE`, `VALIDATION_TRACKER_BOTSORT_BASELINE`, and `VALIDATION_TRACKER_FIXTURE_SHA256_JSON` mapping `video`, `bytetrack`, and `botsort` to the approved frozen input digests. Both native baselines must identify the exact video and their algorithm. Both trackers execute in both measured cycles; positive frame continuity, box geometry, actual backend type and model device are checked. The stock BoT-SORT configuration has ReID disabled; do not silently acquire extra models.
-
-GPU outputs are compared with CPU-frozen expectations using minimum box and polygon IoU 0.9 and maximum confidence delta 0.1; tracker frame boxes require IoU 0.9. Classes, result counts and tracker frame indices must match exactly. The report records these comparator tolerances and actual outputs; it does not claim bit-exact CPU/CUDA equality.
-
-The validator emits canonical JSON and derives `passed` from measured checks. A coordinator-approved report and its digest must be mounted as `AAP_PLUGIN_QUALIFICATION_FILE` and `AAP_PLUGIN_QUALIFICATION_SHA256`; a report from a different image is never sufficient.
-
-Torch qualification topology contains the exact Registry, GPU resource and native model pools, without an empty ONNX Runtime `session_counts` field. The pinned shared runtime validates this same shape during normal SDK activation. Changing the runtime image requires a fresh bound report; never edit an earlier report to make installation accept it.
-
-Plugin health reports the actual model-pool capacity and measured GPU UUID, driver and total memory alongside performance counters; CPU installations report no GPU identity. Setup and qualification use the measured CUDA runtime, not the framework's compile-time CUDA label. The strict validator checks these activation facts before accepting inference cycles, and normal SDK activation remains a separate required check.
-
-Optional controlled-model fixture inputs and validation rules are in `scripts/controlled_segmentation_validation.py`. Actual GPU validation, model accuracy, storage publication and platform workflow acceptance are separate from a CPU setup smoke.
-
-## Licenses
-
-First-party YOAO code is under `LICENSE` (MIT). The Ultralytics 8.4.183 dependency and the pinned Ultralytics CLIP fork at `7ffa84b3bfa40c42ecc1c77147a855e69cb2dd40` both carry AGPL-3.0; their upstream license text is retained in `AGPL-3.0.txt` and their source is available at https://github.com/ultralytics/ultralytics and https://github.com/ultralytics/CLIP. Other transitive dependencies have their own licenses, and model weights have separate terms. The combined runtime is not represented as MIT; downstream operators must assess distribution and network-service obligations and model rights.
+First-party YOAO source code is licensed under [MIT](LICENSE). The `ultralytics==8.4.183` runtime dependency and pinned Ultralytics CLIP fork carry [AGPL-3.0](AGPL-3.0.txt) (upstream repositories: [ultralytics/ultralytics](https://github.com/ultralytics/ultralytics) and [ultralytics/CLIP](https://github.com/ultralytics/CLIP)). Other transitive dependencies and model weights carry separate terms; the combined runtime is not MIT and operators must evaluate AGPL-3.0 and model rights independently.

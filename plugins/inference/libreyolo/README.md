@@ -1,101 +1,54 @@
-# LibreYOLO detection plugin
+# LibreYOLO Inference Plugin
 
-This service uses the native LibreYOLO 1.6.0 loader, not Ultralytics, and the existing detection SDK, model store and GPU lifecycle. It serves `detect` with YOLO9 t/s/m/c, full images and crops. Controlled checkpoints are independently validated against their immutable training receipts. The separately verified official pretrained files have native metadata version 1.1.1; only exact bytes in the canonical controlled asset manifest are accepted. No weights are downloaded by inference.
+English | [简体中文](README.zh-CN.md)
 
-## Build and prepare
+`yoao-libreyolo-plugin` is an object detection inference plugin for YOAO built on the native LibreYOLO `1.6.0` loader (`yoao-libreyolo-native`), with no Ultralytics dependency. It uses the YOAO detection plugin SDK (`yoao-inference-plugin-sdk`) and shared GPU lifecycle runtime.
 
-从插件仓库的指定提交构建私有 Linux x86-64 glibc / CPython 3.11 候选包。隔离构建环境需包含 `pip`、`build==1.3.0`、`setuptools==80.9.0`、`wheel==0.45.1`、`hatchling==1.27.0`、`git` 和 GNU `tar`。构建从 PyPI 和 PyTorch cu132 索引下载哈希锁定依赖；即使在 CPU 上推理，也包含 CUDA 链接的 Torch 和 NVIDIA 运行时 wheel。提供实际候选契约和 SDK 制品的本地 manifest 或包含 `manifest.json` 和 wheel 的目录，以及通过可信独立渠道获取的 manifest SHA-256；不能假定新名称的公开发布制品已经存在。构建器校验 manifest 和选定 wheel 的摘要。
+## Capabilities and models
 
-开发者使用 `uv` 解析插件或 `native/` 依赖前，先在仓库根目录将两个已验证的制品集暂存到本仓库忽略的 `.artifacts/python/first-party/`。使用实际 manifest 路径及独立取得的可信 SHA-256；wheel 必须与各自的 manifest 位于同一目录：
+| `/setup` model ID | Task | Inputs | Outputs | Variants / checkpoints |
+| --- | --- | --- | --- | --- |
+| `detect` | `detect` | `full_image`, `crop` | `bbox` | Pretrained YOLOv9 `t` (default), `s`, `m`, `c`; managed checkpoints (`trained:<model_version_id>`) |
 
-```sh
-python scripts/fetch-contracts.py --manifest /private/contracts/manifest.json --sha256 <trusted-contracts-sha256> \
-  --output .artifacts/python/first-party --package yoao-task-contract --package yoao-protocol-v2 \
-  --package yoao-lifecycle-contract --package yoao-inference-contract --package yoao-training-contract
-python scripts/fetch-contracts.py --manifest /private/sdk/manifest.json --sha256 <trusted-sdk-sha256> \
-  --output .artifacts/python/first-party --package yoao-backend-runtime --package yoao-inference-plugin-sdk
-```
+- Pretrained variants map to `LibreYOLO9t.pt`, `LibreYOLO9s.pt`, `LibreYOLO9m.pt`, and `LibreYOLO9c.pt`. The `t` variant must be prepared before starting the service.
+- Managed checkpoints use the `libreyolo-native-state-dict-1.0` format and are validated against immutable training receipts before loading.
+- Per-request parameters support `conf` (default `0.25`), `iou` (default `0.45`), `max_det` (default `300`), and optional `classes` filtering.
 
-`uv` 将本仓库的 `native/` 作为非 editable 依赖，并从暂存 wheel 读取第一方契约与 SDK；不从源码 checkout 或未经验证的公开发布源替代这些 wheel。候选归档的第三方依赖单独由 `third-party-requirements.lock` 锁定。
+## Model weights and assets
 
-```sh
-python scripts/build-libreyolo-candidate.py --revision <commit> --output /private/candidate.tar \
-  --contracts-manifest /private/contracts/manifest.json --contracts-sha256 <trusted-contracts-sha256> \
-  --sdk-manifest /private/sdk/manifest.json --sdk-sha256 <trusted-sdk-sha256>
-```
+No weights are bundled in this repository or built images, and inference never downloads weights at runtime. The plugin ships its versioned pretrained catalog in `yoao_libreyolo_plugin/controlled-model-assets.json`, pinning the four official YOLOv9 files and their SHA-256 digests.
 
-An optional `--dependency-cache /private/wheel-cache` reuses downloaded wheels across builds. The producer disables pip's shared cache and verifies the locked hashes again when selecting wheels for each candidate. The cache is not part of the candidate.
-
-归档包含由指定插件提交构建的 plugin 和 LibreYOLO native wheel、经过校验的候选 SDK 和平台契约 wheel、完整哈希锁定 wheelhouse、`requirements.lock`、源码提交与 wheel 摘要，以及权威受控资产清单；不包含权重或平台 checkout。构建器规范化 wheel 和归档时间戳，但 wheel 兼容性取决于平台标签。这不意味着 OCI 镜像摘要可复现：基础镜像、apt 包和镜像构建器是独立输入。重新分发前须审查许可；私有候选包不是公开发布制品，也不授权推送或发布。
-
-Transfer the expected archive SHA256 through a trusted independent channel. Verify that value before unpacking or running any artifact; the adjacent checksum alone is not an authenticity mechanism:
+To stage and verify an approved pretrained weight before serving:
 
 ```sh
-echo '<trusted-sha256>  candidate.tar' | sha256sum -c -
-mkdir candidate && tar -xf candidate.tar -C candidate
-python -m pip install --no-index --find-links candidate/wheelhouse --only-binary=:all: --require-hashes -r candidate/requirements.lock
-python -m pip check
+yoao-libreyolo prepare-assets --size t --asset-dir /var/lib/aap-libreyolo/assets
 ```
 
-The plugin owns its pretrained catalog and packages it directly in the wheel:
+Repeat with `--size s`, `m`, or `c` to expose additional variants. Catalog visibility does not grant download, enablement, or redistribution rights.
 
-```sh
-python -m build --wheel --sdist --outdir /absolute/path/to/wheelhouse plugins/inference/libreyolo
-```
+## Configuration
 
-`yoao_libreyolo_plugin/controlled-model-assets.json` 随插件版本发布，只描述 LibreYOLO 的四个预训练变体、固定来源、字节数、摘要、许可状态及兼容要求。平台契约制品不再提供模型清单；平台读取插件清单并独立记录审批、可用状态、项目授权和存储位置。目录可见不代表获准下载、启用或公开分发。用户训练的 checkpoint 仍由平台 Learning／Assets 管理。在干净环境中从锁定 wheelhouse 安装后，由获准的操作者显式准备模型：
+The default container entrypoint is `yoao-libreyolo serve --host 0.0.0.0 --port 8000` (running as UID/GID `10001`).
 
-```sh
-yoao-libreyolo prepare-assets --size t --asset-dir /private/libreyolo/assets
-```
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AAP_PLUGIN_TOKEN_FILE` | Required | Path to private Bearer token file (at least 32 characters) |
+| `AAP_PLUGIN_DEVICE` | `cpu` | Target device (`cpu` or `cuda:0`) |
+| `AAP_PLUGIN_ASSET_DIR` | `/var/lib/aap-libreyolo/assets` | Directory containing verified pretrained weights |
+| `AAP_PLUGIN_DATA_DIR` | `/var/lib/aap-libreyolo` | Private state directory (stores managed models under `managed/`) |
+| `AAP_PLUGIN_ASSET_ORIGINS` | Empty | Comma-separated approved origins for managed model downloads |
+| `AAP_PLUGIN_IMAGE_HOSTS` | Empty | Comma-separated approved hosts for remote image fetches |
 
-The command downloads only the pinned official source, bounds redirects and size, and checks SHA256 before publication. The default `t` must be prepared before serving; prepare s/m/c separately to expose those variants. Their original model repository licenses must be reviewed before use or redistribution. [LibreYOLO licensing](https://www.libreyolo.com/docs/licensing) identifies the library's code as MIT and YOLO9 COCO checkpoints as MIT, while identifying each exact weight repository as authoritative; code and weight licenses are distinct.
+Managed CUDA deployments also require `AAP_PLUGIN_REGISTRY_ID`, `AAP_PLUGIN_GPU_RESOURCE_ID`, `AAP_PLUGIN_GPU_UUID` (physical `GPU-...`), and `AAP_PLUGIN_GPU_KEYRING_FILE` (Ed25519 public verification keyring JSON). Managed GPU lifecycle is advertised only when approved qualification evidence is mounted via `AAP_PLUGIN_QUALIFICATION_FILE`, `AAP_PLUGIN_QUALIFICATION_SHA256`, `AAP_PLUGIN_OCI_ARTIFACT`, and `AAP_PLUGIN_IMAGE_ID`.
 
-The upstream MIT declaration is not a license inventory for the complete image. The LibreYOLO distribution also includes third-party notices and bundled code with separate terms, including DINOv3; Torch and NVIDIA runtime components have their own licenses. Review the installed wheel's `NOTICE`, bundled license files and exact weight revisions before redistribution. The manifest's `license` field records the publisher's declaration, not an automatic legal review.
+For loopback-only local development on CPU, run `yoao-libreyolo serve --local --device cpu --host 127.0.0.1 --port 8000`.
 
-An installed developer project can compose its own detection provider by calling `yoao_libreyolo_plugin.cli.main(provider_factory=MyProvider)`. The zero-argument factory returns an object with `load(model_id, device, config)` and `execution_facts()`; the latter should delegate to the native provider when wrapping it so measured runtime facts remain accurate. The generated project owns its model's load, predict and close methods.
+## Runtime requirements
 
-For a local service, supply a private token file containing at least 32 characters and explicitly approved object origins/image hosts:
+- **Python**: `>=3.11`
+- **ML stack**: `libreyolo==1.6.0`, `torch==2.14.1+cu132`, `torchvision==0.29.1+cu132` (CUDA `13.2` baseline)
+- **Precision and fallback**: runs in FP32 with half precision, AMP, and TF32 disabled. Failed CUDA checks do not fall back to CPU.
 
-```sh
-export AAP_PLUGIN_ASSET_ORIGINS=https://assets.example
-export AAP_PLUGIN_IMAGE_HOSTS=assets.example
-export AAP_PLUGIN_DATA_DIR=/private/libreyolo
-export AAP_PLUGIN_TOKEN_FILE=/private/libreyolo/token
-yoao-libreyolo serve --device cpu --asset-dir /private/libreyolo/assets --host 127.0.0.1 --port 8000
-```
+## License
 
-CPU is a development profile, not GPU qualification. For CUDA set `AAP_PLUGIN_DEVICE=cuda:0`, `AAP_PLUGIN_REGISTRY_ID`, `AAP_PLUGIN_GPU_RESOURCE_ID`, `AAP_PLUGIN_GPU_UUID` (physical `GPU-...`) and `AAP_PLUGIN_GPU_KEYRING_FILE`. The keyring is the existing JSON mapping from key ID to unpadded base64url raw Ed25519 public key; never put authority private keys in the plugin. The CUDA driver is queried for the physical UUID before serving. GPU requests require the existing signed admission and lifecycle contracts as well as the bearer token. CUDA 13.2 build and the 1.6.0/2.14.1+cu132/0.29.1+cu132 package baseline are required; execution is FP32 with half, AMP and TF32 disabled. Failed device checks do not fall back to CPU.
-
-Managed CUDA rejects workloads from startup, even when a bearer token or a premature signed permit is present. Only the signed owner handshake can enter enforce mode. The explicitly local-exclusive developer and qualification commands retain their isolated legacy path; that path does not qualify a platform installation.
-
-For an OCI artifact provide a digest-pinned base and a complete, separately locked wheelhouse (no Ultralytics). Publishing requires separate authorization; only after an authorized push can the manifest command inspect its repository digest:
-
-```sh
-yoao-plugin build --base-image image@sha256:<digest> --wheelhouse /absolute/path/to/wheelhouse --requirements-lock /absolute/path/to/requirements.lock --entrypoint yoao-libreyolo --tag registry.example/libreyolo:release --push
-yoao-libreyolo manifest registry.example/libreyolo:release --publisher YOUR_PUBLISHER --license REVIEWED_SPDX_EXPRESSION --device cuda --memory-mb 16384 --gpu-memory-mb 8192 --asset-origin https://assets.example --output manifest.json
-```
-
-The image runs as UID/GID 10001, listens on port 8000 and uses `/var/lib/aap-libreyolo` for private state. Its fixed entrypoint is `yoao-libreyolo serve --host 0.0.0.0 --port 8000`. Mount prepared assets under `assets/`, with token and public keyring files accessible to that UID. The manifest generator reads the pushed image's actual `RepoDigest`; no placeholder digest qualifies for installation. Installing the artifact does not enable it in a project or prove GPU lifecycle qualification.
-
-The installed CLI requires the publisher and license declaration explicitly; review the code and exact weights before supplying them. These commands run outside the platform checkout. The complete wheelhouse and hash-locked requirements must include the entrypoint distribution and all runtime dependencies.
-
-## Qualification
-
-原生 CPU 回归用例位于 `tests/test_native.py`；在安装了候选 wheelhouse 和 pytest 的干净 CPython 3.11 环境中运行。测试无需下载权重，会构造并重新加载真实的 t/s/m/c 模型。
-
-For a local-exclusive developer check, activate the verified candidate environment and use known real images (one yielding multiple detections and one yielding none). Scope the loader path to this command: a host with its own cuDNN may otherwise load a different engine library and fail with `CUDNN_STATUS_SUBLIBRARY_LOADING_FAILED`. Do not replace system libraries.
-
-```sh
-nvidia_libs="$(python -c 'import sysconfig; print(sysconfig.get_path("purelib") + "/nvidia")')"
-LD_LIBRARY_PATH="$nvidia_libs/cudnn/lib:$nvidia_libs/cu13/lib" \
-  yoao-libreyolo probe --device cuda:0 --gpu-uuid GPU-... --asset-dir /private/libreyolo/assets --multi-image /private/multiple.jpg --empty-image /private/empty.jpg --output /private/local-probe.json
-```
-
-The probe verifies actual native input/model tensor placement and FP32 execution, rejects a missing asset and a nonexistent CUDA ordinal, and measures two real model load/inference/release cycles. It samples other GPU compute processes and fails closed if attribution is unavailable or the selected card is in use. It does not acquire a platform GPU lease; its report explicitly says `local-isolated` and cannot qualify a managed installation.
-
-`yoao-libreyolo-evidence --url URL --token-file FILE --scenario FILE --output FILE` accepts a controller-prepared scenario with fresh signed lifecycle/admission headers and records real HTTP responses and `nvidia-smi` observations for at least two prediction/unload cycles. A `kind: cancel_drain` scenario entry contains `predict_headers`, `predict_body`, `drain_headers`, and `drain_body`: the harness observes a live native borrower, cancels its HTTP request, requires the signed drain to report it active and not ready to unload, and waits until native work actually exits. Missing or unobservable cancellation evidence fails. Headers remain private and are not written to the output report. Review output against the existing lifecycle evidence thresholds; it does not issue authority credentials or itself approve a deployment. The training-return trial and project release remain separately required.
-
-Ordinary scenario steps specify `method`, `path`, optional `headers`, `body`, and `expected_status` (default 200). Negative fault probes must specify their expected rejection status; the harness rejects any mismatch and requires two ordered successful prediction/unload pairs.
-
-Managed lifecycle eligibility requires the existing shared lifecycle evidence report, authenticated administrator approval, and the constrained operator's actual Docker image inspection. The operator mounts the exact approved report read-only and sets `AAP_PLUGIN_QUALIFICATION_FILE`, `AAP_PLUGIN_QUALIFICATION_SHA256`, `AAP_PLUGIN_OCI_ARTIFACT`, and `AAP_PLUGIN_IMAGE_ID`; there is no Boolean qualification switch. The report is canonical JSON (`sort_keys=True`, compact separators, `ensure_ascii=True`, `allow_nan=False`) and its SHA256 is over those bytes. The plugin applies shared report thresholds and verifies the report against the image identity supplied by the operator, canonical asset manifest and pinned weight, single models pool, registry/resource binding, observed GPU UUID, driver, memory and CUDA FP32 runtime. The platform owner must separately validate and audit the administrator approval and inspected image; the process cannot independently attest its container image. Missing report means no managed lifecycle capability; invalid or partially supplied evidence fails startup.
+First-party plugin and native loader source code is licensed under [MIT](LICENSE). Upstream [LibreYOLO](https://www.libreyolo.com/docs/licensing) identifies its library code and YOLO9 COCO weights as MIT, while bundled third-party notices (including DINOv3), PyTorch, NVIDIA runtime components, and each weight repository remain subject to their own terms and must be reviewed before use or redistribution.

@@ -1,44 +1,71 @@
-# YOAO LabelMe JSON Format Adapter Plugin
+# LabelMe JSON Format Adapter Plugin
 
-Zero-dependency Node.js (`>=20`) reference format adapter implementing `yoao-format-adapter/v1` and `yoao-extension-manifest/v1` (`extension_point: "format_adapter"`).
+English | [简体中文](README.zh-CN.md)
 
-## Capabilities
+`yoao.format.labelme-json` (`format_id: "labelme-json"`) is a zero-dependency Node.js (`>=20`) ESM format adapter plugin implementing `yoao-format-adapter/v1` and `yoao-extension-manifest/v1`.
 
-- `import`: translates LabelMe JSON (`rectangle` -> `bbox`, `polygon` -> `polygon`) into canonical YOAO annotations with explicit label mapping.
-- `export`: renders canonical YOAO `bbox` and `polygon` tasks into LabelMe JSON files.
-- Holds no database credentials, user JWTs, or platform secrets.
+It translates between LabelMe JSON files and canonical YOAO annotations without holding database credentials, user JWTs, or platform secrets, and requires no outbound network access.
 
-## Direct Tier (bare process)
+## Capabilities and endpoints
 
-```bash
-YOAO_FORMAT_ADAPTER_TOKEN=replace-with-random-token HOST=127.0.0.1 PORT=8092 node src/server.mjs
+- **Extension point and protocol**: `format_adapter` (`yoao-format-adapter/v1`)
+- **Capabilities**: `import`, `export`
+- **Media types**: `image`
+- **Supported geometries**:
+  - `import`: converts LabelMe `rectangle` (2 points) to `bbox` and `polygon` (3 or more points) to `polygon` with normalized `[0, 1]` coordinates and explicit label mapping. Accepts a single JSON object or an array of objects (request body limit `16 MiB`).
+  - `export`: renders YOAO `bbox` and `polygon` tasks into LabelMe JSON (`version: "5.0.0"`, `imageData: null`).
+- **Import option (`option_schema`)**: `ignore_unsupported_shapes` (boolean, default `true`) skips shapes other than `rectangle` and `polygon` with warnings; set to `false` to reject them.
+
+| Endpoint | Auth | Description |
+| --- | --- | --- |
+| `GET /health` | None | Liveness probe returning `{"status": "ok"}` |
+| `GET /setup` | Bearer token | Returns adapter metadata, capabilities, and `option_schema` |
+| `POST /import/parse` | Bearer token | Parses base64-encoded LabelMe JSON into YOAO annotations |
+| `POST /export/render` | Bearer token | Renders YOAO tasks into base64-encoded LabelMe JSON files |
+
+## Running
+
+**Bare Node.js process:**
+
+```sh
+cd plugins/format-adapter/labelme-json
+YOAO_FORMAT_ADAPTER_TOKEN="replace-with-random-token" \
+HOST=127.0.0.1 \
+PORT=8092 \
+node src/server.mjs
 ```
 
-Register with YOAO as a super admin:
+**Hardened OCI container:**
 
-```bash
-POST /api/v1/admin/format-adapters
-{
-  "endpoint_url": "http://127.0.0.1:8092",
-  "auth_token": "replace-with-random-token",
-  "mode": "direct",
-  "source_tier": "official",
-  "activate": true
-}
+```sh
+docker build -t yoao-format-labelme-json:1.0.0 plugins/format-adapter/labelme-json
+docker run --rm \
+  --read-only \
+  --cap-drop ALL \
+  --security-opt no-new-privileges \
+  --memory 128m \
+  --user 1000:1000 \
+  -e YOAO_FORMAT_ADAPTER_TOKEN="replace-with-random-token" \
+  -p 127.0.0.1:8092:8092 \
+  yoao-format-labelme-json:1.0.0
 ```
 
-## Managed Tier (hardened OCI container)
+Register the endpoint URL and `YOAO_FORMAT_ADAPTER_TOKEN` in YOAO's admin format-adapter settings (`/api/v1/admin/format-adapters`).
 
-```bash
-docker build -t yoao-format-labelme-json:1.0.0 .
-docker run --rm --read-only --cap-drop ALL --security-opt no-new-privileges \
-  --memory 128m --user 1000:1000 \
-  -e YOAO_FORMAT_ADAPTER_TOKEN=replace-with-random-token \
-  -p 127.0.0.1:8092:8092 yoao-format-labelme-json:1.0.0
-```
+## Configuration
 
-## Tests
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `YOAO_FORMAT_ADAPTER_TOKEN` | Yes | None | Bearer token required from YOAO |
+| `HOST` | No | `127.0.0.1` (`0.0.0.0` in image) | HTTP listen host |
+| `PORT` | No | `8092` | HTTP listen port (`0` to `65535`) |
 
-```bash
-node --test test/plugin.test.mjs
-```
+## Runtime requirements
+
+- **Runtime**: Node.js `>=20.0.0` (container image uses `node:22-alpine`), zero third-party npm dependencies
+- **Resources and container**: `manifest.json` declares `memory_mb: 128` and `allowed_egress_hosts: []`; runs as non-root with a read-only root filesystem
+- **Tests**: run `node --test test/plugin.test.mjs` inside `plugins/format-adapter/labelme-json`
+
+## License
+
+Licensed under [MIT](../../../LICENSE).

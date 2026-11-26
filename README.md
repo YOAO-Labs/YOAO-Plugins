@@ -1,41 +1,43 @@
 # YOAO Plugins
 
-YOAO（You Only Annotate Once）的官方插件仓库，集中维护平台使用的推理、训练、通知渠道与格式适配器插件。
+English | [简体中文](README.zh-CN.md)
 
-插件开发 SDK 与共享推理运行时由 [YOAO-Labs/Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK) 维护。各插件的具体能力、配置与使用方式见对应目录内的 `README.md`。
+Official plugin repository for YOAO (You Only Annotate Once), maintaining the platform's inference, trainer, notification channel, and format adapter plugins.
 
-## 仓库内容
+The plugin development SDK and shared inference runtime live in [YOAO-Labs/Plugin-SDK](https://github.com/YOAO-Labs/Plugin-SDK). See each plugin directory's `README.md` for supported capabilities, configuration, and usage.
 
-### 推理插件（`plugins/inference/`）
+## Repository contents
 
-| 插件 | 说明 |
+### Inference plugins (`plugins/inference/`)
+
+| Plugin | Description |
 | --- | --- |
-| [LibreYOLO](plugins/inference/libreyolo/README.md) | 基于 LibreYOLO（YOLOv9）的目标检测推理插件，不依赖 Ultralytics |
-| [YOLO](plugins/inference/yolo/README.md) | 基于 Ultralytics YOLO 的多任务推理插件，支持目标检测、实例分割、姿态估计、旋转框（OBB）、开放词汇检测与分割、视觉示例交互及视频跟踪 |
-| [RapidOCR](plugins/inference/rapidocr/README.md) | 基于 RapidOCR（ONNX）的 OCR 推理插件，支持文本检测、文本识别与端到端识别 |
-| [ONNX Tools](plugins/inference/onnxtools/README.md) | 基于 ONNX Tools 的两阶段车辆属性推理插件，支持车辆检测与车型、颜色属性分类 |
-| [Grounded-SAM2](plugins/inference/grounded-sam2/README.md) | 基于 GroundingDINO 与 SAM 2.1 的开放词汇检测、交互式图像分割与视频跟踪插件 |
-| [SAM3](plugins/inference/sam3/README.md) | 基于 SAM 3 与 SAM 3.1 的文本检测与分割、交互式图像分割及视频跟踪插件 |
+| [LibreYOLO](plugins/inference/libreyolo/README.md) | Object detection inference plugin based on LibreYOLO (YOLOv9), with no Ultralytics dependency |
+| [YOLO](plugins/inference/yolo/README.md) | Multi-task inference plugin based on Ultralytics YOLO supporting detection, instance segmentation, pose estimation, oriented bounding boxes (OBB), open-vocabulary detection and segmentation, visual exemplar prompts, and video tracking |
+| [RapidOCR](plugins/inference/rapidocr/README.md) | ONNX-based OCR inference plugin built on RapidOCR for text detection, text recognition, and end-to-end OCR |
+| [ONNX Tools](plugins/inference/onnxtools/README.md) | Two-stage vehicle attribute inference plugin built on ONNX Tools for vehicle detection and vehicle type and color classification |
+| [Grounded-SAM2](plugins/inference/grounded-sam2/README.md) | Open-vocabulary detection, interactive image segmentation, and video tracking plugin based on GroundingDINO and SAM 2.1 |
+| [SAM3](plugins/inference/sam3/README.md) | Text-prompted detection and segmentation, interactive image segmentation, and video tracking plugin based on SAM 3 and SAM 3.1 |
 
-### 训练器插件（`plugins/trainer/`）
+### Trainer plugins (`plugins/trainer/`)
 
-| 插件 | 说明 |
+| Plugin | Description |
 | --- | --- |
-| [Ultralytics YOLO](plugins/trainer/ultralytics/README.md) | 基于 Ultralytics YOLO 的目标检测与实例分割训练器插件，支持 YOLOv8、YOLO11 与 YOLO26 及离线增强预览（运行时依赖为 AGPL-3.0-only） |
-| [LibreYOLO](plugins/trainer/libreyolo/README.md) | 基于 LibreYOLO（LibreYOLO9）的目标检测训练器插件（MIT 许可，无 Ultralytics 依赖） |
+| [Ultralytics YOLO](plugins/trainer/ultralytics/README.md) | Object detection and instance segmentation trainer plugin based on Ultralytics YOLO, supporting YOLOv8, YOLO11, YOLO26, and offline augmentation preview (runtime dependency is AGPL-3.0-only) |
+| [LibreYOLO](plugins/trainer/libreyolo/README.md) | Object detection trainer plugin based on LibreYOLO (LibreYOLO9), MIT-licensed with no Ultralytics dependency |
 
-### 通知渠道插件（`plugins/notification-channel/`）
+### Notification channel plugins (`plugins/notification-channel/`)
 
-| 插件 | 说明 |
+| Plugin | Description |
 | --- | --- |
-| [飞书私信（Feishu DM）](plugins/notification-channel/feishu-dm/README.md) | 零依赖 Node.js 飞书私信通知渠道插件，向绑定用户的 `open_id` 发送任务与作业卡片消息 |
+| [Feishu DM](plugins/notification-channel/feishu-dm/README.md) | Zero-dependency Node.js Feishu direct message plugin that sends task and job notification cards to a bound user's `open_id` |
 
-### 格式适配器插件（`plugins/format-adapter/`）
+### Format adapter plugins (`plugins/format-adapter/`)
 
-| 插件 | 说明 |
+| Plugin | Description |
 | --- | --- |
-| [LabelMe JSON](plugins/format-adapter/labelme-json/README.md) | 零依赖 Node.js LabelMe JSON 格式适配器插件，支持矩形框与多边形标注的导入和导出 |
+| [LabelMe JSON](plugins/format-adapter/labelme-json/README.md) | Zero-dependency Node.js LabelMe JSON format adapter supporting rectangle and polygon annotation import and export |
 
-## 许可证
+## License
 
-第一方源码采用 [MIT](LICENSE) 许可证。第三方依赖、上游子模块及模型权重继续适用各自许可；本仓库不包含模型权重、训练产物、数据集和凭据。
+First-party source code is licensed under [MIT](LICENSE). Third-party dependencies, upstream submodules, and model weights remain subject to their own licenses. This repository does not include model weights, training artifacts, datasets, or credentials.

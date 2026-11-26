@@ -1,66 +1,59 @@
-# SAM3 inference plugin
+# SAM3 Inference Plugin
 
-`yoao-sam3-plugin` serves `/setup`, `/predict`, image and video sessions, and the platform's lifecycle, admission, cancellation and drain contracts. It uses Python 3.12, PyTorch 2.7.1, torchvision 0.22.1 and CUDA 12.8. SAM3 requires CUDA and does not fall back to CPU.
+English | [简体中文](README.zh-CN.md)
 
-The configured logical CUDA device is used for image model placement and for the
-vendor's implicit CUDA operations in image and video construction and inference.
-The pinned image builder does not move a model for an indexed selector such as
-`cuda:0`, so the plugin explicitly moves the returned model to that device. The
-multiplex builder has no device argument; it runs under the selected CUDA device
-context. A device error fails the build rather than falling back to CPU.
+`yoao-sam3-plugin` is a GPU-only inference plugin for YOAO built on SAM 3 and SAM 3.1 (`facebookresearch/sam3`). It implements YOAO ML Backend protocol v2.2 for text-prompted detection and segmentation, interactive image segmentation, interactive video tracking (PVS), and multiplex text video tracking.
 
-## Capabilities and assets
+## Capabilities and models
 
-| `/setup` model ID | Variant | Capability | Prepared file |
-| --- | --- | --- | --- |
-| `sam3-detection` | `model_variant=sam3` | PCS text detection | `checkpoints/sam3.pt` |
-| `sam3-segmentation` | `model_variant=sam3` | PCS text segmentation | `checkpoints/sam3.pt` |
-| `sam3-interactive-seg` | `model_variant=sam3` | points, box, mask/scribble seed, positive/negative exemplars | `checkpoints/sam3.pt` |
-| `sam3-video-interactive-tracker` | `model_variant=sam3` | PVS point/box/mask-seeded forward/reverse tracking | `checkpoints/sam3.pt` |
-| `sam3-video-tracker` | `model_variant=sam3` | SAM3.1 multiplex text tracking | `checkpoints/sam3.1_multiplex.pt` |
+| `/setup` model ID | Task | Composition | Prompts | Inputs | Outputs | Checkpoint |
+| --- | --- | --- | --- | --- | --- | --- |
+| `sam3-detection` | `detect` | `atom` | `text` (PCS) | `full_image`, `crop` | `bbox` | `checkpoints/sam3.pt` |
+| `sam3-segmentation` | `segment` | `composite` | `text` (PCS) | `full_image`, `crop` | `bbox`, `polygon` (`mask` / `both`) | `checkpoints/sam3.pt` |
+| `sam3-interactive-seg` | `interactive_seg` | `atom` (interactive) | `point`, `interactive_box`, `mask`, `scribble`, `exemplar` | `full_image` + prompts | `polygon`, `mask` (multimask candidates and low-res logits) | `checkpoints/sam3.pt` |
+| `sam3-video-interactive-tracker` | `tracker` | `composite` (PVS, interactive) | `point`, `interactive_box`, `correction_frame` | `video` + prompts | `bbox`, `polygon`, `mask` (forward/reverse tracking) | `checkpoints/sam3.pt` |
+| `sam3-video-tracker` | `tracker` | `composite` (SAM 3.1 multiplex) | `text` | `video` | `bbox`, `polygon`, `mask` | `checkpoints/sam3.1_multiplex.pt` |
 
-The existing APIs preserve exact masks/RLE and polygons, low-resolution logits and multimask candidates, prompt/source/object identity, cross-window sessions, lost/close semantics, and cancellation/drain of actual work and borrowers. Video responses are whole-window JSON, not an incremental frame stream. BPE vocabulary is included in the upstream SAM3 package; the local-checkpoint builders do not need Hugging Face configuration files. Keep vendor package data intact.
+- All five models use `model_variant=sam3`. BPE vocabulary assets are packaged inside the upstream `sam3` package; local checkpoints do not require extra Hugging Face config files.
+- Video tracking responses return whole-window JSON. Persistent PVS session contexts are bound to the active PVS pool entry and invalidated on idle unload, eviction, or terminal drain.
 
-Single-candidate image continuation resamples SAM3's native 288×288 logits to the
-shared 256×256 wire format and restores the native grid on the next request, using
-the same pixel-center nearest-neighbor sampling in both directions. Multimask
-results do not emit an ambiguous continuation token. Invalid logits fail explicitly
-rather than silently dropping `mask_input_next`.
+## Model weights and assets
 
-`sam3_plugin.catalog.descriptor()` and `deployment_selections(data_root)` use only the standard library and do not access or mutate assets. The published checkpoint hashes come from public Git LFS pointer texts whose Git blob SHA-1s match the upstream gated repositories' public tree entries; catalog `identity_evidence` records those blob IDs and pointer sources. This verifies metadata without downloading weights. Metadata does not authorize download, execution or redistribution.
+No weights are bundled in this repository or built images, and the service never downloads checkpoints at startup. `sam3_plugin/pretrained-assets.json` pins the expected paths, sizes, and SHA-256 digests for `checkpoints/sam3.pt` (`facebook/sam3`) and `checkpoints/sam3.1_multiplex.pt` (`facebook/sam3.1`).
 
-## Access and licensing
+- In plugin mode (`AAP_PLUGIN_TOKEN_FILE` set), mount approved weights under `AAP_PLUGIN_DATA_DIR/checkpoints`.
+- In standalone mode, checkpoints default to `CHECKPOINT_DIR` (`/app/checkpoints`).
+- Both Hugging Face repositories are separately gated. Authorized administrators must obtain access independently and may run `scripts/download_checkpoints.py` in a separate preparation environment; never bake credentials into container images.
 
-The upstream submodule is `facebookresearch/sam3` at `4cbac146c1b5a1e3a7f5c6a894901090b4dfd65b`; its `LICENSE` is the SAM License, not MIT. This plugin's `LICENSE` covers first-party code only. The SAM License governs SAM Materials and includes redistribution conditions; assess the exact license and preserve the license/notice before distributing source, images or weights. `facebook/sam3` and `facebook/sam3.1` are separately gated repositories: authorized administrators must independently obtain access and review/accept applicable terms for each. A token proves neither legal permission nor redistribution rights. No weights are included in this repository or built image.
+## Configuration
 
-## Build and run
+The container entrypoint is `uvicorn main:app --host 0.0.0.0 --port 8002 --workers 1`, with `HOME=/tmp` so kernel caches work under non-root and read-only root filesystems.
 
-Initialize the pinned submodule and stage candidate wheels under `.artifacts/python/first-party/` at the repository root. Use `scripts/fetch-contracts.py --manifest PATH_OR_URL --sha256 HASH --output .artifacts/python/first-party` separately for the SDK and platform contract manifests, selecting `yoao-backend-runtime` and `yoao-mask-utils` from the former and `yoao-lifecycle-contract`, `yoao-protocol-v2`, and `yoao-task-contract` from the latter with repeated `--package` options. The manifest digest and wheel hashes must identify actual approved candidate bytes; do not substitute old published AAP wheels. The portable `uv` sources and lock reference this directory, not the SDK source checkout.
+| Variable | Default | Description |
+| --- | --- | --- |
+| `CHECKPOINT_DIR` | `/app/checkpoints` | Standalone checkpoint directory (overridden by `AAP_PLUGIN_DATA_DIR/checkpoints` in plugin mode) |
+| `SAM3_SCORE_THRESHOLD` | `0.5` | Default score threshold |
+| `SAM3_EMBEDDING_CACHE_SIZE` | `32` | Cached image embeddings for interactive segmentation |
+| `SAM3_MODEL_POOL_BUILD_TIMEOUT` | `120` | Model pool cold-start wait timeout in seconds |
+| `SAM3_IDLE_UNLOAD_SECONDS` | `600` | Idle unload threshold in seconds (`<=0` disables) |
+| `SAM3_IDLE_CHECK_INTERVAL` | `60` | Idle check interval in seconds |
+| `SAM3_VIDEO_MAX_WINDOW_FRAMES` | `16` | Maximum frames per SAM 3.1 multiplex tracking window |
+| `SAM3_PVS_MAX_WINDOW_FRAMES` | `16` | Maximum frames per PVS interactive tracking window |
+| `SAM3_PVS_MAX_CONTEXT_FRAMES` | `16` | Maximum frames per persistent PVS session context (enables session mode when greater than window size) |
+| `SAM3_VIDEO_USE_FA3` | `0` | Set to `1` to enable FlashAttention-3 in video inference |
+| `LOG_LEVEL` | `INFO` | Python logging level |
 
-For the Docker build context, copy the five staged candidate wheels and `first-party-requirements.lock` (as `requirements.lock`) into a separate directory. Its hashes pin exactly `yoao-backend-runtime==0.1.0`, `yoao-lifecycle-contract==0.1.0`, `yoao-protocol-v2==0.2.0`, `yoao-task-contract==0.1.0`, and `yoao-mask-utils==0.1.0`.
+Managed plugin mode consumes `AAP_PLUGIN_TOKEN_FILE`, `AAP_PLUGIN_DATA_DIR`, `AAP_PLUGIN_DEVICE`, `AAP_PLUGIN_ASSET_MANIFEST_SHA256`, `AAP_PLUGIN_REGISTRY_ID`, `AAP_ROUTE_REGISTRY_ID`, `AAP_PLUGIN_GPU_RESOURCE_ID`, `AAP_PLUGIN_GPU_UUID`, `AAP_PLUGIN_GPU_KEYRING_FILE`, and approved qualification evidence (`AAP_PLUGIN_QUALIFICATION_FILE` / `AAP_PLUGIN_QUALIFICATION_SHA256`).
 
-From the repository root, use `docker build --build-context first-party=/absolute/path/to/candidate-wheels -f plugins/inference/sam3/Dockerfile .`. The named context supplies the explicit local artifacts and hash lock; installation is offline and does not resolve transitive dependencies. The image uses the pinned CUDA base digest and separately hashed Python locks; the request-scoped autocast patch is applied with zero fuzz. It does not download checkpoints at startup. Native deployments mount the approved `AAP_PLUGIN_DATA_DIR` (normally `/var/lib/aap-plugin`) and place assets in its `checkpoints/` directory. Standalone deployments may instead set `CHECKPOINT_DIR` (default `/app/checkpoints`). Administrators may explicitly invoke `scripts/download_checkpoints.py` in an appropriately authorized preparation environment; that command requires separate gated access and credentials, and must not run as a governed service startup step. Credentials must not be baked into the image.
+## Runtime requirements
 
-The image defaults `HOME` to `/tmp`, keeping Triton and PyTorch kernel caches out
-of a root-owned home directory. A non-root service also supports a read-only root
-filesystem when `/tmp` is writable; the installer determines the actual root and
-temporary-filesystem mount policy. These caches are separate from approved
-checkpoint storage.
+- **Python**: `3.12` (`>=3.12,<3.13`)
+- **ML stack**: `torch==2.7.1`, `torchvision==0.22.1`, CUDA `12.8`
+- **Submodule**: initialize the `vendor/sam3` Git submodule before building the image.
+- **Device policy**: CUDA is required. Build or device failures fail closed with no CPU fallback.
 
-Native startup reads the instance token and GPU verification keyring files, binds signed lifecycle claims to the supplied registry/GPU resource identity, and rejects legacy unsigned GPU workloads. It advertises managed lifecycle only after the SDK validates approved qualification evidence against the actual three-pool topology, GPU identity, immutable image and both checkpoint identities. Signed terminal drain fences new work, waits for admitted work and tracked futures, retires PVS session owners, then waits for builders and borrowers before proving all three pools empty; uncertain session cleanup fails closed.
+## License
 
-Persistent PVS state is owned by the exact PVS model-pool entry, with a borrower held only during each start or continuation command. Idle unload, eviction and terminal drain invalidate its contexts and close their state before model disposal; reloading the same key cannot revive an old token. Failed or uncertain cleanup retains ownership and prevents an empty-pool proof. Multiplex tracking retains its separate pool and whole-window behavior.
+First-party plugin code is licensed under [MIT](LICENSE). The upstream `facebookresearch/sam3` submodule and model weights (`facebook/sam3` and `facebook/sam3.1`) are governed by the **SAM License**, not MIT.
 
-PVS start and continuation each establish their own device-scoped BF16 autocast
-context in the executing worker thread. Persistent startup cannot rely on the
-outer context of the separate whole-window path. When the configured service
-advertises persistent contexts, GPU qualification also exercises independently
-signed start, continuation and close requests, checking frame and object identity.
-
-Real-GPU qualification runs in a separately authorized isolated process with the same native installation identity and approved assets, never in the governed service. Supply its `AAP_PLUGIN_ID`, `AAP_PLUGIN_VERSION`, `AAP_PLUGIN_OCI_ARTIFACT`, `AAP_PLUGIN_ASSET_MANIFEST_SHA256`, `AAP_PLUGIN_IMAGE_ID`, `AAP_PLUGIN_REGISTRY_ID`, `AAP_ROUTE_REGISTRY_ID`, `AAP_PLUGIN_GPU_RESOURCE_ID`, `AAP_PLUGIN_GPU_UUID`, `AAP_PLUGIN_DEVICE`, `AAP_PLUGIN_TOKEN_FILE`, and `AAP_PLUGIN_DATA_DIR`; set matching `VALIDATION_REGISTRY_ID`, `VALIDATION_GPU_RESOURCE_ID`, `VALIDATION_IMAGE_ID`, `VALIDATION_GPU_UUID`, `CUDA_VERSION`, and the model/fixture approval and hash variables required by `scripts/validate_managed_lifecycle.py`. The isolated validator creates temporary signing keys and exercises real loopback HTTP routing; the resulting canonical report requires independent approval and its digest must be supplied by the installer.
-
-For standalone packaging, build wheel and sdist with `python -m build plugins/inference/sam3`; installation also requires the exact patched vendor source and the staged first-party wheels. The checked-in `uv.lock`, `requirements.lock`, and `first-party-requirements.lock` describe the independent candidate environment. Do not use platform source paths as runtime dependencies. Candidate artifacts are not a public release, and this build does not authorize publishing. For managed lifecycle validation see `scripts/validate_managed_lifecycle.py` and its explicit approval prerequisites.
-
-The installed vendor package owns its Python imports and BPE resource lookup; no `/app/vendor` source-tree override is used. Use the authenticated lifecycle validator above for GPU smoke runs.
-
-CPU-only packaging, metadata and HTTP checks do not qualify model inference. Real inference, every pool's two lifecycle cycles, forward/reverse cross-window identity, exact masks, cancellation and teardown require separately authorized GPU and checkpoint acceptance.
+Administrators must independently obtain gated access and review and comply with the SAM License (including redistribution conditions and required notices) before distributing source, images, or weights.

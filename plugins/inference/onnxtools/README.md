@@ -1,229 +1,54 @@
-# yoao-onnxtools-plugin
+# ONNX Tools Inference Plugin
 
-ONNX Tools 是 YOAO 的官方推理插件：先用 RT-DETR 检测车辆，再对机动车 ROI 分类，将车型和颜色写回检测框。实现基于 [onnxtools](https://github.com/yyq19990828/onnxtools)。
-本服务源代码依仓库 MIT 许可证分发；上游 `onnxtools` 固定到
-`102fcfeb08fc00f865c334a181bfd0bb518e5ed8`，其代码和全部第三方依赖遵循各自许可证。
-模型、验收图、第三方 wheel 和 OCI 镜像未获授权公开再分发；镜像不包含权重。
-此目录不与其他 flat-module 服务共装到同一 Python 环境。
-`pretrained-model-assets.json` 是本插件版本化、随 wheel 和镜像分发的预训练资产描述，
-列出两个现有 ONNX 文件的大小、SHA-256、用途和兼容模型。权重的来源及许可均未核实；
-此描述不是下载、使用或重新分发许可。管理员必须独立核查权利并批准资产、项目授权和
-存储位置，用户训练的 checkpoint 仍由平台管理。仓库及镜像均不包含这些权重。
+English | [简体中文](README.zh-CN.md)
 
-管理员可在 Python 3.11+ 环境用候选 wheel 安装的 `share/yoao-onnxtools-plugin/create_plugin_manifest.py`
-和匹配的 `yoao-inference-contract` wheel 为已检查且具有唯一 repository digest 的实际镜像生成原生安装意图；
-工具默认读取同目录安装的资产描述（在源码树运行时通过 `--asset-manifest` 指定路径），计算其
-SHA-256，拒绝不同的镜像入口，且不添加未验证的资产下载来源。它不创建权重审批或 CUDA
-验收，必须使用平台独立核验的镜像摘要、许可声明和资源预算。例如：
+`yoao-onnxtools-plugin` is a two-stage vehicle attribute inference plugin for YOAO built on [onnxtools](https://github.com/yyq19990828/onnxtools) and ONNX Runtime `1.22.0`. It implements YOAO ML Backend protocol v2.2 and exposes both a combined detection-and-attribute pipeline and standalone atomic handles for multi-stage workflows.
 
-```bash
-python <venv>/share/yoao-onnxtools-plugin/create_plugin_manifest.py <inspected-digest-image> \
-  --publisher <publisher> \
-  --license <plugin-license> --device cpu --memory-mb <budget> --output <private-manifest.json>
-```
+## Capabilities and models
 
+| `/setup` model ID | Task | Composition | Inputs | Outputs | ORT sessions |
+| --- | --- | --- | --- | --- | --- |
+| `vehicle-attr` | `detect` | `composite` (RT-DETR + PP-LCNet) | `full_image`, `crop` | `bbox` + `vehicle_type`, `color` | 2 |
+| `vehicle-detect` | `detect` | `atom` (RT-DETR only) | `full_image`, `crop` | `bbox` | 1 |
+| `vehicle-attr-classify` | `classify` | `atom` (PP-LCNet only) | `full_image`, `crop` | `vehicle_type`, `color` (no geometry) | 1 |
 
-服务暴露三个按需加载的固定句柄：
+- **`vehicle_type`** (13 classes): `car`, `truck`, `bus`, `tanker`, `slagcar`, `fire_engine`, `mixer`, `ambulance`, `police_car`, `engineering_truck`, `hazardous_goods_vehicle`, `manned_sweeping_vehicle`, `school_bus`.
+- **`color`** (11 classes): `black`, `white`, `gray`, `red`, `yellow`, `green`, `blue`, `purple`, `brown`, `pink`, `other`.
+- `/setup` publishes `output_attribute_schema` for `vehicle-attr` and `vehicle-attr-classify` so projects can import the attribute options directly.
 
-- `vehicle-detect`：独立检测器，一个 ORT session。
-- `vehicle-attr-classify`：独立属性分类器，一个 ORT session。
-- `vehicle-attr`：检测与分类复合管道，两个 ORT session。
+## Model weights and assets
 
-句柄池为同 key 冷启动提供 single-flight，推理期间持有 borrower 与逐句柄 use lock。手动卸载、空闲卸载和 shutdown 都经过同一个全池清理边界，不会卸载仍在构建或使用的 session。
+No model weights are bundled in this repository or built images. `pretrained-model-assets.json` describes the two ONNX files (`rtdetr-2024080100.onnx` for vehicle detection and `va_260612.onnx` for attribute classification) with their expected sizes and SHA-256 digests.
 
-## 端点
+- In plugin mode (`AAP_PLUGIN_TOKEN_FILE` set), mount approved weights read-only under `AAP_PLUGIN_DATA_DIR/models`.
+- In standalone mode, mount weights under `ONNXTOOLS_MODEL_DIR` (default `/app/models`).
 
-| 端点                    | 说明                                                       |
-| ----------------------- | ---------------------------------------------------------- |
-| `GET /health`           | 健康、实际 ORT provider、句柄池与受管 residency            |
-| `GET /setup`            | 协议模型目录；通过部署验证后同时声明 managed lifecycle     |
-| `GET /versions`         | backend 与模型版本                                         |
-| `POST /predict`         | 批量预测，按 `context.model_id` 路由三个句柄               |
-| `POST /warmup`          | 可空 body；按 `model_id` 预加载指定句柄                    |
-| `POST /unload`          | 空 body 保留 legacy 响应；generation body 执行受管全池卸载 |
-| `POST /drain`           | 进入指定 generation 的 draining 状态                       |
-| `POST /drain/cancel`    | 用更新 generation 取消 drain                               |
-| `POST /lifecycle/mode`  | 切换 legacy/enforce gate                                   |
-| `POST /lifecycle/reset` | 受签名的全池清理与状态恢复                                 |
+## Configuration
 
-`/predict` 与 `/warmup` 在读取业务 body 前完成 admission。协程取消时，底层 builder 或 executor 未真正结束之前，active、builder 和 borrower 不会提前归零。
+The container entrypoint is `python3 -m uvicorn main:app --host 0.0.0.0 --port 8004 --workers 1`.
 
-## Residency 与部署验证
+| Variable | Default | Description |
+| --- | --- | --- |
+| `ONNXTOOLS_MODEL_DIR` | `/app/models` | Standalone model directory (overridden by `AAP_PLUGIN_DATA_DIR/models` in plugin mode) |
+| `ONNXTOOLS_DET_MODEL` | `rtdetr-2024080100.onnx` | Vehicle detection ONNX filename |
+| `ONNXTOOLS_VA_MODEL` | `va_260612.onnx` | Vehicle attribute classification ONNX filename |
+| `ONNXTOOLS_CONF_THRES` | `0.5` | Detection confidence threshold |
+| `ONNXTOOLS_BUILD_TIMEOUT` | `30` | Cold-start wait timeout in seconds |
+| `ONNXTOOLS_IDLE_UNLOAD_SECONDS` | `600` | Full-pool idle unload threshold in seconds (`<=0` disables) |
+| `ONNXTOOLS_IDLE_CHECK_INTERVAL` | `60` | Idle check interval in seconds |
+| `LOG_LEVEL` | `INFO` | Python logging level |
 
-`/health.residency.pools` 始终包含 `pipeline`、`detector` 和 `va`。驻留判定读取实际业务 session 的完整 `get_providers()`：
+Managed plugin mode also consumes `AAP_PLUGIN_TOKEN_FILE`, `AAP_PLUGIN_DATA_DIR`, `AAP_PLUGIN_DEVICE`, `AAP_PLUGIN_REGISTRY_ID`, `AAP_ROUTE_REGISTRY_ID`, `AAP_PLUGIN_GPU_RESOURCE_ID`, `AAP_PLUGIN_GPU_UUID`, `AAP_PLUGIN_GPU_KEYRING_FILE`, and approved qualification evidence (`AAP_PLUGIN_QUALIFICATION_FILE` / `AAP_PLUGIN_QUALIFICATION_SHA256`) for CUDA lifecycle enforcement.
 
-- 任一 session provider chain 包含 CUDA 或 TensorRT，`gpu_loaded=true`。
-- 所有已加载 session 都可确认只使用 CPU，`gpu_loaded=false`。
-- 私有 session 路径不可读、构建/清理状态不确定或清理失败时返回 `null`。
+## Runtime requirements
 
-Dockerfile 固定到已审计的 onnxtools commit，避免 `_onnx_session` 所有权契约随上游 `main` 漂移。以独立服务部署（非原生插件安装）时，在真实 GPU 全池卸载验证完成前保持 `ONNXTOOLS_MANAGED_LIFECYCLE_VERIFIED=0`。原生 CUDA 插件必须使用与镜像、资源、模型和实际运行时匹配的批准报告；独立部署开关不能替代报告。
+- **Python**: `>=3.10`
+- **ML stack**: pinned `onnxtools[inference]`, `onnxruntime-gpu==1.22.0` (runs on both CUDA and CPU), `numpy==2.2.6`, `opencv-contrib-python-headless==5.0.0.93`, CUDA `12.8` runtime base image
+- **Device policy**: standalone mode may fall back to CPU when CUDA is unavailable. Managed CUDA plugin mode rejects whole-session CPU fallback.
+- **Environment isolation**: flat top-level modules (`main`, `schemas`, `predictor`) must be installed in an isolated Python environment.
 
-验收器会在加载 CUDA 前校验两个模型和三张验收图的批准 SHA-256 与审批引用，不允许用未批准模型或图片代替业务资产。使用实际已注册的插件、registry、资源与镜像身份，在获准独占验收卡上执行：
+## License
 
-```bash
-export VALIDATION_IMAGE_PATH=/absolute/path/to/representative-vehicle.jpg
-export VALIDATION_IMAGE_SHA256=<approved-positive-image-sha256>
-export VALIDATION_EMPTY_IMAGE_PATH=/absolute/path/to/empty-scene.jpg
-export VALIDATION_EMPTY_IMAGE_SHA256=<approved-empty-image-sha256>
-export VALIDATION_BOUNDARY_IMAGE_PATH=/absolute/path/to/edge-vehicle.jpg
-export VALIDATION_BOUNDARY_IMAGE_SHA256=<approved-boundary-image-sha256>
-export VALIDATION_DET_SHA256=<approved-rtdetr-sha256>
-export VALIDATION_VA_SHA256=<approved-va-sha256>
-export VALIDATION_MODEL_APPROVAL_REF=<approval-record-or-ticket>
-export VALIDATION_FIXTURE_APPROVAL_REF=<approved-fixture-record-or-ticket>
-export VALIDATION_BACKEND_REGISTRY_ID=<registered-backend-id>
-export VALIDATION_GPU_RESOURCE_ID=<registered-gpu-resource-id>
-export VALIDATION_GPU_UUID=GPU-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-export AAP_PLUGIN_ID=<registered-plugin-id>
-export AAP_PLUGIN_VERSION=<registered-plugin-version>
-export AAP_PLUGIN_OCI_ARTIFACT=<digest-pinned-approved-image-reference>
-export AAP_PLUGIN_ASSET_MANIFEST_SHA256=<approved-asset-manifest-sha256>
-export AAP_PLUGIN_MANAGED_MODEL_COMPATIBILITY='<registered-compatibility-json>'
-export AAP_PLUGIN_TOKEN_FILE=/absolute/path/to/private-plugin-token
-export VALIDATION_IMAGE=<local-qualified-image-tag>
-export VALIDATION_GIT_COMMIT=$(git rev-parse HEAD)
-export EVIDENCE_DIR="$(mktemp -d)"
-set -o pipefail
+First-party plugin code is licensed under [MIT](LICENSE). Upstream `onnxtools` and third-party runtime dependencies remain subject to their own licenses.
 
-docker run --rm --gpus "device=$VALIDATION_GPU_UUID" --entrypoint python3 \
-  -e VALIDATION_GPU_UUID \
-  -e VALIDATION_BACKEND_REGISTRY_ID \
-  -e VALIDATION_GPU_RESOURCE_ID \
-  -e AAP_PLUGIN_ID -e AAP_PLUGIN_VERSION \
-  -e AAP_PLUGIN_OCI_ARTIFACT -e AAP_PLUGIN_ASSET_MANIFEST_SHA256 \
-  -e AAP_PLUGIN_MANAGED_MODEL_COMPATIBILITY \
-  -e AAP_PLUGIN_DEVICE=cuda:0 \
-  -e AAP_PLUGIN_REGISTRY_ID="$VALIDATION_BACKEND_REGISTRY_ID" \
-  -e AAP_ROUTE_REGISTRY_ID="$VALIDATION_BACKEND_REGISTRY_ID" \
-  -e AAP_PLUGIN_GPU_RESOURCE_ID="$VALIDATION_GPU_RESOURCE_ID" \
-  -e AAP_PLUGIN_GPU_UUID="$VALIDATION_GPU_UUID" \
-  -e AAP_PLUGIN_TOKEN_FILE=/validation/plugin-token \
-  -e AAP_PLUGIN_DATA_DIR=/var/lib/aap-plugin \
-  -e NVIDIA_VISIBLE_DEVICES="$VALIDATION_GPU_UUID" \
-  -e VALIDATION_DET_SHA256 \
-  -e VALIDATION_VA_SHA256 \
-  -e VALIDATION_IMAGE_SHA256 \
-  -e VALIDATION_EMPTY_IMAGE_SHA256 \
-  -e VALIDATION_BOUNDARY_IMAGE_SHA256 \
-  -e VALIDATION_MODEL_APPROVAL_REF \
-  -e VALIDATION_FIXTURE_APPROVAL_REF \
-  -e VALIDATION_GIT_COMMIT \
-  -e VALIDATION_IMAGE_PATH=/validation/vehicle.jpg \
-  -e VALIDATION_EMPTY_IMAGE_PATH=/validation/empty.jpg \
-  -e VALIDATION_BOUNDARY_IMAGE_PATH=/validation/edge.jpg \
-  -e VALIDATION_IMAGE_ID="$(docker image inspect "$VALIDATION_IMAGE" --format '{{.Id}}')" \
-  -v "$PWD/plugins/inference/onnxtools/models:/var/lib/aap-plugin/models:ro" \
-  --mount "type=bind,src=$AAP_PLUGIN_TOKEN_FILE,dst=/validation/plugin-token,readonly" \
-  -v "$VALIDATION_IMAGE_PATH:/validation/vehicle.jpg:ro" \
-  -v "$VALIDATION_EMPTY_IMAGE_PATH:/validation/empty.jpg:ro" \
-  -v "$VALIDATION_BOUNDARY_IMAGE_PATH:/validation/edge.jpg:ro" \
-  "$VALIDATION_IMAGE" \
-  /app/scripts/validate_managed_lifecycle.py 2>"$EVIDENCE_DIR/onnxtools-managed-lifecycle-device.log" \
-  | tee "$EVIDENCE_DIR/onnxtools-managed-lifecycle.json"
-jq -e '.passed == true and .runtime_ephemera_clean == true' \
-  "$EVIDENCE_DIR/onnxtools-managed-lifecycle.json"
-```
-
-验收器使用只读挂载的插件业务凭据，并仅在本机临时创建独立的 GPU 签名和 route-control 验收密钥；它们不是平台执行凭据。通过验收后，实际安装仍须使用平台凭据、经批准的报告和独立的激活验证。
-
-wheel 亦将同一验收器安装至 `share/yoao-onnxtools-plugin/validate_managed_lifecycle.py`；
-镜像中的路径为 `/app/scripts/validate_managed_lifecycle.py`。
-
-设备日志包含每轮每个真实 ORT session 的 provider 链、逻辑 device ID 与显存样本；失败报告保留已经完成的周期和观测事实，不补造缺失数据。日志需与 JSON 报告和授权卡 UUID 一起保存在私有验收目录；GPU 准入仍由平台校验证明，而不是由日志自行授予。
-
-冷卡基线采样后，验收进程只初始化并同步不加载模型的 CUDA context，再采样 context 基线；实际加载、卸载后的残余显存仍按相同回收门槛计算。
-
-代表图必须让 `vehicle-attr` 复合管道实际产生检测与分类结果；空场景必须不产生检测，边界图必须检测到接近画面边缘（5% 范围内）的汽车，且归一化框不能越界。独立分类器使用边界汽车裁剪图作为输入。验收器在拥有 session 的同一服务进程中通过本机 HTTP 执行两轮三句柄/四 session 加载与受签全池卸载，拒绝任一 session 整体退回 CPU，并要求每轮卸载后显存稳定、回收至上下文基线且至少回收 90% 的模型工作集。CUDA operator 可由 CPU provider 分区执行，但业务 session 的首选 provider 必须为 CUDA。报告包含路径无关的制品指纹、实际 provider 链、物理 GPU 身份、显存样本与最终 residency。
-
-## 环境变量
-
-| 变量                                   | 默认                     | 说明                                                    |
-| -------------------------------------- | ------------------------ | ------------------------------------------------------- |
-| `ONNXTOOLS_MODEL_DIR`                  | `/app/models`            | 独立部署的模型目录；原生插件使用 `AAP_PLUGIN_DATA_DIR/models` |
-| `ONNXTOOLS_DET_MODEL`                  | `rtdetr-2024080100.onnx` | 检测模型文件名                                          |
-| `ONNXTOOLS_VA_MODEL`                   | `va_260612.onnx`         | 属性分类模型文件名                                      |
-| `ONNXTOOLS_CONF_THRES`                 | `0.5`                    | 检测置信度阈值                                          |
-| `ONNXTOOLS_BUILD_TIMEOUT`              | `30`                     | 调用方等待冷启动的秒数；超时后真实 builder 继续受跟踪   |
-| `ONNXTOOLS_IDLE_UNLOAD_SECONDS`        | `600`                    | 全池空闲卸载阈值；非正数关闭                            |
-| `ONNXTOOLS_IDLE_CHECK_INTERVAL`        | `60`                     | 空闲检查周期                                            |
-| `ONNXTOOLS_MANAGED_LIFECYCLE_VERIFIED` | `0`                      | 真实 GPU 全池卸载验证门槛                               |
-| `GPU_LIFECYCLE_VERIFY_KEYS_JSON`       | 空                       | Ed25519 公钥 keyring；空值保持 legacy gate              |
-| `ONNXTOOLS_LOG_LEVEL`                  | `INFO`                   | 日志级别                                                |
-
-## 模型放置与启动
-
-构建上下文是 YOAO-Plugins 仓库根目录，无需平台源码。构建前须取得实际候选
-contract manifest、其 SHA-256、对应 wheel 及匹配的 runtime wheel，并按下节重新生成锁文件。
-本地制品可放在构建上下文内；BuildKit 在 `/source` 下只读挂载该上下文：
-
-```bash
-docker build -f plugins/inference/onnxtools/Dockerfile \
-  --build-arg CONTRACT_MANIFEST=/source/<artifact-dir>/manifest.json \
-  --build-arg CONTRACT_MANIFEST_SHA256=<actual-manifest-sha256> \
-  --build-arg FIRSTPARTY_FIND_LINKS=/source/<runtime-wheel-dir> \
-  -t onnxtools-backend:local .
-```
-
-`CONTRACT_MANIFEST` 也可指定可访问的 manifest URL，`FIRSTPARTY_FIND_LINKS`
-可指定 wheel 索引或目录 URL。不能使用未验证的摘要，也不能把源码 checkout 当作已发布制品。
-
-模型不打进镜像；只从已授权的私有位置只读挂载模型。CPU 验证须使用
-`--runtime=runc`，不请求 GPU，显式设置 `CUDA_VISIBLE_DEVICES=""` 和
-`NVIDIA_VISIBLE_DEVICES=void`，并使用现有插件治理注入的私有 token 和配置。
-CPU 健康检查或推理不构成 CUDA 验收。
-
-独立部署时，ONNX Runtime 在没有可用 GPU provider 时可退回 CPU。原生 CUDA 插件拒绝将整个业务 session 退回 CPU；原生 CPU 插件显式使用 CPU provider。`compute` 报告实际 primary provider，`residency` 独立表达 GPU session 是否仍可能驻留。
-
-## Python 依赖与镜像构建
-
-`pyproject.toml` 声明 `yoao-backend-runtime`、`yoao-lifecycle-contract`、
-`yoao-protocol-v2` 和 `yoao-task-contract`，以及固定提交的 `onnxtools[inference]`、
-ONNX Runtime GPU 1.22.0、NumPy 2.2.6 和 headless contrib OpenCV。ORT GPU wheel
-也可在 CPU 上运行。镜像通过 `scripts/fetch-contracts.py` 验证显式指定的 manifest
-和 wheel SHA-256，仅选取上述三个 contract，避免向 Python 3.10 镜像安装不兼容的其他 contract。
-runtime wheel 使用 `requirements-firstparty.txt` 的实际制品哈希及显式 wheel 来源。
-
-候选 wheel／sdist 是待验收制品，不表示已公开发布；不要推送、发布或更改版本号。
-在仓库根目录用明确的来源及摘要校验并暂存实际 SDK runtime 和 platform contract wheel；
-两者是独立制品。以下变量分别指向已有的 manifest 路径或 URL，摘要须来自可信交付记录：
-
-```bash
-python3 scripts/fetch-contracts.py --manifest "$SDK_MANIFEST" --sha256 "$SDK_MANIFEST_SHA256" \
-  --output .artifacts/python/first-party --package yoao-backend-runtime
-python3 scripts/fetch-contracts.py --manifest "$CONTRACT_MANIFEST" --sha256 "$CONTRACT_MANIFEST_SHA256" \
-  --output .artifacts/python/first-party --package yoao-task-contract \
-  --package yoao-protocol-v2 --package yoao-lifecycle-contract
-```
-
-`pyproject.toml` 的相对 wheel 路径指向此目录，不安装 SDK 源码。更换候选制品时须同步
-更新相对路径、实际 wheel 哈希和 `requirements-firstparty.txt`，随后在本目录重新生成：
-
-```bash
-uv lock
-uv export --locked --extra build --no-emit-local \
-  --no-emit-package yoao-backend-runtime --no-emit-package yoao-lifecycle-contract \
-  --no-emit-package yoao-protocol-v2 --no-emit-package yoao-task-contract \
-  --no-emit-package opencv-python --no-emit-package opencv-contrib-python \
-  --no-emit-package onnxtools --output-file requirements-runtime.txt
-uv export --locked --extra build --no-emit-local --no-hashes --no-annotate \
-  | python3 -c 'import sys; print("# Exported from uv.lock; Git commit is the immutable upstream source identity."); print(next(line for line in sys.stdin if line.startswith("onnxtools @ git+")), end="")' \
-  > requirements-vcs.txt
-```
-
-镜像以 `--no-deps --require-hashes` 安装 registry 导出，再以 `--no-deps` 安装固定提交、
-经验证的候选 contract/runtime wheel 和本插件。上游 inference extra 要求 `opencv-contrib-python`，
-`supervision` 要求 `opencv-python`；运行时刻意用唯一的 `opencv-contrib-python-headless`
-替代两者。原始 metadata 不因此改变，`pip check` 会报告 GUI 包缺失；普通 `pip install`
-或 `uv sync` 不保证此布局。不要再安装 GUI OpenCV，它们会覆盖同一个 `cv2` 文件。
-
-## 测试
-
-可在刚构建的真实后端镜像中验证，并只读挂载测试目录：
-
-```bash
-docker run --rm --runtime=runc -e CUDA_VISIBLE_DEVICES="" -e NVIDIA_VISIBLE_DEVICES=void --entrypoint sh \
-  -v "$PWD/plugins/inference/onnxtools/tests:/tests:ro" \
-  -w /app onnxtools-backend:local \
-  -c 'python3 -m pip install -q "pytest>=8" "pytest-asyncio>=0.23" && \
-      python3 -m pytest -q -p no:cacheprovider /tests'
-```
+Provenance and licenses for `rtdetr-2024080100.onnx` and `va_260612.onnx` are unverified; `pretrained-model-assets.json` grants no rights to download, use, or redistribute those files, and administrators must verify rights independently before deployment.

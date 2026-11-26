@@ -1,62 +1,43 @@
-# YOAO LibreYOLO Trainer Plugin (`yoao.trainer.libreyolo`)
+# LibreYOLO Trainer Plugin
 
-Official MIT-licensed LibreYOLO9 (`libreyolo==1.6.0`) object detection trainer plugin implementing `yoao-trainer/v1` and `yoao-extension-manifest/v1`.
+English | [简体中文](README.zh-CN.md)
 
-## License and Dependency Boundary
+`yoao-trainer-libreyolo` (`yoao.trainer.libreyolo`) is the official MIT-licensed `yoao-trainer/v1` object detection trainer plugin built on LibreYOLO `1.6.0` (LibreYOLO9). It implements `yoao-extension-manifest/v1` with no Ultralytics dependency anywhere in code, packaging, or container images.
 
-- First-party plugin code is licensed under [MIT](LICENSE).
-- This plugin depends exclusively on `yoao-plugin-sdk`, `PyYAML`, and `libreyolo==1.6.0` (with PyTorch/CUDA supplied by the pinned container base image). It has **zero** `ultralytics` dependency or import anywhere in code, packaging, lockfiles, or container builds.
-- Model weights are not bundled; controlled base weights (`LibreYOLO9{t,s,m,c}.pt`) remain administrator-approved assets mounted read-only at runtime.
+## Capabilities
 
-## Supported Capabilities
-
-- **Extension point**: `trainer` (`yoao-trainer/v1`)
+- **Extension point and protocol**: `trainer` (`yoao-trainer/v1`, manifest capabilities `train`, `evaluate`, `export_weights`; `preview` is not declared)
 - **Framework**: `libreyolo` `1.6.0`
-- **Task**: `detect` (object detection only; `preview` is not declared)
-- **Architectures**: `libreyolo9t`, `libreyolo9s`, `libreyolo9m`, `libreyolo9c` (`family: "libreyolo9"`, `end2end: false`)
+- **Tasks**: `detect` (object detection only)
+- **Architectures (4 total)**: `libreyolo9t`, `libreyolo9s`, `libreyolo9m`, `libreyolo9c` (`family: "libreyolo9"`, `end2end: false`)
 - **Dataset contracts**: `ultralytics-yolo-1`, `ultralytics-bbox-1`
-- **Serving compatibility**: `framework: "libreyolo"`, `format: "libreyolo-native-state-dict-1.0"`
+- **Serving compatibility**: `framework: "libreyolo"`, `min_version: "1.6.0"`, `format: "libreyolo-native-state-dict-1.0"`
 
-## CLI (`yoao-trainer-libreyolo`)
+## CLI subcommands
 
-```bash
-# Emit TrainerCapabilitiesV1 JSON without GPU or network
+The container entrypoint is `yoao-trainer-libreyolo`:
+
+```sh
+# Emit TrainerCapabilitiesV1 JSON without GPU or network access
 yoao-trainer-libreyolo describe
 
 # Validate a training configuration and emit ValidateConfigResultV1 JSON
 yoao-trainer-libreyolo validate-config --spec /work/input/config-spec.json
 
-# Run deterministic training, evaluation, and receipt generation
+# Run offline deterministic training, evaluation, and receipt generation
 yoao-trainer-libreyolo train --spec /work/input/spec.json --output /work/output
 ```
 
-## Security and Determinism Invariants
+- Checkpoint loading enforces `torch.load(..., weights_only=True)`, and optimizer, EMA, RNG, or GradScaler restore mismatches fail fast rather than silently falling back.
+- Training writes `libreyolo-data.yaml` under the output directory without mutating read-only dataset mounts, records `input-membership.json` when task identities are present, and reports canonical COCO metrics (`mAP50-95`, `mAP50`, `mAP75`, `AR100`).
 
-- All checkpoint reads enforce `torch.load(..., weights_only=True)`.
-- `StrictResumeLogging` turns silent optimizer, EMA, RNG, or GradScaler restore warnings into hard failures.
-- `CheckpointCallbacks` keeps `best.pt` free of `aap_resume` metadata while embedding verified historical best weights inside `checkpoint-NNNN.pt` alongside an atomic `checkpoint.json` pointer.
-- `ObservedTrainer` and `ObservedValidator` verify exact dataset snapshot membership and emit `input-membership.json` when sample task identities are present.
-- `output/libreyolo-data.yaml` is written inside the writable output directory without mutating the read-only dataset mount.
-- Final evaluation strips `metrics/precision` and `metrics/recall` aliases from summaries and reports canonical `mAP50-95`, `mAP50`, `mAP75`, and `AR100`.
+## Runtime requirements
 
-## Container Build
+- **Python**: `>=3.11` (container image uses Python `3.12`)
+- **ML stack**: `libreyolo==1.6.0`, `torch==2.14.1+cu132`, `torchvision==0.29.1+cu132`, `pycocotools>=2.0.7,<3`, CUDA `13.2` (zero `ultralytics` dependency)
+- **Resources and container**: `manifest.json` declares `requires_gpu: true` and `memory_mb: 8192`. The container runs as non-root UID/GID `10001` with `--network=none` and writable caches under `/tmp`.
+- **Model weights**: base weights (`LibreYOLO9{t,s,m,c}.pt`) are not bundled in this repository or image; mount approved weights read-only at runtime.
 
-Build from the `YOAO-Plugins` repository root with the verified `yoao-plugin-sdk` wheel supplied via the `first-party-inputs` BuildKit context:
+## License
 
-```bash
-docker build \
-  -f plugins/trainer/libreyolo/Dockerfile \
-  --build-context first-party-inputs=.artifacts/python/first-party \
-  -t yoao-trainer-libreyolo:1.0.0 \
-  .
-```
-
-## Local CPU Tests
-
-```bash
-uv venv --python 3.12 .venv
-uv pip install --python .venv/bin/python \
-  .artifacts/python/first-party/yoao_plugin_sdk-0.1.0-py3-none-any.whl \
-  -e "plugins/trainer/libreyolo[dev]"
-.venv/bin/pytest -q plugins/trainer/libreyolo/tests
-```
+First-party plugin code is licensed under [MIT](LICENSE), and `manifest.json` declares `MIT` with no Ultralytics dependency. Third-party runtime dependencies (such as PyTorch, CUDA, `pycocotools`, and notices bundled with `libreyolo`) and pretrained weights remain subject to their own licenses.

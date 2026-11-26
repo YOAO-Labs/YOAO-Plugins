@@ -1,30 +1,46 @@
-# YOAO Ultralytics Trainer Plugin (`yoao.trainer.ultralytics`)
+# Ultralytics YOLO Trainer Plugin
 
-Official `yoao-trainer/v1` trainer plugin for Ultralytics YOLO `8.4.183`, supporting detection and instance segmentation across the 30 controlled `yolov8`, `yolo11`, and `yolo26` architectures (`n/s/m/l/x` × `detect/segment`).
+English | [简体中文](README.zh-CN.md)
+
+`yoao-trainer-ultralytics` (`yoao.trainer.ultralytics`) is the official `yoao-trainer/v1` trainer plugin for Ultralytics YOLO `8.4.183`. It supports offline object detection and instance segmentation training, configuration validation, and CPU-only augmentation preview under `yoao-extension-manifest/v1`.
 
 ## Capabilities
 
-- **Protocol**: `yoao-trainer/v1` (`yoao-extension-manifest/v1`, `extension_point: "trainer"`).
-- **Entrypoint**: `yoao-trainer-ultralytics` with subcommands:
-  - `describe`: prints `TrainerCapabilitiesV1` JSON (30 architectures with pinned base-asset SHA-256 digests, Ultralytics `8.4.183` parameter schema, evaluator source SHA-256 descriptors, policy digests, and `serving_compatibility` with `format: null`).
-  - `validate-config --spec <path>`: validates task, architecture, dataset contract, and cross-field rules (`optimizer`, `warmup_epochs`, `rect`, `close_mosaic`, `ultralytics-instance-rle-1` `workers=0`, `yolo26` `dfl`/`nms`/64M semantic class pixel cap) and prints `ValidateConfigResultV1` JSON (exit `0` even when `valid=false`).
-  - `train --spec <path> --output <dir>`: runs offline fixed-batch training with offline font interception (`DejaVuSans.ttf` / `NotoSansCJK-Regular.ttc`), disabled telemetry, disabled first-epoch OOM batch halving, `aap_resume` historical-best checkpointing, `InstanceRLETrainer` support, retained-model FP32 tensor-identity verification, `input-membership.json`, monotonic `events.jsonl` (`TrainEventV1`), and atomic `result.json` (`TrainReceiptV1`).
-  - `preview --spec <path> --output <dir>`: runs CPU-only deterministic augmentation preview (`RLIMIT_AS=16 GiB`, `RLIMIT_CPU=(30, 35)`, 45 s alarm, single-core affinity, `CUDA_VISIBLE_DEVICES=""`, `torch.cuda.is_initialized() is False`) with `NativeTrace`, emitting `preview-*.png` and `report.json` (`PreviewReportV1`).
+- **Extension point and protocol**: `trainer` (`yoao-trainer/v1`, manifest capabilities `train`, `evaluate`, `preview`, `export_weights`)
+- **Framework**: `ultralytics` `8.4.183`
+- **Tasks**: `detect` (object detection) and `segment` (instance segmentation)
+- **Architectures (30 total)**: `yolov8`, `yolo11`, and `yolo26` across scales `n`, `s`, `m`, `l`, and `x` for detection (`{family}{scale}`) and segmentation (`{family}{scale}-seg`). `yolo26` uses the end-to-end head (`nms=False`, no `dfl` loss gain).
+- **Dataset contracts**: `ultralytics-yolo-1`, `ultralytics-bbox-1`, `ultralytics-simple-polygon-1`, `ultralytics-instance-rle-1`
+- **Serving compatibility**: `framework: "ultralytics"`, `min_version: "8.4.183"`, `format: null` (segmentation uses the `aap-instance-rle-1` output contract)
 
-## Building the OCI Image
+## CLI subcommands
 
-Build from the `YOAO-Plugins` repository root with a BuildKit named context supplying the verified `yoao-plugin-sdk` wheel:
+The container entrypoint is `yoao-trainer-ultralytics`:
 
 ```sh
-docker build \
-  -f plugins/trainer/ultralytics/Dockerfile \
-  --build-context first-party-inputs=.artifacts/python/first-party \
-  -t yoao-trainer-ultralytics:1.0.0 \
-  .
+# Emit TrainerCapabilitiesV1 JSON (architectures, base-asset SHA-256 catalog, parameter schema)
+yoao-trainer-ultralytics describe
+
+# Validate a training spec and emit ValidateConfigResultV1 JSON (exits 0 even when valid=false)
+yoao-trainer-ultralytics validate-config --spec /work/input/config-spec.json
+
+# Run offline fixed-batch training, evaluation, and receipt generation
+yoao-trainer-ultralytics train --spec /work/input/spec.json --output /work/output
+
+# Run CPU-only deterministic augmentation preview (preview-*.png and report.json)
+yoao-trainer-ultralytics preview --spec /work/input/spec.json --output /work/output
 ```
 
-The container runs cleanly under arbitrary non-root `--user <uid>:<gid>` with `--network=none` and writable caches under `/tmp`.
+- `train` runs offline with telemetry disabled, deterministic settings, resume-aware checkpointing, `input-membership.json`, monotonic `events.jsonl`, and atomic `result.json` receipts.
+- `preview` enforces CPU-only execution (`CUDA_VISIBLE_DEVICES=""`) with memory, CPU time, and timeout limits.
+
+## Runtime requirements
+
+- **Python**: `>=3.11,<3.14` (container image uses Python `3.12`)
+- **ML stack**: `ultralytics==8.4.183`, `torch==2.14.1+cu132`, `torchvision==0.29.1+cu132`, CUDA `13.2`
+- **Resources and container**: `manifest.json` declares `requires_gpu: true` and `memory_mb: 8192`. The container runs as non-root UID/GID `10001` with `--network=none` and writable caches under `/tmp`.
+- **Model weights**: the 30 controlled base `.pt` weights are not bundled in this repository or image; mount approved weights read-only at runtime.
 
 ## License
 
-First-party plugin code is licensed under [MIT](LICENSE). The bundled container runtime pins `ultralytics==8.4.183`, which is licensed under [AGPL-3.0-only](AGPL-3.0.txt); the plugin manifest declares `AGPL-3.0-only` accordingly.
+First-party plugin code is licensed under [MIT](LICENSE). The container runtime pins `ultralytics==8.4.183`, which is licensed under [AGPL-3.0-only](AGPL-3.0.txt); `manifest.json` declares `AGPL-3.0-only` accordingly. Model weights and other third-party dependencies remain subject to their own terms.
