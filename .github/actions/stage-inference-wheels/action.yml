@@ -1,0 +1,13 @@
+name: Stage verified inference wheels
+description: Verify the first-party wheels from this run against the inference manifest.
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: inference-wheels
+        path: ${{ runner.temp }}/inference-wheels
+    - shell: bash
+      run: |
+        python scripts/fetch-contracts.py --manifest "$RUNNER_TEMP/inference-wheels/manifest.json" \
+          --sha256 "$INFERENCE_MANIFEST_SHA256" --output .artifacts/python/first-party
