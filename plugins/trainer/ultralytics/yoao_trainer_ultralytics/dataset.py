@@ -2,21 +2,26 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from fractions import Fraction
 import hashlib
 import json
 import math
-from pathlib import Path, PurePosixPath
-import re
+from pathlib import Path
 import struct
 from typing import Any
-import uuid
 
 import yaml
+from yoao_plugin_sdk.trainer import (
+    SOURCE_LINEAGE_CONTRACT,
+    canonical_json_digest,
+    ordered_names,
+    validate_frozen_manifest_core,
+    validate_sample_files,
+    validate_source_lineage,
+    validate_yolo_bbox_label,
+)
 
 from . import DatasetContractError
-from .files import canonical_digest, digest_file
 from .policies import (
     DETECTION,
     INSTANCE_RLE_LIMITS,
@@ -59,23 +64,6 @@ INSTANCE_RLE_CONTRACT = {
 MAX_VERTICES = 512
 MAX_INSTANCES = 300
 MAX_IMAGE_VERTICES = 8192
-
-SOURCE_LINEAGE_CONTRACT = {"schema": 1, "scope": "accepted-reference"}
-_LINEAGE_FIELDS = {
-    "source_id",
-    "location_id",
-    "path_digest",
-    "scan_run_id",
-    "accepted_revision_id",
-    "revision_number",
-    "previous_revision_id",
-    "accepted_at",
-    "scan_completed_at",
-    "content_verified_at",
-    "source_config_revision",
-    "location_config_revision",
-}
-_SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 
 
 def normalize_task(task: str | None) -> str:
@@ -139,118 +127,6 @@ def data_contract(record: dict[str, Any]) -> dict[str, Any]:
         "unknown_data_contract",
         "Unknown training task, geometry, or bridge dataset contract",
     )
-
-
-def _check_uuid(value: Any, *, nullable: bool = False) -> None:
-    if nullable and value is None:
-        return
-    if not isinstance(value, str):
-        raise DatasetContractError(
-            "invalid_source_lineage", "Lineage identifier must be a canonical UUID"
-        )
-    try:
-        parsed = str(uuid.UUID(value))
-    except ValueError as exc:
-        raise DatasetContractError(
-            "invalid_source_lineage", "Lineage identifier must be a canonical UUID"
-        ) from exc
-    if parsed != value:
-        raise DatasetContractError(
-            "invalid_source_lineage", "Lineage identifier must be a canonical UUID"
-        )
-
-
-def _check_timestamp(value: Any) -> None:
-    if value is None:
-        return
-    if not isinstance(value, str) or len(value) > 64 or "T" not in value:
-        raise DatasetContractError(
-            "invalid_source_lineage", "Lineage timestamp must be tz-aware ISO-8601"
-        )
-    norm = value[:-1] + "+00:00" if value.endswith(("Z", "z")) else value
-    try:
-        parsed = datetime.fromisoformat(norm)
-    except ValueError as exc:
-        raise DatasetContractError(
-            "invalid_source_lineage", "Lineage timestamp must be tz-aware ISO-8601"
-        ) from exc
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise DatasetContractError(
-            "invalid_source_lineage", "Lineage timestamp must be tz-aware ISO-8601"
-        )
-
-
-def validate_source_lineage(record: dict[str, Any]) -> None:
-    if not isinstance(record, dict):
-        raise DatasetContractError(
-            "invalid_source_lineage", "Frozen manifest must be a JSON object"
-        )
-    declared = False
-    if "source_lineage_contract" in record:
-        contract = record["source_lineage_contract"]
-        if (
-            not isinstance(contract, dict)
-            or type(contract.get("schema")) is not int
-            or contract != SOURCE_LINEAGE_CONTRACT
-        ):
-            raise DatasetContractError(
-                "unknown_source_lineage_contract",
-                "Unknown source_lineage_contract",
-            )
-        declared = True
-    members = record.get("samples", [])
-    if not isinstance(members, list):
-        raise DatasetContractError("invalid_source_lineage", "samples must be a list")
-    for member in members:
-        if not isinstance(member, dict):
-            raise DatasetContractError(
-                "invalid_source_lineage", "Each sample must be an object"
-            )
-        if "source_lineage" not in member:
-            if declared and member.get("asset_reference") is not None:
-                raise DatasetContractError(
-                    "invalid_source_lineage",
-                    "Referenced sample is missing declared source_lineage",
-                )
-            continue
-        if not declared:
-            raise DatasetContractError(
-                "invalid_source_lineage",
-                "source_lineage present without source_lineage_contract",
-            )
-        if member.get("asset_reference") is None:
-            raise DatasetContractError(
-                "invalid_source_lineage",
-                "source_lineage must belong to a referenced asset",
-            )
-        value = member["source_lineage"]
-        if not isinstance(value, dict) or set(value) != _LINEAGE_FIELDS:
-            raise DatasetContractError(
-                "invalid_source_lineage",
-                "Incomplete or unauthorized source_lineage fields",
-            )
-        for key in ("source_id", "location_id", "scan_run_id"):
-            _check_uuid(value[key])
-        for key in ("accepted_revision_id", "previous_revision_id"):
-            _check_uuid(value[key], nullable=True)
-        if not isinstance(value["path_digest"], str) or not _SHA256_RE.fullmatch(
-            value["path_digest"]
-        ):
-            raise DatasetContractError(
-                "invalid_source_lineage", "path_digest must be a SHA-256 hex digest"
-            )
-        for key in ("source_config_revision", "location_config_revision"):
-            if type(value[key]) is not int or value[key] < 1:
-                raise DatasetContractError(
-                    "invalid_source_lineage", f"{key} must be a positive integer"
-                )
-        rev = value["revision_number"]
-        if rev is not None and (type(rev) is not int or rev < 1):
-            raise DatasetContractError(
-                "invalid_source_lineage", "revision_number must be positive or None"
-            )
-        for key in ("accepted_at", "scan_completed_at", "content_verified_at"):
-            _check_timestamp(value[key])
 
 
 def _cross(a: tuple[float, float], b: tuple[float, float], c: tuple[float, float]):
@@ -595,7 +471,7 @@ def validate_instance_rle_sample(
         encoded += evidence["rle_bytes"]
         semantics.append((index, evidence["pixel_sha256"]))
     instance_rle_budget(width, height, len(mapping), encoded)
-    if sample.get("semantic_label_sha256") != canonical_digest(sorted(semantics)):
+    if sample.get("semantic_label_sha256") != canonical_json_digest(sorted(semantics)):
         raise DatasetContractError(
             "rle_semantic_mismatch", "Frozen RLE semantic label digest mismatch"
         )
@@ -612,61 +488,27 @@ def validate_dataset(
     """Validate frozen dataset directory, returning (manifest, classes, data_yaml)."""
     root = dataset_dir.resolve()
     data_yaml = root / "data.yaml"
-    manifest_path = root / "manifest.json"
-    classes_path = root / "classes.json"
-    if not data_yaml.is_file() or not manifest_path.is_file():
+    if not data_yaml.is_file():
         raise DatasetContractError(
             "missing_dataset_files", "Frozen dataset requires data.yaml and manifest.json"
         )
+    if data_yaml.is_symlink():
+        raise DatasetContractError(
+            "symlink_rejected", "Frozen dataset data.yaml must not be a symlink"
+        )
     yaml_cfg = yaml.safe_load(data_yaml.read_text(encoding="utf-8"))
-    if (
-        not isinstance(yaml_cfg, dict)
-        or set(yaml_cfg) != {"train", "val", "names"}
-        or yaml_cfg["train"] != "images/train"
-        or yaml_cfg["val"] != "images/val"
-    ):
+    if not isinstance(yaml_cfg, dict):
         raise DatasetContractError(
             "invalid_data_yaml",
             "Unsupported frozen dataset paths or download configuration in data.yaml",
         )
-    names = yaml_cfg["names"]
-    if isinstance(names, dict):
-        parsed_names = {int(k): v for k, v in names.items()}
-        if set(parsed_names) != set(range(len(parsed_names))):
-            raise DatasetContractError("invalid_classes", "Invalid dataset class indexes")
-        classes = [parsed_names[i] for i in range(len(parsed_names))]
-    elif isinstance(names, list):
-        classes = list(names)
-    else:
-        raise DatasetContractError("invalid_classes", "Invalid dataset class names")
-
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    validate_source_lineage(manifest)
-
-    if (
-        expected_snapshot_digest is not None
-        and manifest.get("content_digest") is not None
-        and manifest.get("content_digest") != expected_snapshot_digest
-    ):
-        raise DatasetContractError(
-            "snapshot_digest_mismatch",
-            "Frozen manifest content_digest differs from TrainSpecV1.dataset_snapshot_digest",
-        )
-
-    if manifest.get("classes") != classes:
-        raise DatasetContractError(
-            "class_mismatch", "Frozen manifest classes differ from data.yaml"
-        )
-    if classes_path.is_file():
-        if json.loads(classes_path.read_text(encoding="utf-8")) != classes:
-            raise DatasetContractError(
-                "class_mismatch", "Frozen classes.json differs from data.yaml"
-            )
-    if canonical_digest(classes) != expected_classes_digest:
-        raise DatasetContractError(
-            "classes_digest_mismatch",
-            "Frozen dataset classes digest differs from TrainSpecV1.classes_digest",
-        )
+    manifest, classes = validate_frozen_manifest_core(
+        root,
+        expected_classes_digest=expected_classes_digest,
+        expected_snapshot_digest=expected_snapshot_digest,
+        data_yaml_config=yaml_cfg,
+        require_classes_file=False,
+    )
 
     contract = data_contract(manifest)
     manifest_task = normalize_task(contract["task"])
@@ -683,38 +525,9 @@ def validate_dataset(
         )
 
     segmentation = manifest_task == SEGMENTATION
-    seen: set[str] = set()
-    splits: set[str] = set()
-    for sample in manifest["samples"]:
-        split = sample["split"]
-        splits.add(split)
-        paths = [sample["image_path"], sample["label_path"]]
-        for idx, raw in enumerate(paths):
-            rel = PurePosixPath(raw)
-            expected_root = "images" if idx == 0 else "labels"
-            if (
-                rel.is_absolute()
-                or ".." in rel.parts
-                or len(rel.parts) != 3
-                or rel.parts[:2] != (expected_root, split)
-                or raw in seen
-            ):
-                raise DatasetContractError("invalid_sample_path", f"Invalid sample path: {raw}")
-            seen.add(raw)
-        image, label = root / paths[0], root / paths[1]
-        if (
-            image.stem != label.stem
-            or not image.is_file()
-            or not label.is_file()
-            or not image.resolve().is_relative_to(root)
-            or not label.resolve().is_relative_to(root)
-            or digest_file(image) != sample["sha256"]
-            or digest_file(label) != sample["label_sha256"]
-        ):
-            raise DatasetContractError(
-                "sample_digest_mismatch",
-                "Frozen image or explicit label file missing or changed",
-            )
+    for sample, _image, label in validate_sample_files(
+        root, manifest, require_splits=("train", "val")
+    ):
         if rle:
             validate_instance_rle_sample(label, sample, classes)
             continue
@@ -761,27 +574,6 @@ def validate_dataset(
                     "Frozen segmentation label or instance receipt changed",
                 )
             continue
-        for line in text.splitlines():
-            values = line.split()
-            if len(values) != 5:
-                raise DatasetContractError("invalid_label", "Invalid detection label line")
-            cls_idx = int(values[0])
-            x, y, w, h = map(float, values[1:])
-            if (
-                not 0 <= cls_idx < len(classes)
-                or not all(math.isfinite(v) for v in (x, y, w, h))
-                or min(w, h) <= 0
-                or x - w / 2 < -1e-8
-                or y - h / 2 < -1e-8
-                or x + w / 2 > 1 + 1e-8
-                or y + h / 2 > 1 + 1e-8
-            ):
-                raise DatasetContractError(
-                    "invalid_label", "Invalid normalized detection bounding box"
-                )
+        validate_yolo_bbox_label(text, len(classes))
 
-    if splits != {"train", "val"}:
-        raise DatasetContractError(
-            "missing_splits", "Frozen dataset requires both train and val splits"
-        )
     return manifest, classes, data_yaml

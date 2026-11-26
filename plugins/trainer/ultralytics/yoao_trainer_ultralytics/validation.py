@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import math
-from pathlib import PurePath
 from typing import Any
 
 from yoao_plugin_sdk.trainer import (
     TRAINER_PROTOCOL_VERSION,
     ValidateConfigResultV1,
     ValidationIssueV1,
+    normalized,
+    validate_value,
 )
 
 from . import FRAMEWORK_ID, FRAMEWORK_VERSION, NativeConfigurationMismatch
@@ -27,70 +27,6 @@ from .catalog import (
     parameter_schema_for,
 )
 from .policies import MAX_SEMANTIC_CLASS_PIXELS, SEGMENTATION
-
-
-def normalized(value: Any) -> Any:
-    if isinstance(value, PurePath):
-        return str(value)
-    if isinstance(value, tuple):
-        return [normalized(item) for item in value]
-    if isinstance(value, list):
-        return [normalized(item) for item in value]
-    if isinstance(value, dict):
-        return {str(key): normalized(item) for key, item in value.items()}
-    return value
-
-
-def validate_value(value: Any, rule: dict[str, Any]) -> None:
-    if "anyOf" in rule:
-        for option in rule["anyOf"]:
-            try:
-                validate_value(value, option)
-                return
-            except ValueError:
-                pass
-        raise ValueError("value does not match any allowed type or range")
-    if "enum" in rule:
-        if not any(
-            type(value) is type(item) and value == item for item in rule["enum"]
-        ):
-            raise ValueError(f"must be one of {rule['enum']}")
-        return
-    kind = rule["type"]
-    types = {
-        "null": type(None),
-        "boolean": bool,
-        "integer": int,
-        "string": str,
-        "array": list,
-    }
-    if kind == "number":
-        valid = type(value) is int or (type(value) is float and math.isfinite(value))
-    else:
-        valid = type(value) is types[kind]
-    if not valid:
-        raise ValueError(f"must be {kind} without implicit type coercion")
-    if kind in {"number", "integer"}:
-        if type(value) is float and not math.isfinite(value):
-            raise ValueError("must be a finite number")
-        for bound_key, predicate in (
-            ("minimum", lambda bound: value >= bound),
-            ("maximum", lambda bound: value <= bound),
-            ("exclusiveMinimum", lambda bound: value > bound),
-        ):
-            if bound_key in rule and not predicate(rule[bound_key]):
-                raise ValueError(f"violates {bound_key}={rule[bound_key]}")
-        if "multipleOf" in rule and value % rule["multipleOf"] != 0:
-            raise ValueError(f"must be a multiple of {rule['multipleOf']}")
-    if kind == "array":
-        if not rule.get("minItems", 0) <= len(value) <= rule.get("maxItems", 100):
-            raise ValueError("array length out of range")
-        for item in value:
-            validate_value(item, rule["items"])
-        if rule.get("uniqueItems") and len(set(value)) != len(value):
-            raise ValueError("array items must be unique")
-        if rule.get("ordered") and value != sorted(value):
-            raise ValueError("range lower bound cannot exceed upper bound")
 
 
 def _fixed_values_for(spec: ModelSpec, *, is_rle: bool) -> dict[str, Any]:

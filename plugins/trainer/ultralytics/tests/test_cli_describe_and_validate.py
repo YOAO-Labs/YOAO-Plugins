@@ -65,6 +65,10 @@ def test_describe_emits_valid_capabilities_with_30_architectures_and_null_format
     for digest_key in ("initialization", "preview", "input_membership", "instance_rle", "budget"):
         assert digest_key in caps.policy_digests
         assert SHA256_RE.fullmatch(caps.policy_digests[digest_key])
+    assert (
+        caps.policy_digests["input_membership"]
+        == "1ad70c6b02157e1b4c33646027309a72e73aaa5eba693e7a5fe52ce8f9bb71b4"
+    )
 
     assert len(caps.serving_compatibility) == 4
     for compat in caps.serving_compatibility:

@@ -16,10 +16,10 @@ from yoao_plugin_sdk.trainer import (
     PreviewReportV1,
     PreviewSourceV1,
     PreviewSpecV1,
+    digest_file,
 )
 
 from yoao_trainer_ultralytics import InputMismatchError, NativeRuntimeMismatch
-from yoao_trainer_ultralytics.files import digest_file
 from yoao_trainer_ultralytics.policies import PREVIEW_LIMITS, PREVIEW_POLICY_DIGEST
 from yoao_trainer_ultralytics.preview import (
     closed_mosaic,

@@ -2,33 +2,33 @@
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
 import json
 import os
 from pathlib import Path
-import platform
-import signal
 import sys
 import time
 from typing import Any
 
 from yoao_plugin_sdk.trainer import (
+    SUPERVISOR_OWNED_ARTIFACTS,
     TRAINER_PROTOCOL_VERSION,
+    EventEmitter,
+    InputMembership,
     TrainArtifactV1,
-    TrainEventV1,
     TrainReceiptV1,
     TrainSpecV1,
     atomic_write_json,
-    write_event_jsonl,
+    build_artifact_entry,
+    immutable_copy,
+    load_dataset_identity,
+    normalized,
+    run_with_signal_receipt,
 )
 
 from . import (
     FRAMEWORK_ID,
-    FRAMEWORK_VERSION,
     InputMismatchError,
     NativeConfigurationMismatch,
-    NativeRuntimeMismatch,
-    TrainerError,
 )
 from .adapter import (
     UltralyticsAttemptTrainer,
@@ -41,115 +41,27 @@ from .catalog import (
     serving_compatibility_for,
 )
 from .checkpoints import UltralyticsCheckpoints
-from .dataset import is_instance_rle, validate_dataset
+from .cli import collect_runtime_versions
+from .dataset import data_contract as manifest_data_contract, is_instance_rle, validate_dataset
 from .evaluation import (
     UltralyticsTrainingEvaluation,
     ultralytics_descriptor,
     ultralytics_epoch_metrics,
     ultralytics_report,
 )
-from .files import atomic_json, digest_file, immutable_copy
 from .initialization import (
     observation as initialization_observation,
     prepare as prepare_initialization,
     tensor_identity,
     validate_input as validate_initialization_input,
 )
-from .input_membership import InputMembership
 from .native_identity import validate_architecture
 from .policies import SEGMENTATION
 from .validation import (
     native_values,
-    normalized,
     validate_config,
     verify_native_configuration,
 )
-
-SUPERVISOR_OWNED_ARTIFACTS = frozenset(
-    {"manifest.json", "train.log", "observability.json", "config.json", "result.json"}
-)
-
-
-class _CancelledTraining(BaseException):
-    """Raised when SIGTERM/SIGINT interrupts training cleanly."""
-
-
-class _EventStream:
-    """Emit strictly increasing TrainEventV1 JSONL lines to events.jsonl."""
-
-    def __init__(self, output_dir: Path) -> None:
-        self._path = output_dir / "events.jsonl"
-        self._seq = 0
-
-    def emit(
-        self,
-        kind: str,
-        *,
-        phase: str | None = None,
-        epoch: int | None = None,
-        total_epochs: int | None = None,
-        progress: float | None = None,
-        metrics: dict[str, Any] | None = None,
-        detail: dict[str, Any] | None = None,
-    ) -> TrainEventV1:
-        self._seq += 1
-        event = TrainEventV1(
-            seq=self._seq,
-            kind=kind,  # type: ignore[arg-type]
-            phase=phase,
-            epoch=epoch,
-            total_epochs=total_epochs,
-            progress=progress,
-            metrics=metrics or {},
-            detail=detail or {},
-        )
-        write_event_jsonl(self._path, event)
-        return event
-
-
-def _runtime_versions() -> dict[str, str]:
-    versions: dict[str, str] = {
-        "python": platform.python_version(),
-        "ultralytics": FRAMEWORK_VERSION,
-    }
-    for pkg in ("torch", "torchvision", "numpy", "pillow", "opencv-python"):
-        try:
-            versions[pkg] = version(pkg)
-        except PackageNotFoundError:
-            continue
-    return versions
-
-
-def _artifact_entry(role: str, path: Path) -> TrainArtifactV1:
-    if path.name in SUPERVISOR_OWNED_ARTIFACTS:
-        raise NativeConfigurationMismatch(
-            f"Refusing to declare supervisor-owned artifact {path.name!r} in TrainReceiptV1"
-        )
-    return TrainArtifactV1(
-        role=role,  # type: ignore[arg-type]
-        filename=path.name,
-        sha256=digest_file(path),
-        size_bytes=path.stat().st_size,
-    )
-
-
-def _sanitize_failure_message(exc: BaseException) -> str:
-    raw = str(exc) or type(exc).__name__
-    cleaned = "".join(" " if ord(ch) < 32 or ord(ch) == 127 else ch for ch in raw)
-    collapsed = " ".join(cleaned.split())
-    return (collapsed[:2048].strip() or type(exc).__name__)
-
-
-def _classify_failure(exc: BaseException) -> tuple[str, str]:
-    torch_mod = sys.modules.get("torch")
-    oom_cls = getattr(getattr(torch_mod, "cuda", None), "OutOfMemoryError", None)
-    if oom_cls is not None and isinstance(exc, oom_cls):
-        code = "cuda_oom"
-    elif isinstance(exc, TrainerError):
-        code = exc.failure_code
-    else:
-        code = "native_exception"
-    return code, _sanitize_failure_message(exc)
 
 
 def _resolve_model_path(
@@ -187,18 +99,6 @@ def _resolve_model_path(
     return f"{spec.architecture_id}.yaml"
 
 
-def _load_dataset_identity(spec_path: Path | None) -> dict[str, Any]:
-    if spec_path is None:
-        return {}
-    sidecar = spec_path.parent / "dataset-identity.json"
-    if not sidecar.is_file():
-        return {}
-    loaded = json.loads(sidecar.read_text(encoding="utf-8"))
-    if not isinstance(loaded, dict):
-        raise InputMismatchError("dataset-identity.json must be a JSON object")
-    return loaded
-
-
 def _load_optional_init_pin(
     spec_path: Path | None, spec_parameters: dict[str, Any]
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
@@ -227,8 +127,8 @@ def run_train(
     if architecture_validator is _DEFAULT_ARCH_VALIDATOR:
         architecture_validator = validate_architecture
     output_dir.mkdir(parents=True, exist_ok=True)
-    events = _EventStream(output_dir)
-    events.emit("phase", phase="preparing")
+    events = EventEmitter(output_dir)
+    events.phase("preparing")
 
     if spec.framework_id != FRAMEWORK_ID:
         raise NativeConfigurationMismatch(
@@ -241,7 +141,7 @@ def run_train(
     config_directory.mkdir(parents=True, exist_ok=True)
 
     init_pin, raw_parameters = _load_optional_init_pin(spec_path, spec.parameters)
-    dataset_identity = _load_dataset_identity(spec_path)
+    dataset_identity = load_dataset_identity(spec_path)
 
     manifest, classes, data_yaml = validate_dataset(
         Path(spec.dataset_dir),
@@ -294,14 +194,16 @@ def run_train(
             or spec.dataset_snapshot_digest
         )
         membership = InputMembership(
-            dataset_root=Path(spec.dataset_dir),
+            dataset_dir=Path(spec.dataset_dir),
             output_dir=output_dir,
             manifest=manifest,
             run_id=spec.run_id,
             attempt_id=spec.attempt_id,
             config_digest=spec.config_digest,
+            dataset_snapshot_digest=spec.dataset_snapshot_digest,
             dataset_id=dataset_id,
             dataset_sha256=dataset_sha256,
+            require_identities=True,
         )
 
     require_qualified_runtime()
@@ -319,7 +221,7 @@ def run_train(
 
         trainer_class = build_instance_rle_trainer_class()
         rle_consumer_path = output_dir / "rle-consumer.json"
-        atomic_json(rle_consumer_path, consumer_evidence())
+        atomic_write_json(rle_consumer_path, consumer_evidence())
 
     class AttemptTrainer(UltralyticsAttemptTrainer, trainer_class):  # type: ignore[valid-type,misc]
         def preprocess_batch(self, batch: Any) -> Any:
@@ -329,7 +231,7 @@ def run_train(
 
         def final_eval(self) -> Any:
             self._platform_final_eval = True
-            events.emit("phase", phase="evaluating")
+            events.phase("evaluating")
             try:
                 return super().final_eval()
             finally:
@@ -451,7 +353,7 @@ def run_train(
                 "tensor_count": loaded_count,
                 "start_epoch": int(trainer.start_epoch),
             }
-        atomic_json(
+        atomic_write_json(
             native_config_path,
             {
                 "config_digest": spec.config_digest,
@@ -463,7 +365,7 @@ def run_train(
         )
         batch_window_start = time.monotonic()
         batch_window_images = 0
-        events.emit("phase", phase="training", total_epochs=total_epochs)
+        events.phase("training", total_epochs=total_epochs)
 
     def on_train_batch_end(trainer: Any) -> None:
         nonlocal batch_window_start, batch_window_images
@@ -486,12 +388,11 @@ def run_train(
                     torch_mod.cuda.memory_allocated() / (1024 * 1024), 2
                 )
             epoch_val = max(0, int(getattr(trainer, "epoch", 0)))
-            events.emit(
-                "progress",
+            events.progress(
+                progress=min(1.0, epoch_val / max(total_epochs, 1)),
                 phase="training",
                 epoch=min(epoch_val, total_epochs),
                 total_epochs=total_epochs,
-                progress=min(1.0, epoch_val / max(total_epochs, 1)),
                 detail=detail,
             )
             batch_window_start = now
@@ -500,23 +401,20 @@ def run_train(
     def on_val_start(validator: Any) -> None:
         if membership is not None:
             membership.observe("val", validator.dataloader.dataset.im_files)
-        events.emit("phase", phase="evaluating")
+        events.phase("evaluating")
 
     def on_val_end(validator: Any) -> None:
-        events.emit("phase", phase="training")
+        events.phase("training")
 
     def on_model_save(trainer: Any) -> None:
         checkpoints.saved(trainer)
         if checkpoints.checkpoint is not None:
-            events.emit(
-                "checkpoint",
-                phase="training",
+            events.checkpoint(
                 epoch=checkpoints.checkpoint["epoch"],
+                filename=checkpoints.checkpoint["name"],
+                sha256=checkpoints.checkpoint["sha256"],
                 total_epochs=total_epochs,
-                detail={
-                    "filename": checkpoints.checkpoint["name"],
-                    "sha256": checkpoints.checkpoint["sha256"],
-                },
+                phase="training",
             )
 
     def on_fit_epoch_end(trainer: Any) -> None:
@@ -526,15 +424,13 @@ def run_train(
         ):
             metrics = ultralytics_epoch_metrics(trainer)
             if training_evaluation is not None:
-                events.emit("phase", phase="evaluating")
+                events.phase("evaluating")
                 try:
                     metrics.update(training_evaluation(trainer))
                 finally:
-                    events.emit("phase", phase="training")
+                    events.phase("training")
             completed = int(trainer.epoch) + 1
-            events.emit(
-                "epoch",
-                phase="training",
+            events.epoch(
                 epoch=completed,
                 total_epochs=int(trainer.epochs),
                 progress=min(1.0, completed / max(int(trainer.epochs), 1)),
@@ -587,8 +483,6 @@ def run_train(
         if preflight_map:
             report["mask_resolution"] = preflight_map
 
-    from .dataset import data_contract as manifest_data_contract
-
     resolved_data_contract = (
         manifest.get("data_contract")
         or dataset_identity.get("data_contract")
@@ -608,22 +502,20 @@ def run_train(
     )
 
     metrics_path = output_dir / "metrics.json"
-    atomic_json(metrics_path, report)
+    atomic_write_json(metrics_path, report)
 
-    membership_path: Path | None = None
-    if membership is not None:
-        membership.complete()
-        membership_path = output_dir / "input-membership.json"
+    membership_result = membership.complete() if membership is not None else None
+    membership_path = membership_result.path if membership_result is not None else None
 
     artifacts: list[TrainArtifactV1] = [
-        _artifact_entry("weights", output_dir / weights["name"]),
-        _artifact_entry("checkpoint", output_dir / checkpoints.checkpoint["name"]),
-        _artifact_entry("metrics", metrics_path),
+        build_artifact_entry("weights", output_dir / weights["name"]),
+        build_artifact_entry("checkpoint", output_dir / checkpoints.checkpoint["name"]),
+        build_artifact_entry("metrics", metrics_path),
     ]
     if native_config_path.is_file():
-        artifacts.append(_artifact_entry("config", native_config_path))
+        artifacts.append(build_artifact_entry("config", native_config_path))
     if membership_path is not None and membership_path.is_file():
-        artifacts.append(_artifact_entry("input_membership", membership_path))
+        artifacts.append(build_artifact_entry("input_membership", membership_path))
     if raster:
         for extra_path in (
             rle_consumer_path,
@@ -631,14 +523,14 @@ def run_train(
             output_dir / "rle-val-preflight.json",
         ):
             if extra_path is not None and extra_path.is_file():
-                artifacts.append(_artifact_entry("config", extra_path))
+                artifacts.append(build_artifact_entry("config", extra_path))
 
     receipt = TrainReceiptV1(
         protocol_version=TRAINER_PROTOCOL_VERSION,
         status="succeeded",
         artifacts=artifacts,
         serving_compatibility=serving_compatibility_for(
-            arch, runtime_versions=_runtime_versions()
+            arch, runtime_versions=collect_runtime_versions()
         ),
     )
     atomic_write_json(output_dir / "result.json", receipt)
@@ -646,47 +538,9 @@ def run_train(
 
 
 def run_train_cli(spec_path: Path, output_dir: Path) -> int:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    previous_handlers: dict[int, Any] = {}
-
-    def _handle_cancel(signum: int, frame: Any) -> None:
-        raise _CancelledTraining(f"Received signal {signum}")
-
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        try:
-            previous_handlers[sig] = signal.getsignal(sig)
-            signal.signal(sig, _handle_cancel)
-        except (ValueError, OSError):
-            pass
-
-    try:
-        raw = json.loads(spec_path.read_text(encoding="utf-8"))
-        spec = TrainSpecV1.model_validate(raw)
-        run_train(spec, output_dir, spec_path=spec_path)
-        return 0
-    except _CancelledTraining as exc:
-        receipt = TrainReceiptV1(
-            protocol_version=TRAINER_PROTOCOL_VERSION,
-            status="cancelled",
-            artifacts=[],
-            failure_message=_sanitize_failure_message(exc),
-        )
-        atomic_write_json(output_dir / "result.json", receipt)
-        return 130
-    except Exception as exc:
-        code, message = _classify_failure(exc)
-        receipt = TrainReceiptV1(
-            protocol_version=TRAINER_PROTOCOL_VERSION,
-            status="failed",
-            artifacts=[],
-            failure_code=code,
-            failure_message=message,
-        )
-        atomic_write_json(output_dir / "result.json", receipt)
-        return 1
-    finally:
-        for sig, handler in previous_handlers.items():
-            try:
-                signal.signal(sig, handler)
-            except (ValueError, OSError):
-                pass
+    return run_with_signal_receipt(
+        spec_path,
+        output_dir,
+        lambda spec, out_dir, sp: run_train(spec, out_dir, spec_path=sp),
+        logger_prefix="yoao-trainer-ultralytics",
+    )

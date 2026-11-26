@@ -24,6 +24,10 @@ from yoao_plugin_sdk.trainer import (
     PreviewReportV1,
     PreviewSpecV1,
     atomic_write_json,
+    canonical_json_digest,
+    classify_failure,
+    digest_file,
+    sanitize_failure_message,
 )
 
 from . import (
@@ -32,11 +36,9 @@ from . import (
     InputMismatchError,
     NativeConfigurationMismatch,
     NativeRuntimeMismatch,
-    TrainerError,
 )
 from .adapter import disable_telemetry, require_qualified_runtime
 from .catalog import model_spec
-from .files import canonical_digest, digest_file
 from .policies import (
     DETECTION,
     PREVIEW_LIMITS,
@@ -298,13 +300,6 @@ def _infer_class_count(spec: PreviewSpecV1, input_dir: Path) -> int:
     return max(max_cls + 1, 1)
 
 
-def _sanitize_failure_message(exc: BaseException) -> str:
-    raw = str(exc) or type(exc).__name__
-    cleaned = "".join(" " if ord(ch) < 32 or ord(ch) == 127 else ch for ch in raw)
-    collapsed = " ".join(cleaned.split())
-    return (collapsed[:2048].strip() or type(exc).__name__)
-
-
 def _resolve_preview_native_values(spec: PreviewSpecV1) -> dict[str, Any]:
     values = dict(spec.native_values)
     if not values:
@@ -329,8 +324,8 @@ def _resolve_preview_native_values(spec: PreviewSpecV1) -> dict[str, Any]:
 def _pipeline_sha256(ultralytics_mod: Any) -> str:
     root = Path(ultralytics_mod.__file__).parent
     if not root.is_dir():
-        return canonical_digest({"plugin_preview": digest_file(Path(__file__))})
-    return canonical_digest(
+        return canonical_json_digest({"plugin_preview": digest_file(Path(__file__))})
+    return canonical_json_digest(
         {
             str(path.relative_to(root)): digest_file(path)
             for path in sorted(root.rglob("*.py"))
@@ -614,8 +609,10 @@ def run_preview_cli(
         run_preview(spec, spec_path.parent, output_dir, apply_rlimits=apply_rlimits)
         return 0
     except Exception as exc:
-        code = exc.failure_code if isinstance(exc, TrainerError) else "preview_failed"
-        message = _sanitize_failure_message(exc)
+        code = classify_failure(exc)
+        if code == "native_exception":
+            code = "preview_failed"
+        message = sanitize_failure_message(exc, type(exc).__name__)
         cuda_init = False
         import sys
 

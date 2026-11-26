@@ -10,6 +10,8 @@ import uuid
 import numpy as np
 import pytest
 
+from yoao_plugin_sdk.trainer import canonical_json_digest, digest_file
+
 from yoao_trainer_ultralytics import InputMismatchError
 from yoao_trainer_ultralytics.catalog import model_spec
 from yoao_trainer_ultralytics.dataset import INSTANCE_RLE_CONTRACT
@@ -17,7 +19,6 @@ from yoao_trainer_ultralytics.evaluation import (
     ultralytics_descriptor,
     ultralytics_report,
 )
-from yoao_trainer_ultralytics.files import canonical_digest, digest_file
 from yoao_trainer_ultralytics.initialization import (
     observation,
     prepare,
@@ -74,7 +75,7 @@ def _make_pin(
         )
     pin: dict[str, Any] = {
         "kind": "trained_model",
-        "policy_digest": canonical_digest(policy),
+        "policy_digest": canonical_json_digest(policy),
         "project_id": proj_id,
         "model_version_id": str(uuid.uuid4()),
         "model_name": "detector-v1",
@@ -93,9 +94,9 @@ def _make_pin(
             "size_bytes": weights_path.stat().st_size,
         },
         "classes": classes,
-        "classes_digest": canonical_digest(classes),
+        "classes_digest": canonical_json_digest(classes),
         "bindings": list(classes),
-        "binding_digest": canonical_digest({"classes": classes, "bindings": list(classes)}),
+        "binding_digest": canonical_json_digest({"classes": classes, "bindings": list(classes)}),
         "config_digest": "6" * 64,
         "dataset_digest": "7" * 64,
         "validation_digest": "3" * 64,
@@ -110,7 +111,7 @@ def _make_pin(
     }
     if task == "segment":
         pin["data_contract"] = dict(INSTANCE_RLE_CONTRACT)
-    pin["source_digest"] = canonical_digest(pin)
+    pin["source_digest"] = canonical_json_digest(pin)
     return pin
 
 

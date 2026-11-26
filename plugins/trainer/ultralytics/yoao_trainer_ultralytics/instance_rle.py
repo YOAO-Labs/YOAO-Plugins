@@ -13,9 +13,10 @@ from typing import Any
 import numpy as np
 from PIL import Image, ImageOps
 
+from yoao_plugin_sdk.trainer import atomic_write_json
+
 from . import InputMismatchError
 from .dataset import instance_rle_budget
-from .files import atomic_json
 from .policies import INSTANCE_RLE_LIMITS, MAX_SEMANTIC_CLASS_PIXELS
 
 MAX_LABEL_BYTES = INSTANCE_RLE_LIMITS["max_sample_label_bytes"]
@@ -427,8 +428,8 @@ def build_instance_rle_trainer_class() -> type:
                 )
             dataset = self.build_dataset(dataset_path, mode, batch_size)
             evidence = dataset.preflight()
-            atomic_json(self.save_dir / f"rle-{mode}-preflight.json", evidence)
-            atomic_json(self.save_dir.parent / f"rle-{mode}-preflight.json", evidence)
+            atomic_write_json(self.save_dir / f"rle-{mode}-preflight.json", evidence)
+            atomic_write_json(self.save_dir.parent / f"rle-{mode}-preflight.json", evidence)
             if evidence["resize_vanished"]:
                 raise InputMismatchError(
                     "Instances disappear at selected input resolution; inspect RLE preflight"

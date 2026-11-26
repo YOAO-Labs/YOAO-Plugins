@@ -16,10 +16,10 @@ from yoao_plugin_sdk.trainer import (
     TrainEventV1,
     TrainReceiptV1,
     TrainSpecV1,
+    digest_file,
 )
 
 from yoao_trainer_ultralytics.cli import main
-from yoao_trainer_ultralytics.files import digest_file
 from yoao_trainer_ultralytics.train import SUPERVISOR_OWNED_ARTIFACTS, run_train
 from tests.conftest import (
     install_fake_ultralytics_modules,

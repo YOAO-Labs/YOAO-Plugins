@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
-import argparse
-from importlib.metadata import PackageNotFoundError, version
-import json
+from collections.abc import Sequence
 from pathlib import Path
 import platform
-import sys
+from typing import Any
 
 from yoao_plugin_sdk.trainer import (
     TRAINER_PROTOCOL_VERSION,
+    PreviewReportV1,
+    PreviewSpecV1,
     TrainerCapabilitiesV1,
-    canonical_json_bytes,
+    TrainReceiptV1,
+    TrainSpecV1,
+    ValidateConfigResultV1,
+    optional_package_version,
+    run_trainer_cli,
 )
 
-from . import FRAMEWORK_ID, FRAMEWORK_VERSION
+from . import FRAMEWORK_ID, FRAMEWORK_VERSION, InputMismatchError
 from .catalog import (
     SUPPORTED_DATASET_CONTRACTS,
     SUPPORTED_TASKS,
@@ -24,20 +28,19 @@ from .catalog import (
     trainer_architectures,
 )
 from .evaluation import describe_evaluators
-from .policies import policy_digests
+from .policies import PREVIEW_LIMITS, policy_digests
 from .validation import validate_config
 
 
-def _collect_runtime_versions() -> dict[str, str]:
+def collect_runtime_versions() -> dict[str, str]:
     versions: dict[str, str] = {
         "python": platform.python_version(),
         "ultralytics": FRAMEWORK_VERSION,
     }
     for pkg in ("torch", "torchvision", "numpy", "pillow", "opencv-python"):
-        try:
-            versions[pkg] = version(pkg)
-        except PackageNotFoundError:
-            continue
+        pkg_version = optional_package_version(pkg)
+        if pkg_version is not None:
+            versions[pkg] = pkg_version
     return versions
 
 
@@ -46,7 +49,7 @@ def build_capabilities() -> TrainerCapabilitiesV1:
         protocol_version=TRAINER_PROTOCOL_VERSION,
         framework_id=FRAMEWORK_ID,
         framework_version=FRAMEWORK_VERSION,
-        runtime_versions=_collect_runtime_versions(),
+        runtime_versions=collect_runtime_versions(),
         supported_tasks=list(SUPPORTED_TASKS),
         supported_dataset_contracts=list(SUPPORTED_DATASET_CONTRACTS),
         architectures=trainer_architectures(),
@@ -57,63 +60,50 @@ def build_capabilities() -> TrainerCapabilitiesV1:
     )
 
 
-def _cmd_describe() -> int:
-    caps = build_capabilities()
-    sys.stdout.write(canonical_json_bytes(caps).decode("utf-8") + "\n")
-    return 0
+class UltralyticsTrainerPlugin:
+    def describe(self) -> TrainerCapabilitiesV1:
+        return build_capabilities()
+
+    def validate_config(self, payload: Any) -> ValidateConfigResultV1:
+        return validate_config(payload)
+
+    def train(
+        self,
+        spec: TrainSpecV1,
+        output_dir: Path,
+        *,
+        spec_path: Path | None = None,
+    ) -> TrainReceiptV1:
+        from .train import run_train
+
+        return run_train(spec, output_dir, spec_path=spec_path)
+
+    def preview(
+        self,
+        spec: PreviewSpecV1,
+        output_dir: Path,
+        *,
+        spec_path: Path | None = None,
+    ) -> PreviewReportV1:
+        from .preview import run_preview
+
+        if (
+            spec_path is not None
+            and spec_path.stat().st_size > PREVIEW_LIMITS["report_bytes"]
+        ):
+            raise InputMismatchError("Preview spec exceeds byte bound")
+        input_dir = spec_path.parent if spec_path is not None else output_dir
+        return run_preview(spec, input_dir, output_dir)
 
 
-def _cmd_validate_config(spec_path: Path) -> int:
-    raw = json.loads(spec_path.read_text(encoding="utf-8"))
-    result = validate_config(raw)
-    sys.stdout.write(canonical_json_bytes(result).decode("utf-8") + "\n")
-    return 0
-
-
-def _cmd_train(spec_path: Path, output_dir: Path) -> int:
-    from .train import run_train_cli
-
-    return run_train_cli(spec_path, output_dir)
-
-
-def _cmd_preview(spec_path: Path, output_dir: Path) -> int:
-    from .preview import run_preview_cli
-
-    return run_preview_cli(spec_path, output_dir)
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
+def main(argv: Sequence[str] | None = None) -> int:
+    return run_trainer_cli(
+        UltralyticsTrainerPlugin(),
         prog="yoao-trainer-ultralytics",
         description="Official Ultralytics YOLO 8.4.183 trainer plugin (yoao-trainer/v1).",
+        supports_preview=True,
+        argv=argv,
     )
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    sub.add_parser("describe", help="Print TrainerCapabilitiesV1 JSON to stdout")
-
-    validate_p = sub.add_parser(
-        "validate-config", help="Validate training configuration against Ultralytics 8.4.183"
-    )
-    validate_p.add_argument("--spec", type=Path, required=True)
-
-    train_p = sub.add_parser("train", help="Execute a frozen yoao-trainer/v1 training attempt")
-    train_p.add_argument("--spec", type=Path, required=True)
-    train_p.add_argument("--output", type=Path, required=True)
-
-    preview_p = sub.add_parser("preview", help="Run CPU-only augmentation preview")
-    preview_p.add_argument("--spec", type=Path, required=True)
-    preview_p.add_argument("--output", type=Path, required=True)
-
-    args = parser.parse_args(argv)
-    if args.command == "describe":
-        return _cmd_describe()
-    if args.command == "validate-config":
-        return _cmd_validate_config(args.spec)
-    if args.command == "train":
-        return _cmd_train(args.spec, args.output)
-    if args.command == "preview":
-        return _cmd_preview(args.spec, args.output)
-    return 2
 
 
 if __name__ == "__main__":

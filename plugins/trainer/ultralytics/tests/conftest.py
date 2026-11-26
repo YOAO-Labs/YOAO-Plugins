@@ -14,12 +14,13 @@ from PIL import Image
 import pytest
 import yaml
 
+from yoao_plugin_sdk.trainer import canonical_json_digest, digest_file
+
 from yoao_trainer_ultralytics.dataset import (
     DETECTION_CONTRACT,
     INSTANCE_RLE_CONTRACT,
     instance_rle_evidence,
 )
-from yoao_trainer_ultralytics.files import canonical_digest, digest_file
 
 
 def encode_rle(mask: np.ndarray) -> dict[str, Any]:
@@ -90,7 +91,7 @@ def make_detect_dataset(root: Path, *, classes: list[str] | None = None) -> dict
         "root": root,
         "manifest": manifest,
         "classes": classes,
-        "classes_digest": canonical_digest(classes),
+        "classes_digest": canonical_json_digest(classes),
     }
 
 
@@ -151,7 +152,7 @@ def make_rle_dataset(
                 "height": height,
                 "size_bytes": img_path.stat().st_size,
                 "instances": manifest_instances,
-                "semantic_label_sha256": canonical_digest(sorted(semantics)),
+                "semantic_label_sha256": canonical_json_digest(sorted(semantics)),
             }
         )
 
@@ -176,7 +177,7 @@ def make_rle_dataset(
         "root": root,
         "manifest": manifest,
         "classes": classes,
-        "classes_digest": canonical_digest(classes),
+        "classes_digest": canonical_json_digest(classes),
     }
 
 

@@ -9,10 +9,13 @@ from importlib.resources import files
 import json
 from typing import Any
 
-from yoao_plugin_sdk.trainer import ServingCompatibilityV1, TrainerArchitectureV1
+from yoao_plugin_sdk.trainer import (
+    ServingCompatibilityV1,
+    TrainerArchitectureV1,
+    canonical_json_digest,
+)
 
 from . import FRAMEWORK_ID, FRAMEWORK_VERSION
-from .files import canonical_digest
 from .policies import DETECTION, SEGMENTATION
 
 SUPPORTED_TASKS = (DETECTION, SEGMENTATION)
@@ -418,7 +421,7 @@ def parameter_schema_for(architecture_id: str) -> dict[str, Any]:
             ),
         }
     )
-    result["schema_digest"] = canonical_digest(result)
+    result["schema_digest"] = canonical_json_digest(result)
     return deepcopy(result)
 
 

@@ -4,8 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from yoao_plugin_sdk.trainer import (
+    MAX_MEMBERS as INPUT_MEMBERSHIP_MAX_MEMBERS,
+    MEMBER_FIELDS as INPUT_MEMBERSHIP_MEMBER_FIELDS,
+    POLICY_DIGEST as INPUT_MEMBERSHIP_POLICY_DIGEST,
+    SPLITS as INPUT_MEMBERSHIP_SPLITS,
+    canonical_json_digest,
+)
+
 from . import FRAMEWORK_ID, FRAMEWORK_VERSION, LEGACY_ULTRALYTICS_VERSION
-from .files import canonical_digest
 
 DETECTION = "detect"
 SEGMENTATION = "segment"
@@ -59,21 +66,8 @@ PREVIEW_POLICY: dict[str, Any] = {
     "buffer_policy": "native-sequential-pool-load-v1",
     "limits": PREVIEW_LIMITS,
 }
-PREVIEW_POLICY_DIGEST = canonical_digest(PREVIEW_POLICY)
+PREVIEW_POLICY_DIGEST = canonical_json_digest(PREVIEW_POLICY)
 
-INPUT_MEMBERSHIP_MAX_MEMBERS = 20000
-INPUT_MEMBERSHIP_SPLITS = ("train", "val")
-INPUT_MEMBERSHIP_MEMBER_FIELDS = (
-    "task_id",
-    "split",
-    "image_path",
-    "label_path",
-    "sha256",
-    "label_sha256",
-    "width",
-    "height",
-    "size_bytes",
-)
 INPUT_MEMBERSHIP_POLICY: dict[str, Any] = {
     "schema": 1,
     "scope": "native-loader-membership",
@@ -81,7 +75,6 @@ INPUT_MEMBERSHIP_POLICY: dict[str, Any] = {
     "splits": list(INPUT_MEMBERSHIP_SPLITS),
     "max_members": INPUT_MEMBERSHIP_MAX_MEMBERS,
 }
-INPUT_MEMBERSHIP_POLICY_DIGEST = canonical_digest(INPUT_MEMBERSHIP_POLICY)
 
 BUDGET_POLICY: dict[str, Any] = {
     "revision": 1,
@@ -91,7 +84,7 @@ BUDGET_POLICY: dict[str, Any] = {
     "unknown": "block-admission-and-resume",
     "overrun": "count-in-full",
 }
-BUDGET_POLICY_DIGEST = canonical_digest(BUDGET_POLICY)
+BUDGET_POLICY_DIGEST = canonical_json_digest(BUDGET_POLICY)
 
 LEGACY_INIT_POLICY: dict[str, Any] = {
     "revision": 1,
@@ -110,7 +103,7 @@ LEGACY_INIT_POLICY: dict[str, Any] = {
     "state": "fresh-training",
     "maximum_bytes": MAX_WEIGHTS_BYTES,
 }
-LEGACY_INIT_POLICY_DIGEST = canonical_digest(LEGACY_INIT_POLICY)
+LEGACY_INIT_POLICY_DIGEST = canonical_json_digest(LEGACY_INIT_POLICY)
 
 LEGACY_SEGMENTATION_INIT_POLICY: dict[str, Any] = {
     **LEGACY_INIT_POLICY,
@@ -120,7 +113,7 @@ LEGACY_SEGMENTATION_INIT_POLICY: dict[str, Any] = {
     "source_data_identity": "exact-frozen-contract-and-bridge",
     "evaluation_identity": "raw-report-and-normalized-registration-separately-frozen",
 }
-LEGACY_SEGMENTATION_INIT_POLICY_DIGEST = canonical_digest(
+LEGACY_SEGMENTATION_INIT_POLICY_DIGEST = canonical_json_digest(
     LEGACY_SEGMENTATION_INIT_POLICY
 )
 
@@ -136,7 +129,7 @@ INSTANCE_RLE_POLICY: dict[str, Any] = {
     "semantic_target": "smallest-covering-instance;first-input-on-equal-area;background-zero",
     "max_semantic_class_pixels": MAX_SEMANTIC_CLASS_PIXELS,
 }
-INSTANCE_RLE_POLICY_DIGEST = canonical_digest(INSTANCE_RLE_POLICY)
+INSTANCE_RLE_POLICY_DIGEST = canonical_json_digest(INSTANCE_RLE_POLICY)
 
 
 def initialization_policy_for(
@@ -169,13 +162,13 @@ def initialization_policy_for(
 
 
 INITIALIZATION_POLICY_CATALOG: dict[str, str] = {
-    f"{family}-{task}": canonical_digest(
+    f"{family}-{task}": canonical_json_digest(
         initialization_policy_for(family, task, FRAMEWORK_VERSION)
     )
     for family in ("yolov8", "yolo11", "yolo26")
     for task in (DETECTION, SEGMENTATION)
 }
-INITIALIZATION_POLICY_DIGEST = canonical_digest(INITIALIZATION_POLICY_CATALOG)
+INITIALIZATION_POLICY_DIGEST = canonical_json_digest(INITIALIZATION_POLICY_CATALOG)
 
 
 def policy_digests() -> dict[str, str]:

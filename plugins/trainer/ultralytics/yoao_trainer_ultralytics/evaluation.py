@@ -3,35 +3,21 @@
 from __future__ import annotations
 
 from copy import copy
-import hashlib
-from importlib.metadata import PackageNotFoundError, version
 import inspect
 import math
 from pathlib import Path
 from typing import Any
 
+from yoao_plugin_sdk.trainer import (
+    hash_source_files,
+    metrics_of,
+    normalized,
+    optional_package_version,
+)
+
 from . import FRAMEWORK_ID, FRAMEWORK_VERSION
 from .catalog import model_spec
-from .files import canonical_digest
 from .policies import SEGMENTATION
-from .validation import normalized
-
-
-def _optional_version(pkg: str, default: str = "unavailable") -> str:
-    try:
-        return version(pkg)
-    except PackageNotFoundError:
-        return default
-
-
-def metrics_of(raw: dict[str, Any]) -> dict[str, float]:
-    return {
-        str(key): (0.0 if float(value) == 0.0 else float(value))
-        for key, value in raw.items()
-        if not isinstance(value, bool)
-        and isinstance(value, (float, int))
-        and math.isfinite(float(value))
-    }
 
 
 def ultralytics_epoch_metrics(trainer: Any) -> dict[str, float]:
@@ -76,9 +62,7 @@ def descriptor(
             "version": FRAMEWORK_VERSION,
             "task": "instance-segmentation" if segmentation else "detection",
             "implementation": implementation,
-            "source_sha256": canonical_digest(
-                [hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in source_files]
-            ),
+            "source_sha256": hash_source_files(source_files),
             "options": normalized(options),
         },
         "semantics": {
@@ -141,8 +125,8 @@ def ultralytics_descriptor(
         workers=validator.dataloader.num_workers,
         rect=validator.dataloader.dataset.rect,
         imgsz=validator.dataloader.dataset.imgsz,
-        torch_version=_optional_version("torch"),
-        torchvision_version=_optional_version("torchvision"),
+        torch_version=optional_package_version("torch", "unavailable"),
+        torchvision_version=optional_package_version("torchvision", "unavailable"),
         end2end=bool(getattr(validator, "end2end", False)),
     )
     expected = model_spec(architecture_id)
@@ -235,11 +219,6 @@ def describe_evaluators() -> dict[str, dict[str, Any]]:
     except ImportError:
         pass
 
-    def _source_sha(paths: list[Path]) -> str:
-        return canonical_digest(
-            [hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
-        )
-
     return {
         "detect": {
             "framework": FRAMEWORK_ID,
@@ -253,7 +232,7 @@ def describe_evaluators() -> dict[str, dict[str, Any]]:
                 "metrics/recall",
             ],
             "runtime_available": runtime_available,
-            "source_sha256": _source_sha(detect_sources),
+            "source_sha256": hash_source_files(detect_sources),
         },
         "segment": {
             "framework": FRAMEWORK_ID,
@@ -262,7 +241,7 @@ def describe_evaluators() -> dict[str, dict[str, Any]]:
             "implementation": "ultralytics.models.yolo.segment.val.SegmentationValidator",
             "rle_implementation": "yoao_trainer_ultralytics.instance_rle.InstanceRLEValidator",
             "runtime_available": runtime_available,
-            "source_sha256": _source_sha(segment_sources),
+            "source_sha256": hash_source_files(segment_sources),
         },
     }
 

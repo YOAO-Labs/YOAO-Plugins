@@ -5,12 +5,15 @@ from __future__ import annotations
 import hashlib
 import io
 import math
-import os
 from pathlib import Path
 from typing import Any, Callable
 
+from yoao_plugin_sdk.trainer import (
+    CheckpointSlotStore,
+    atomic_write_bytes,
+)
+
 from . import FRAMEWORK_VERSION, InputMismatchError
-from .files import atomic_bytes, atomic_json, immutable_copy
 from .native_identity import validate_architecture
 from .policies import SEGMENTATION
 
@@ -46,6 +49,7 @@ class UltralyticsCheckpoints:
         architecture_validator: Callable[..., Any] | None = validate_architecture,
     ) -> None:
         self.output = output_dir
+        self._store = CheckpointSlotStore(output_dir, extension=".pt")
         self.architecture_id = architecture_id
         self.task = task
         self.classes = list(classes)
@@ -94,11 +98,7 @@ class UltralyticsCheckpoints:
                 raise InputMismatchError(
                     "Historical best fitness or epoch does not match the resume checkpoint"
                 )
-            self.checkpoint = immutable_copy(
-                resume_path, self.output / f"checkpoint-{epoch:04d}.pt"
-            )
-            self.checkpoint.update(role="checkpoint", epoch=epoch)
-            atomic_json(self.output / "checkpoint.json", self.checkpoint)
+            self.checkpoint = self._store.commit_file(resume_path, epoch)
 
     def _load(self, source: Any) -> Any:
         if self._torch_load is not None:
@@ -141,10 +141,9 @@ class UltralyticsCheckpoints:
 
     def started(self, trainer: Any) -> None:
         if self.best_bytes is not None:
-            atomic_bytes(Path(trainer.best), self.best_bytes)
+            atomic_write_bytes(Path(trainer.best), self.best_bytes)
 
     def saved(self, trainer: Any) -> None:
-        previous = self.checkpoint
         epoch = trainer.epoch + 1
         full = self._load(trainer.last)
         self.validate_identity(full)
@@ -167,18 +166,6 @@ class UltralyticsCheckpoints:
                 "best_weights": best_bytes,
                 "best_sha256": hashlib.sha256(best_bytes).hexdigest(),
             }
-        staging = self.output / "checkpoint-staging.pt"
-        try:
-            with staging.open("wb") as stream:
-                self._save(full, stream)
-                stream.flush()
-                os.fsync(stream.fileno())
-            self.checkpoint = immutable_copy(
-                staging, self.output / f"checkpoint-{epoch:04d}.pt"
-            )
-        finally:
-            staging.unlink(missing_ok=True)
-        self.checkpoint.update(role="checkpoint", epoch=epoch)
-        atomic_json(self.output / "checkpoint.json", self.checkpoint)
-        if previous and previous["name"] != self.checkpoint["name"]:
-            (self.output / previous["name"]).unlink(missing_ok=True)
+        self.checkpoint = self._store.commit_via_writer(
+            epoch, lambda stream: self._save(full, stream)
+        )

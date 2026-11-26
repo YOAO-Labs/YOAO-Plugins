@@ -10,11 +10,11 @@ from typing import Any
 import uuid
 
 import numpy as np
+from yoao_plugin_sdk.trainer import canonical_json_digest, digest_file
 
 from . import FRAMEWORK_ID, InputMismatchError
 from .catalog import model_spec
 from .dataset import data_contract, normalize_task
-from .files import canonical_digest, digest_file
 from .native_identity import validate_architecture
 from .policies import (
     LEGACY_INIT_POLICY,
@@ -101,7 +101,7 @@ def policy_for_pin(pin: Any) -> dict[str, Any]:
     if isinstance(base_model, str) and isinstance(framework_version, str):
         spec = model_spec(base_model)
         policy = initialization_policy_for(spec.family, spec.task, framework_version)
-        if pin.get("policy_digest") == canonical_digest(policy):
+        if pin.get("policy_digest") == canonical_json_digest(policy):
             return policy
         v3_policy = {
             "framework": FRAMEWORK_ID,
@@ -110,7 +110,7 @@ def policy_for_pin(pin: Any) -> dict[str, Any]:
             "model_family": spec.family,
             "base_model": spec.id,
         }
-        if pin.get("policy_digest") == canonical_digest(v3_policy):
+        if pin.get("policy_digest") == canonical_json_digest(v3_policy):
             return {**policy, **v3_policy, "_v3_runtime": True}
     raise ValueError("Initialization source policy digest is not qualified")
 
@@ -201,8 +201,8 @@ def validate_pin(pin: Any) -> dict[str, Any]:
         or not isinstance(bindings, list)
         or len(bindings) != len(classes)
         or not all(isinstance(v, str) and 0 < len(v) <= 2000 for v in bindings)
-        or canonical_digest(classes) != pin["classes_digest"]
-        or canonical_digest({"classes": classes, "bindings": bindings})
+        or canonical_json_digest(classes) != pin["classes_digest"]
+        or canonical_json_digest({"classes": classes, "bindings": bindings})
         != pin["binding_digest"]
     ):
         raise ValueError("Initialization classes or binding identity mismatch")
@@ -235,7 +235,7 @@ def validate_pin(pin: Any) -> dict[str, Any]:
         or not all(_is_sha256(v) for v in evaluation.values())
         or evaluation["validation_digest"] != pin["validation_digest"]
         or (segmentation and evaluation["weights_sha256"] != artifact["sha256"])
-        or canonical_digest({k: v for k, v in pin.items() if k != "source_digest"})
+        or canonical_json_digest({k: v for k, v in pin.items() if k != "source_digest"})
         != pin["source_digest"]
     ):
         raise ValueError("Initialization evaluation or source digest mismatch")
