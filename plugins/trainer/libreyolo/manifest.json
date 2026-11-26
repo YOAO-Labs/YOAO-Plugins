@@ -1,0 +1,22 @@
+{
+  "manifest_schema": "yoao-extension-manifest/v1",
+  "extension_point": "trainer",
+  "plugin_id": "yoao.trainer.libreyolo",
+  "version": "1.0.0",
+  "display_name": "LibreYOLO Trainer",
+  "description": "Official MIT-licensed LibreYOLO9 object detection trainer plugin for YOAO.",
+  "homepage": "https://github.com/YOAO-Labs/YOAO-Plugins",
+  "publisher": "YOAO Official",
+  "license": "MIT",
+  "protocol_version": "yoao-trainer/v1",
+  "entrypoint": ["yoao-trainer-libreyolo"],
+  "capabilities": ["train", "evaluate", "export_weights"],
+  "resource": {
+    "memory_mb": 8192
+  },
+  "extension": {
+    "framework_id": "libreyolo",
+    "framework_version": "1.6.0",
+    "requires_gpu": true
+  }
+}

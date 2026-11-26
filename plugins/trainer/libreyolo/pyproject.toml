@@ -1,0 +1,52 @@
+[project]
+name = "yoao-trainer-libreyolo"
+version = "1.0.0"
+description = "Official MIT-licensed LibreYOLO9 object detection trainer plugin for YOAO (yoao-trainer/v1)."
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+  "yoao-plugin-sdk==0.1.0",
+  "PyYAML>=6.0,<7",
+]
+
+[project.optional-dependencies]
+ml = [
+  "libreyolo==1.6.0",
+  "torch==2.14.1",
+  "torchvision==0.29.1",
+  "pycocotools>=2.0.7,<3",
+  "opencv-python>=4.8",
+  "pillow>=10.0",
+]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+yoao-trainer-libreyolo = "yoao_trainer_libreyolo.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["yoao_trainer_libreyolo", "yoao_trainer_libreyolo.*"]
+
+[tool.setuptools.package-data]
+yoao_trainer_libreyolo = [
+  "controlled-model-assets.json",
+  "native-inventory.json",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.uv.sources]
+yoao-plugin-sdk = { path = "../../../.artifacts/python/first-party/yoao_plugin_sdk-0.1.0-py3-none-any.whl" }
+torch = { index = "pytorch-cu132" }
+torchvision = { index = "pytorch-cu132" }
+
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+explicit = true

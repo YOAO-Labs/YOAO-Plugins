@@ -1,0 +1,15 @@
+*
+!plugins/
+plugins/*
+!plugins/trainer/
+plugins/trainer/*
+!plugins/trainer/libreyolo/
+plugins/trainer/libreyolo/.venv/
+plugins/trainer/libreyolo/build/
+plugins/trainer/libreyolo/dist/
+plugins/trainer/libreyolo/*.egg-info/
+plugins/trainer/libreyolo/**/__pycache__/
+plugins/trainer/libreyolo/.pytest_cache/
+plugins/trainer/libreyolo/**/*.pyc
+plugins/trainer/libreyolo/**/*.pt
+plugins/trainer/libreyolo/**/*.onnx

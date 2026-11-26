@@ -1,0 +1,98 @@
+"""Atomic local artifact writes and SHA-256 helpers."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import tempfile
+from pathlib import Path
+from typing import Any
+
+
+def digest_file(path: Path) -> str:
+    hasher = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def sync_directory(path: Path) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        descriptor = os.open(str(path), flags)
+    except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError:
+        pass
+    finally:
+        os.close(descriptor)
+
+
+def atomic_bytes(path: Path, data: bytes, *, mode: int = 0o644) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=".tmp-", dir=str(path.parent))
+    fd_open = True
+    try:
+        with os.fdopen(fd, "wb") as target:
+            fd_open = False
+            target.write(data)
+            target.flush()
+            os.fsync(target.fileno())
+        os.chmod(tmp_name, mode)
+        os.replace(tmp_name, path)
+        sync_directory(path.parent)
+    except BaseException:
+        if fd_open:
+            os.close(fd)
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+        raise
+
+
+def atomic_json(path: Path, value: Any, *, mode: int = 0o644) -> None:
+    encoded = (
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    atomic_bytes(path, encoded, mode=mode)
+
+
+def immutable_copy(source: Path, destination: Path) -> dict[str, Any]:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        if digest_file(source) != digest_file(destination):
+            raise ValueError("Immutable artifact already exists with different content")
+    else:
+        fd, tmp_name = tempfile.mkstemp(prefix=".tmp-", dir=str(destination.parent))
+        fd_open = True
+        try:
+            with source.open("rb") as original, os.fdopen(fd, "wb") as copy:
+                fd_open = False
+                shutil.copyfileobj(original, copy, length=1024 * 1024)
+                copy.flush()
+                os.fsync(copy.fileno())
+            os.chmod(tmp_name, 0o644)
+            os.replace(tmp_name, destination)
+            sync_directory(destination.parent)
+        except BaseException:
+            if fd_open:
+                os.close(fd)
+            if os.path.exists(tmp_name):
+                os.unlink(tmp_name)
+            raise
+    return {
+        "name": destination.name,
+        "sha256": digest_file(destination),
+        "size_bytes": destination.stat().st_size,
+    }
