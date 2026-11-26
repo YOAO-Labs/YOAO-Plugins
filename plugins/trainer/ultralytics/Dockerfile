@@ -23,7 +23,7 @@ COPY plugins/trainer/ultralytics/requirements.lock /tmp/requirements.lock
 RUN python -m pip install --require-hashes --no-deps -r /tmp/requirements.lock
 
 ARG PLUGIN_SDK_WHEEL=/first-party-inputs/yoao_plugin_sdk-0.1.0-py3-none-any.whl
-ARG PLUGIN_SDK_SHA256=efb6936e3338313598c39e648cc573c81486485204d6fcee113711b7ceb12282
+ARG PLUGIN_SDK_SHA256=50667c6e0c6c118fbb7155d096870bc477c6b1621641fb9b3695fda9f476490c
 RUN --mount=type=bind,from=first-party-inputs,target=/first-party-inputs \
     test -n "$PLUGIN_SDK_WHEEL" && test -n "$PLUGIN_SDK_SHA256" \
     && printf '%s  %s\n' "$PLUGIN_SDK_SHA256" "$PLUGIN_SDK_WHEEL" | sha256sum -c - \
