@@ -39,6 +39,7 @@ jobs:
           "$RUNNER_TEMP/venv-ultralytics/bin/python" -m pip wheel --no-deps --no-build-isolation -w "$RUNNER_TEMP/wheels" plugins/trainer/ultralytics
           "$RUNNER_TEMP/venv-ultralytics/bin/python" -m pip install --no-deps "$RUNNER_TEMP/wheels"/yoao_trainer_ultralytics-*.whl
           "$RUNNER_TEMP/venv-ultralytics/bin/yoao-plugin" validate plugins/trainer/ultralytics/manifest.json
+          "$RUNNER_TEMP/venv-ultralytics/bin/yoao-plugin" trainer check --manifest plugins/trainer/ultralytics/manifest.json --entrypoint "$RUNNER_TEMP/venv-ultralytics/bin/yoao-trainer-ultralytics" --skip-train > "$RUNNER_TEMP/ultralytics-check.json"
           "$RUNNER_TEMP/venv-ultralytics/bin/yoao-trainer-ultralytics" describe > "$RUNNER_TEMP/ultralytics-capabilities.json"
           "$RUNNER_TEMP/venv-ultralytics/bin/pytest" -q plugins/trainer/ultralytics/tests
 
@@ -65,5 +66,6 @@ jobs:
           "$RUNNER_TEMP/venv-libreyolo/bin/python" -m pip wheel --no-deps --no-build-isolation -w "$RUNNER_TEMP/wheels" plugins/trainer/libreyolo
           "$RUNNER_TEMP/venv-libreyolo/bin/python" -m pip install --no-deps "$RUNNER_TEMP/wheels"/yoao_trainer_libreyolo-*.whl
           "$RUNNER_TEMP/venv-libreyolo/bin/yoao-plugin" validate plugins/trainer/libreyolo/manifest.json
+          "$RUNNER_TEMP/venv-libreyolo/bin/yoao-plugin" trainer check --manifest plugins/trainer/libreyolo/manifest.json --entrypoint "$RUNNER_TEMP/venv-libreyolo/bin/yoao-trainer-libreyolo" --skip-train > "$RUNNER_TEMP/libreyolo-check.json"
           "$RUNNER_TEMP/venv-libreyolo/bin/yoao-trainer-libreyolo" describe > "$RUNNER_TEMP/libreyolo-capabilities.json"
           "$RUNNER_TEMP/venv-libreyolo/bin/pytest" -q plugins/trainer/libreyolo/tests
