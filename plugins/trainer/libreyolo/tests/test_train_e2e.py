@@ -19,12 +19,12 @@ from yoao_plugin_sdk.trainer import (
     TrainReceiptV1,
     TrainSpecV1,
     canonical_json_digest,
+    digest_file,
 )
 
 from yoao_trainer_libreyolo import SUPERVISOR_OWNED_ARTIFACTS
 from yoao_trainer_libreyolo.catalog import parameter_schema
 from yoao_trainer_libreyolo.cli import main
-from yoao_trainer_libreyolo.files import digest_file
 
 
 def _build_dataset(root: Path) -> tuple[Path, dict[str, Any], list[str]]:

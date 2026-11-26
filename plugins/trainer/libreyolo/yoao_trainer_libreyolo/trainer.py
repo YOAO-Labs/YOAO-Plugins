@@ -2,28 +2,31 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from pathlib import Path
-import signal
-import sys
 from typing import Any
 
 from yoao_plugin_sdk.trainer import (
+    SUPERVISOR_OWNED_ARTIFACTS,
     TRAINER_PROTOCOL_VERSION,
-    TrainArtifactV1,
-    TrainEventV1,
+    EventEmitter,
+    InputMembership,
+    InputMismatchError,
+    NativeConfigurationMismatch,
+    NativeRuntimeMismatch,
     TrainReceiptV1,
     TrainSpecV1,
     atomic_write_json,
-    write_event_jsonl,
+    build_artifact_entry,
+    immutable_copy,
+    load_dataset_identity,
+    run_with_signal_receipt,
 )
 
 from . import (
     FRAMEWORK_ID,
     FRAMEWORK_VERSION,
-    SUPERVISOR_OWNED_ARTIFACTS,
     SUPPORTED_DATASET_CONTRACTS,
     SUPPORTED_TASKS,
 )
@@ -37,98 +40,8 @@ from .checkpoint import (
     ordered_names,
 )
 from .dataset import validate_dataset, write_native_dataset_yaml
-from .errors import (
-    InputMismatchError,
-    NativeConfigurationMismatch,
-    NativeRuntimeMismatch,
-    classify_failure,
-)
 from .evaluation import evaluation_options, libreyolo_descriptor, libreyolo_report
-from .files import atomic_json, digest_file, immutable_copy
-from .membership import InputMembership
 from .validation import resolve_train_parameters
-
-
-class EventEmitter:
-    """Emits strictly monotonic TrainEventV1 JSONL lines to events.jsonl."""
-
-    def __init__(self, path: Path) -> None:
-        self.path = path
-        self._seq = 0
-
-    def _emit(self, **kwargs: Any) -> TrainEventV1:
-        self._seq += 1
-        event = TrainEventV1(seq=self._seq, **kwargs)
-        write_event_jsonl(self.path, event)
-        return event
-
-    def phase(
-        self, phase: str, *, metrics: dict[str, Any] | None = None
-    ) -> TrainEventV1:
-        return self._emit(kind="phase", phase=phase, metrics=metrics or {})
-
-    def epoch(
-        self,
-        *,
-        epoch: int,
-        total_epochs: int,
-        metrics: dict[str, Any],
-    ) -> TrainEventV1:
-        progress = min(1.0, max(0.0, float(epoch) / float(total_epochs)))
-        return self._emit(
-            kind="epoch",
-            phase="training",
-            epoch=epoch,
-            total_epochs=total_epochs,
-            progress=progress,
-            metrics=metrics,
-        )
-
-    def checkpoint(
-        self,
-        *,
-        epoch: int,
-        total_epochs: int,
-        filename: str,
-        sha256: str,
-    ) -> TrainEventV1:
-        return self._emit(
-            kind="checkpoint",
-            phase="training",
-            epoch=epoch,
-            total_epochs=total_epochs,
-            detail={"filename": filename, "sha256": sha256},
-        )
-
-
-def _artifact_entry(role: str, path: Path) -> TrainArtifactV1:
-    if path.name in SUPERVISOR_OWNED_ARTIFACTS:
-        raise ValueError(f"Refusing to declare supervisor-owned artifact: {path.name}")
-    return TrainArtifactV1(
-        role=role,  # type: ignore[arg-type]
-        filename=path.name,
-        sha256=digest_file(path),
-        size_bytes=path.stat().st_size,
-    )
-
-
-def _sanitize_failure_message(exc: BaseException, fallback: str) -> str:
-    raw = str(exc) or fallback
-    cleaned = "".join(" " if ord(ch) < 32 or ord(ch) == 127 else ch for ch in raw)
-    collapsed = " ".join(cleaned.split())
-    return collapsed[:2048].strip() or fallback
-
-
-def _load_dataset_identity(spec_path: Path | None) -> dict[str, Any]:
-    if spec_path is None:
-        return {}
-    sidecar = spec_path.parent / "dataset-identity.json"
-    if not sidecar.is_file():
-        return {}
-    loaded = json.loads(sidecar.read_text(encoding="utf-8"))
-    if not isinstance(loaded, dict):
-        raise InputMismatchError("dataset-identity.json must be a JSON object")
-    return loaded
 
 
 class LibreYOLOAttemptTrainer:
@@ -142,7 +55,7 @@ class LibreYOLOAttemptTrainer:
         spec_path: Path | None = None,
     ) -> TrainReceiptV1:
         output.mkdir(parents=True, exist_ok=True)
-        emitter = EventEmitter(output / "events.jsonl")
+        emitter = EventEmitter(output)
         emitter.phase("preparing")
 
         self._validate_spec_identity(spec)
@@ -155,7 +68,7 @@ class LibreYOLOAttemptTrainer:
         canonical = resolved["canonical"]
         total_epochs = int(canonical["epochs"])
 
-        dataset_identity = _load_dataset_identity(spec_path)
+        dataset_identity = load_dataset_identity(spec_path)
         dataset_dir = Path(spec.dataset_dir)
         manifest, classes = validate_dataset(
             dataset_dir,
@@ -172,6 +85,7 @@ class LibreYOLOAttemptTrainer:
             dataset_snapshot_digest=spec.dataset_snapshot_digest,
             dataset_id=dataset_identity.get("dataset_id"),
             dataset_sha256=dataset_identity.get("dataset_sha256"),
+            require_identities=False,
         )
         native_yaml = write_native_dataset_yaml(dataset_dir, output, classes)
 
@@ -315,20 +229,21 @@ class LibreYOLOAttemptTrainer:
         else:
             report["comparison_unavailable_reason"] = "evaluator_not_recorded"
 
-        membership_path = membership.complete()
+        membership_result = membership.complete()
+        membership_path = membership_result.path if membership_result is not None else None
         metrics_path = output / "metrics.json"
-        atomic_json(metrics_path, report)
+        atomic_write_json(metrics_path, report)
 
         artifacts = [
-            _artifact_entry("weights", output / "best.pt"),
-            _artifact_entry("checkpoint", output / callbacks.checkpoint["name"]),
-            _artifact_entry("metrics", metrics_path),
+            build_artifact_entry("weights", output / "best.pt"),
+            build_artifact_entry("checkpoint", output / callbacks.checkpoint["name"]),
+            build_artifact_entry("metrics", metrics_path),
         ]
         native_config_path = output / "native-config.json"
         if callbacks.native_config_written and native_config_path.is_file():
-            artifacts.append(_artifact_entry("config", native_config_path))
+            artifacts.append(build_artifact_entry("config", native_config_path))
         if membership_path is not None and membership_path.is_file():
-            artifacts.append(_artifact_entry("input_membership", membership_path))
+            artifacts.append(build_artifact_entry("input_membership", membership_path))
 
         receipt = TrainReceiptV1(
             protocol_version=TRAINER_PROTOCOL_VERSION,
@@ -367,52 +282,18 @@ class LibreYOLOAttemptTrainer:
             )
 
 
-def _write_terminal_receipt(output_dir: Path, receipt: TrainReceiptV1) -> None:
-    try:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(output_dir / "result.json", receipt)
-    except Exception:
-        pass
-
-
 def execute_train(spec_path: Path, output_dir: Path) -> int:
-    def _handle_sigterm(signum: int, _frame: Any) -> None:
-        raise KeyboardInterrupt(f"Received signal {signum}")
+    return run_with_signal_receipt(
+        spec_path,
+        output_dir,
+        lambda spec, out, sp: LibreYOLOAttemptTrainer().run(spec, out, spec_path=sp),
+        logger_prefix="yoao-trainer-libreyolo",
+    )
 
-    previous_handler = signal.getsignal(signal.SIGTERM)
-    try:
-        signal.signal(signal.SIGTERM, _handle_sigterm)
-    except ValueError:
-        previous_handler = None
 
-    try:
-        raw = json.loads(spec_path.read_text(encoding="utf-8"))
-        spec = TrainSpecV1.model_validate(raw)
-        LibreYOLOAttemptTrainer().run(spec, output_dir, spec_path=spec_path)
-        return 0
-    except KeyboardInterrupt as exc:
-        receipt = TrainReceiptV1(
-            protocol_version=TRAINER_PROTOCOL_VERSION,
-            status="cancelled",
-            failure_message=_sanitize_failure_message(exc, "Training cancelled"),
-        )
-        _write_terminal_receipt(output_dir, receipt)
-        return 130
-    except Exception as exc:
-        code = classify_failure(exc)
-        message = _sanitize_failure_message(exc, type(exc).__name__)
-        receipt = TrainReceiptV1(
-            protocol_version=TRAINER_PROTOCOL_VERSION,
-            status="failed",
-            failure_code=code,
-            failure_message=message,
-        )
-        _write_terminal_receipt(output_dir, receipt)
-        print(f"yoao-trainer-libreyolo failed ({code}): {message}", file=sys.stderr)
-        return 1
-    finally:
-        if previous_handler is not None:
-            try:
-                signal.signal(signal.SIGTERM, previous_handler)
-            except ValueError:
-                pass
+__all__ = [
+    "SUPERVISOR_OWNED_ARTIFACTS",
+    "EventEmitter",
+    "LibreYOLOAttemptTrainer",
+    "execute_train",
+]

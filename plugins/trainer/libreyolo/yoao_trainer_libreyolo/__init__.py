@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yoao_plugin_sdk.trainer import SUPERVISOR_OWNED_ARTIFACTS
+
 PLUGIN_ID = "yoao.trainer.libreyolo"
 PLUGIN_VERSION = "1.0.0"
 FRAMEWORK_ID = "libreyolo"
@@ -11,9 +13,6 @@ MODEL_FAMILY = "libreyolo9"
 NATIVE_CHECKPOINT_FAMILY = "yolo9"
 SUPPORTED_TASKS = ("detect",)
 SUPPORTED_DATASET_CONTRACTS = ("ultralytics-yolo-1", "ultralytics-bbox-1")
-SUPERVISOR_OWNED_ARTIFACTS = frozenset(
-    {"manifest.json", "train.log", "observability.json", "config.json", "result.json"}
-)
 
 __all__ = [
     "FRAMEWORK_ID",

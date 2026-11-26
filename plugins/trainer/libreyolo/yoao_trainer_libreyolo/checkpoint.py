@@ -7,18 +7,24 @@ import hashlib
 import io
 import logging
 import math
-import os
 from pathlib import Path
 from typing import Any
 
-from yoao_plugin_sdk.trainer import canonical_json_digest
+from yoao_plugin_sdk.trainer import (
+    CheckpointSlotStore,
+    InputMismatchError,
+    atomic_write_bytes,
+    atomic_write_json,
+    canonical_json_digest,
+    digest_file,
+    metrics_of,
+    normalized,
+)
 
 from . import FRAMEWORK_ID, FRAMEWORK_VERSION, NATIVE_CHECKPOINT_FAMILY
 from .catalog import architecture_size
-from .errors import InputMismatchError
-from .evaluation import metrics_of, strip_metric_aliases
-from .files import atomic_bytes, atomic_json, digest_file, immutable_copy
-from .validation import normalized, verify_native_observation
+from .evaluation import strip_metric_aliases
+from .validation import verify_native_observation
 
 STRICT_RESUME_WARNING_SUBSTRINGS = (
     "Could not load optimizer state",
@@ -185,6 +191,7 @@ class CheckpointCallbacks:
         self.emitter = emitter
         self.resume = resume
         self.membership = membership
+        self._slots = CheckpointSlotStore(output, extension=".pt")
         self.checkpoint: dict[str, Any] | None = None
         self.native_config_written = False
         self.trainer: Any = None
@@ -193,11 +200,7 @@ class CheckpointCallbacks:
         if self.resume is None:
             raise ValueError("commit_resume requires a validated resume checkpoint")
         epoch = self.resume["epoch"] + 1
-        self.checkpoint = immutable_copy(
-            Path(path), self.output / f"checkpoint-{epoch:04d}.pt"
-        )
-        self.checkpoint.update(role="checkpoint", epoch=epoch)
-        atomic_json(self.output / "checkpoint.json", self.checkpoint)
+        self.checkpoint = self._slots.commit_file(path, epoch)
 
     def on_train_start(self, event: Any) -> None:
         if self.membership is not None:
@@ -214,7 +217,7 @@ class CheckpointCallbacks:
         ):
             raise ValueError("Native resume directory or epoch mismatch")
         if self.resume:
-            atomic_bytes(
+            atomic_write_bytes(
                 Path(event.save_dir) / "weights/best.pt",
                 self.resume["aap_resume"]["best_weights"],
             )
@@ -236,7 +239,7 @@ class CheckpointCallbacks:
             num_classes=len(self.context.classes),
             size=architecture_size(self.context.architecture_id),
         )
-        atomic_json(
+        atomic_write_json(
             self.output / "native-config.json",
             {
                 "config_digest": self.context.config_digest,
@@ -288,22 +291,10 @@ class CheckpointCallbacks:
             "best_weights": best.read_bytes(),
             "best_sha256": digest_file(best),
         }
-        staging = self.output / "checkpoint-staging.pt"
-        try:
-            with staging.open("wb") as stream:
-                torch.save(checkpoint_payload, stream)
-                stream.flush()
-                os.fsync(stream.fileno())
-            previous = self.checkpoint
-            self.checkpoint = immutable_copy(
-                staging, self.output / f"checkpoint-{event.epoch:04d}.pt"
-            )
-        finally:
-            staging.unlink(missing_ok=True)
-        self.checkpoint.update(role="checkpoint", epoch=event.epoch)
-        atomic_json(self.output / "checkpoint.json", self.checkpoint)
-        if previous and previous["name"] != self.checkpoint["name"]:
-            (self.output / previous["name"]).unlink(missing_ok=True)
+        self.checkpoint = self._slots.commit_via_writer(
+            event.epoch,
+            lambda stream: torch.save(checkpoint_payload, stream),
+        )
         raw = metrics_of(event.val_metrics)
         metrics = strip_metric_aliases(raw)
         train_loss = float(event.train_loss)

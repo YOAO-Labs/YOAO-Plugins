@@ -13,6 +13,12 @@ from typing import Any
 
 import pytest
 
+from yoao_plugin_sdk.trainer import (
+    EventEmitter,
+    InputMismatchError,
+    NativeConfigurationMismatch,
+)
+
 from yoao_trainer_libreyolo.checkpoint import (
     STRICT_RESUME_WARNING_SUBSTRINGS,
     AttemptContext,
@@ -22,8 +28,6 @@ from yoao_trainer_libreyolo.checkpoint import (
     load_checkpoint_safe,
     validate_checkpoint,
 )
-from yoao_trainer_libreyolo.errors import InputMismatchError, NativeConfigurationMismatch
-from yoao_trainer_libreyolo.trainer import EventEmitter
 from yoao_trainer_libreyolo.validation import resolve_train_parameters
 
 CONFIG_DIGEST = "a" * 64

@@ -4,18 +4,19 @@ from __future__ import annotations
 
 from copy import deepcopy
 from functools import lru_cache
-import importlib.metadata
 from importlib.resources import files
 import json
 import platform
 from typing import Any
 
 from yoao_plugin_sdk.trainer import (
+    POLICY_DIGEST as INPUT_MEMBERSHIP_POLICY_DIGEST,
     TRAINER_PROTOCOL_VERSION,
     ServingCompatibilityV1,
     TrainerArchitectureV1,
     TrainerCapabilitiesV1,
     canonical_json_digest,
+    optional_package_version,
 )
 
 from . import (
@@ -377,20 +378,13 @@ def serving_compatibility() -> ServingCompatibilityV1:
     )
 
 
-def _optional_dist_version(package_name: str) -> str | None:
-    try:
-        return importlib.metadata.version(package_name)
-    except importlib.metadata.PackageNotFoundError:
-        return None
-
-
 def runtime_versions() -> dict[str, str]:
     versions: dict[str, str] = {
         "python": platform.python_version(),
-        "libreyolo": _optional_dist_version("libreyolo") or FRAMEWORK_VERSION,
+        "libreyolo": optional_package_version("libreyolo") or FRAMEWORK_VERSION,
     }
     for pkg in ("torch", "torchvision", "pycocotools"):
-        detected = _optional_dist_version(pkg)
+        detected = optional_package_version(pkg)
         if detected is not None:
             versions[pkg] = detected
     return versions
@@ -399,7 +393,6 @@ def runtime_versions() -> dict[str, str]:
 def capabilities() -> TrainerCapabilitiesV1:
     from .checkpoint import CHECKPOINT_RESUME_POLICY_DIGEST
     from .evaluation import evaluator_descriptor_summary
-    from .membership import POLICY_DIGEST as INPUT_MEMBERSHIP_POLICY_DIGEST
 
     return TrainerCapabilitiesV1(
         protocol_version=TRAINER_PROTOCOL_VERSION,

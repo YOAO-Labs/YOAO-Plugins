@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import hashlib
-import importlib.metadata
 import importlib.util
-import math
 from pathlib import Path
 from typing import Any
 
-from yoao_plugin_sdk.trainer import canonical_json_digest
+from yoao_plugin_sdk.trainer import (
+    hash_source_files,
+    metrics_of,
+    normalized,
+    optional_package_version,
+)
 
 from . import FRAMEWORK_ID, FRAMEWORK_VERSION
-from .validation import normalized
 
 CANONICAL_METRIC_KEYS = (
     "metrics/mAP50-95",
@@ -25,21 +26,6 @@ NATIVE_ALIAS_SEMANTICS = {
     "metrics/precision": "mAP50-95",
     "metrics/recall": "AR100",
 }
-
-
-def metrics_of(raw: dict[str, Any] | None) -> dict[str, float]:
-    if not raw:
-        return {}
-    result: dict[str, float] = {}
-    for key, value in raw.items():
-        if (
-            not isinstance(value, bool)
-            and isinstance(value, (float, int))
-            and math.isfinite(float(value))
-        ):
-            as_float = float(value)
-            result[str(key)] = 0.0 if as_float == 0.0 else as_float
-    return result
 
 
 def strip_metric_aliases(metrics: dict[str, float]) -> dict[str, float]:
@@ -113,19 +99,6 @@ def libreyolo_report(
     }
 
 
-def _hash_source_files(paths: list[Path]) -> str:
-    return canonical_json_digest(
-        [hashlib.sha256(path.read_bytes()).hexdigest() for path in paths]
-    )
-
-
-def _optional_version(package: str) -> str | None:
-    try:
-        return importlib.metadata.version(package)
-    except importlib.metadata.PackageNotFoundError:
-        return None
-
-
 def _safe_find_spec(module_name: str) -> Any:
     try:
         return importlib.util.find_spec(module_name)
@@ -146,7 +119,7 @@ def evaluator_source_sha256() -> str:
                 sources.append(Path(spec.origin))
     if not sources:
         sources = [Path(__file__).resolve()]
-    return _hash_source_files(sources)
+    return hash_source_files(sources)
 
 
 def evaluator_descriptor_summary() -> dict[str, Any]:
@@ -190,9 +163,9 @@ def libreyolo_descriptor(
     }
     clean_options.update(
         backend=backend,
-        pycocotools_version=_optional_version("pycocotools") or "unknown",
-        torch_version=_optional_version("torch") or "unknown",
-        torchvision_version=_optional_version("torchvision") or "unknown",
+        pycocotools_version=optional_package_version("pycocotools") or "unknown",
+        torch_version=optional_package_version("torch") or "unknown",
+        torchvision_version=optional_package_version("torchvision") or "unknown",
     )
     sources = sorted(root.rglob("*.py")) + [
         Path(cocoeval.__file__),
@@ -217,7 +190,7 @@ def libreyolo_descriptor(
             "version": FRAMEWORK_VERSION,
             "task": "detection",
             "implementation": "libreyolo.val/pycocotools.COCOeval",
-            "source_sha256": _hash_source_files(sources),
+            "source_sha256": hash_source_files(sources),
             "options": normalized(clean_options),
         },
         "semantics": {

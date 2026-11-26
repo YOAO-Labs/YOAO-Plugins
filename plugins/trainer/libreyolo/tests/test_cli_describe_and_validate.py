@@ -10,6 +10,10 @@ import sys
 
 import pytest
 from yoao_plugin_sdk.trainer import (
+    MAX_MEMBERS,
+    MEMBER_FIELDS,
+    POLICY_DIGEST,
+    SPLITS,
     TrainerCapabilitiesV1,
     ValidateConfigResultV1,
     canonical_json_digest,
@@ -17,7 +21,6 @@ from yoao_plugin_sdk.trainer import (
 
 from yoao_trainer_libreyolo.catalog import controlled_assets
 from yoao_trainer_libreyolo.cli import main
-from yoao_trainer_libreyolo.membership import MEMBER_FIELDS, MAX_MEMBERS, POLICY_DIGEST, SPLITS
 
 EXPECTED_ASSETS = {
     "libreyolo9t": (

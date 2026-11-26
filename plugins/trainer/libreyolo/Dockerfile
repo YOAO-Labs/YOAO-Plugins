@@ -32,7 +32,7 @@ RUN python -m pip install --require-hashes --no-deps -r /tmp/requirements.lock \
     && rm -f /tmp/requirements.lock
 
 ARG PLUGIN_SDK_WHEEL=/first-party-inputs/yoao_plugin_sdk-0.1.0-py3-none-any.whl
-ARG PLUGIN_SDK_SHA256=ee2686f428c93220d052d0f2ff5e28dd1bd008a8115576222ca3de2fb366eccf
+ARG PLUGIN_SDK_SHA256=efb6936e3338313598c39e648cc573c81486485204d6fcee113711b7ceb12282
 RUN --mount=type=bind,from=first-party-inputs,target=/first-party-inputs \
     test -n "$PLUGIN_SDK_WHEEL" && test -n "$PLUGIN_SDK_SHA256" \
     && printf '%s  %s\n' "$PLUGIN_SDK_SHA256" "$PLUGIN_SDK_WHEEL" | sha256sum -c - \
