@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import io
 import logging
+import math
 import os
 from pathlib import Path
 from typing import Any
@@ -288,22 +289,26 @@ class CheckpointCallbacks:
             "best_sha256": digest_file(best),
         }
         staging = self.output / "checkpoint-staging.pt"
-        with staging.open("wb") as stream:
-            torch.save(checkpoint_payload, stream)
-            stream.flush()
-            os.fsync(stream.fileno())
-        previous = self.checkpoint
-        self.checkpoint = immutable_copy(
-            staging, self.output / f"checkpoint-{event.epoch:04d}.pt"
-        )
-        staging.unlink()
+        try:
+            with staging.open("wb") as stream:
+                torch.save(checkpoint_payload, stream)
+                stream.flush()
+                os.fsync(stream.fileno())
+            previous = self.checkpoint
+            self.checkpoint = immutable_copy(
+                staging, self.output / f"checkpoint-{event.epoch:04d}.pt"
+            )
+        finally:
+            staging.unlink(missing_ok=True)
         self.checkpoint.update(role="checkpoint", epoch=event.epoch)
         atomic_json(self.output / "checkpoint.json", self.checkpoint)
         if previous and previous["name"] != self.checkpoint["name"]:
             (self.output / previous["name"]).unlink(missing_ok=True)
         raw = metrics_of(event.val_metrics)
         metrics = strip_metric_aliases(raw)
-        metrics["train/loss"] = float(event.train_loss)
+        train_loss = float(event.train_loss)
+        if math.isfinite(train_loss):
+            metrics["train/loss"] = 0.0 if train_loss == 0.0 else train_loss
         self.emitter.epoch(
             epoch=event.epoch,
             total_epochs=self.context.total_epochs,

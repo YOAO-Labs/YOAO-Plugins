@@ -66,7 +66,7 @@ def test_describe_emits_valid_capabilities_with_30_architectures_and_null_format
         assert digest_key in caps.policy_digests
         assert SHA256_RE.fullmatch(caps.policy_digests[digest_key])
 
-    assert len(caps.serving_compatibility) == 2
+    assert len(caps.serving_compatibility) == 4
     for compat in caps.serving_compatibility:
         assert compat.framework == "ultralytics"
         assert compat.format is None

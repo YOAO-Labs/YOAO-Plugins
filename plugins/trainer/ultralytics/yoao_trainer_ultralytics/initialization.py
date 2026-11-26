@@ -103,6 +103,15 @@ def policy_for_pin(pin: Any) -> dict[str, Any]:
         policy = initialization_policy_for(spec.family, spec.task, framework_version)
         if pin.get("policy_digest") == canonical_digest(policy):
             return policy
+        v3_policy = {
+            "framework": FRAMEWORK_ID,
+            "framework_version": framework_version,
+            "task": spec.task,
+            "model_family": spec.family,
+            "base_model": spec.id,
+        }
+        if pin.get("policy_digest") == canonical_digest(v3_policy):
+            return {**policy, **v3_policy, "_v3_runtime": True}
     raise ValueError("Initialization source policy digest is not qualified")
 
 
@@ -198,9 +207,13 @@ def validate_pin(pin: Any) -> dict[str, Any]:
     ):
         raise ValueError("Initialization classes or binding identity mismatch")
     runtime = pin["runtime"]
-    if (
-        not isinstance(runtime, dict)
-        or set(runtime) != {"python", "torch", "torchvision", "cuda", "image_digest"}
+    if not isinstance(runtime, dict):
+        raise ValueError("Initialization runtime environment is not qualified")
+    if policy.get("_v3_runtime"):
+        if set(runtime) != {"python", "torch", "torchvision", "cuda", "image_digest"}:
+            raise ValueError("Initialization runtime environment is not qualified")
+    elif (
+        set(runtime) != {"python", "torch", "torchvision", "cuda", "image_digest"}
         or not all(isinstance(v, str) and 0 < len(v) <= 150 for v in runtime.values())
         or runtime["torch"].split("+", 1)[0] != policy["torch"]
         or runtime["torchvision"].split("+", 1)[0] != policy["torchvision"]

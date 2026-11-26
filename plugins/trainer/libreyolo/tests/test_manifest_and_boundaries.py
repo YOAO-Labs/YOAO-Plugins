@@ -84,6 +84,7 @@ def test_dockerfile_label_matches_manifest_and_hardens_runtime() -> None:
     assert "HOME=/tmp" in dockerfile_text
     assert "MPLCONFIGDIR=/tmp/matplotlib" in dockerfile_text
     assert "chmod -R a+rX" in dockerfile_text
+    assert "USER 10001:10001" in dockerfile_text
     assert 'ENTRYPOINT ["yoao-trainer-libreyolo"]' in dockerfile_text
     assert "assert libreyolo.__version__ == '1.6.0'" in dockerfile_text
     assert "assert importlib.util.find_spec('ultralytics') is None" in dockerfile_text

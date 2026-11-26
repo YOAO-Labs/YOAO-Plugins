@@ -133,6 +133,13 @@ def _artifact_entry(role: str, path: Path) -> TrainArtifactV1:
     )
 
 
+def _sanitize_failure_message(exc: BaseException) -> str:
+    raw = str(exc) or type(exc).__name__
+    cleaned = "".join(" " if ord(ch) < 32 or ord(ch) == 127 else ch for ch in raw)
+    collapsed = " ".join(cleaned.split())
+    return (collapsed[:2048].strip() or type(exc).__name__)
+
+
 def _classify_failure(exc: BaseException) -> tuple[str, str]:
     torch_mod = sys.modules.get("torch")
     oom_cls = getattr(getattr(torch_mod, "cuda", None), "OutOfMemoryError", None)
@@ -142,8 +149,7 @@ def _classify_failure(exc: BaseException) -> tuple[str, str]:
         code = exc.failure_code
     else:
         code = "native_exception"
-    message = str(exc).strip() or type(exc).__name__
-    return code, message[:2048]
+    return code, _sanitize_failure_message(exc)
 
 
 def _resolve_model_path(
@@ -179,6 +185,18 @@ def _resolve_model_path(
             )
         return str(path)
     return f"{spec.architecture_id}.yaml"
+
+
+def _load_dataset_identity(spec_path: Path | None) -> dict[str, Any]:
+    if spec_path is None:
+        return {}
+    sidecar = spec_path.parent / "dataset-identity.json"
+    if not sidecar.is_file():
+        return {}
+    loaded = json.loads(sidecar.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise InputMismatchError("dataset-identity.json must be a JSON object")
+    return loaded
 
 
 def _load_optional_init_pin(
@@ -223,12 +241,14 @@ def run_train(
     config_directory.mkdir(parents=True, exist_ok=True)
 
     init_pin, raw_parameters = _load_optional_init_pin(spec_path, spec.parameters)
+    dataset_identity = _load_dataset_identity(spec_path)
 
     manifest, classes, data_yaml = validate_dataset(
         Path(spec.dataset_dir),
         task=spec.task,
         dataset_contract=spec.dataset_contract,
         expected_classes_digest=spec.classes_digest,
+        expected_snapshot_digest=spec.dataset_snapshot_digest,
     )
 
     validation = validate_config(
@@ -262,12 +282,14 @@ def run_train(
     membership: InputMembership | None = None
     if "samples" in manifest:
         dataset_id = str(
-            manifest.get("dataset_id")
+            dataset_identity.get("dataset_id")
+            or manifest.get("dataset_id")
             or manifest.get("version_id")
             or spec.dataset_snapshot_digest
         )
         dataset_sha256 = str(
-            manifest.get("dataset_sha256")
+            dataset_identity.get("dataset_sha256")
+            or manifest.get("dataset_sha256")
             or manifest.get("package_sha256")
             or spec.dataset_snapshot_digest
         )
@@ -565,6 +587,13 @@ def run_train(
         if preflight_map:
             report["mask_resolution"] = preflight_map
 
+    from .dataset import data_contract as manifest_data_contract
+
+    resolved_data_contract = (
+        manifest.get("data_contract")
+        or dataset_identity.get("data_contract")
+        or (manifest_data_contract(manifest) if raster else None)
+    )
     report["comparison"] = ultralytics_descriptor(
         config_digest=spec.config_digest,
         architecture_id=spec.architecture_id,
@@ -575,7 +604,7 @@ def run_train(
         validator=model.trainer.validator,
         metrics=report["summary"],
         is_rle=raster,
-        data_contract_meta=manifest.get("data_contract"),
+        data_contract_meta=resolved_data_contract,
     )
 
     metrics_path = output_dir / "metrics.json"
@@ -640,7 +669,7 @@ def run_train_cli(spec_path: Path, output_dir: Path) -> int:
             protocol_version=TRAINER_PROTOCOL_VERSION,
             status="cancelled",
             artifacts=[],
-            failure_message=str(exc)[:2048],
+            failure_message=_sanitize_failure_message(exc),
         )
         atomic_write_json(output_dir / "result.json", receipt)
         return 130

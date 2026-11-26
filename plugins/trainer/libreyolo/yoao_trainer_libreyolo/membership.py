@@ -155,6 +155,8 @@ class InputMembership:
         attempt_id: str,
         config_digest: str,
         dataset_snapshot_digest: str,
+        dataset_id: str | None = None,
+        dataset_sha256: str | None = None,
     ) -> None:
         self.root = dataset_dir.resolve()
         self.output = output_dir
@@ -163,6 +165,8 @@ class InputMembership:
         self.attempt_id = str(attempt_id)
         self.config_digest = str(config_digest)
         self.dataset_snapshot_digest = str(dataset_snapshot_digest)
+        self.dataset_id = dataset_id
+        self.dataset_sha256 = dataset_sha256
         self.has_identities = has_member_identities(manifest)
         self.members: dict[str, Any] = {}
         try:
@@ -223,10 +227,10 @@ class InputMembership:
             raise InputMismatchError("Native input observation is incomplete")
         if not self.has_identities:
             return None
-        dataset_id = self.manifest.get("dataset_id")
+        dataset_id = self.dataset_id or self.manifest.get("dataset_id")
         if not _is_uuid(dataset_id):
             dataset_id = self.dataset_snapshot_digest
-        dataset_sha256 = self.manifest.get("dataset_sha256")
+        dataset_sha256 = self.dataset_sha256 or self.manifest.get("dataset_sha256")
         if not _is_hash(dataset_sha256):
             dataset_sha256 = self.dataset_snapshot_digest
         proof = {

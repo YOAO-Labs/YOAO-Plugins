@@ -438,6 +438,7 @@ def build_parameter_schema_catalog() -> dict[str, Any]:
                 "editable_count": sum(
                     1 for field in schema["fields"] if field["status"] == "editable"
                 ),
+                "fields": schema["fields"],
             }
     return {
         "schema_id": default_schema["schema_id"],
@@ -464,50 +465,80 @@ def build_parameter_schema_catalog() -> dict[str, Any]:
     }
 
 
+_DETECTION_SOURCE_SHA256: dict[str, str] = {
+    "ultralytics.utils.ops": "7b15cd980abbd578a8be91661c2399b2cbdea0207f1e61b0fb74cfac659bed77",
+}
+_SEGMENTATION_SOURCE_SHA256: dict[str, str] = {
+    "ultralytics.models.yolo.segment.predict": "66371a017252aa2e8606ba13dbc6c76307088d69159a5f46970138a9412846c5",
+    "ultralytics.utils.ops": "7b15cd980abbd578a8be91661c2399b2cbdea0207f1e61b0fb74cfac659bed77",
+}
+
+
+def _runtime_qualification(*, task: str, end2end: bool) -> dict[str, Any]:
+    if task == SEGMENTATION:
+        return {
+            "revision": 2,
+            "ultralytics": FRAMEWORK_VERSION,
+            "torch": "2.14.1+cu132",
+            "torchvision": "0.29.1+cu132",
+            "retina_masks": True,
+            "mask_processing": "ultralytics.utils.ops.process_mask_native",
+            "mask_threshold": 0.0,
+            "decoder": "aap-coco-rle-column-major-1",
+            "source_sha256": dict(_SEGMENTATION_SOURCE_SHA256),
+            "end2end": end2end,
+            "nms": False if end2end else None,
+        }
+    return {
+        "revision": 2,
+        "ultralytics": FRAMEWORK_VERSION,
+        "torch": "2.14.1+cu132",
+        "torchvision": "0.29.1+cu132",
+        "source_sha256": dict(_DETECTION_SOURCE_SHA256),
+        "end2end": end2end,
+        "nms": False if end2end else None,
+    }
+
+
 def serving_compatibility_catalog() -> list[ServingCompatibilityV1]:
-    return [
-        ServingCompatibilityV1(
-            framework=FRAMEWORK_ID,
-            format=None,
-            training_runtime={
+    model_sizes = {spec.id: spec.scale for spec in all_model_specs()}
+    entries: list[ServingCompatibilityV1] = []
+    for families, end2end in ((["yolov8", "yolo11"], False), (["yolo26"], True)):
+        for task in SUPPORTED_TASKS:
+            runtime_qual = _runtime_qualification(task=task, end2end=end2end)
+            training_runtime: dict[str, Any] = {
                 "framework": FRAMEWORK_ID,
                 "framework_version": FRAMEWORK_VERSION,
-                "tasks": list(SUPPORTED_TASKS),
-                "model_families": ["yolov8", "yolo11"],
-                "end2end": False,
-                "nms": None,
-            },
-            compatible_serving_runtimes=[
-                {
-                    "framework": FRAMEWORK_ID,
-                    "format": None,
-                    "min_version": FRAMEWORK_VERSION,
-                    "end2end": False,
-                }
-            ],
-        ),
-        ServingCompatibilityV1(
-            framework=FRAMEWORK_ID,
-            format=None,
-            training_runtime={
-                "framework": FRAMEWORK_ID,
-                "framework_version": FRAMEWORK_VERSION,
-                "tasks": list(SUPPORTED_TASKS),
-                "model_families": ["yolo26"],
-                "end2end": True,
-                "nms": False,
-            },
-            compatible_serving_runtimes=[
-                {
-                    "framework": FRAMEWORK_ID,
-                    "format": None,
-                    "min_version": FRAMEWORK_VERSION,
-                    "end2end": True,
-                    "nms": False,
-                }
-            ],
-        ),
-    ]
+                "task": task,
+                "model_families": list(families),
+                "model_sizes": {
+                    spec.id: model_sizes[spec.id]
+                    for spec in all_model_specs()
+                    if spec.family in families and spec.task == task
+                },
+                "end2end": end2end,
+                "nms": False if end2end else None,
+                "runtime_qualification": runtime_qual,
+            }
+            if task == SEGMENTATION:
+                training_runtime["output_contract"] = "aap-instance-rle-1"
+            entries.append(
+                ServingCompatibilityV1(
+                    framework=FRAMEWORK_ID,
+                    format=None,
+                    training_runtime=training_runtime,
+                    compatible_serving_runtimes=[
+                        {
+                            "framework": FRAMEWORK_ID,
+                            "format": None,
+                            "min_version": FRAMEWORK_VERSION,
+                            "end2end": end2end,
+                            "nms": False if end2end else None,
+                        }
+                    ],
+                )
+            )
+    return entries
 
 
 def serving_compatibility_for(
@@ -523,6 +554,9 @@ def serving_compatibility_for(
         "model_size": spec.scale,
         "end2end": spec.end2end,
         "nms": False if spec.end2end else None,
+        "runtime_qualification": _runtime_qualification(
+            task=spec.task, end2end=spec.end2end
+        ),
     }
     if spec.task == SEGMENTATION:
         training_runtime["output_contract"] = "aap-instance-rle-1"

@@ -352,6 +352,20 @@ def serving_compatibility() -> ServingCompatibilityV1:
         training_runtime={
             "framework": FRAMEWORK_ID,
             "framework_version": FRAMEWORK_VERSION,
+            "task": "detect",
+            "model_families": [MODEL_FAMILY, "yolo9"],
+            "serving_model_family": "yolo9",
+            "model_sizes": {
+                asset["base_model"].lower(): asset["base_model"][-1].lower()
+                for asset in controlled_assets()
+            },
+            "runtime_qualification": {
+                "revision": 1,
+                "libreyolo": FRAMEWORK_VERSION,
+                "torch": "2.14.1+cu132",
+                "torchvision": "0.29.1+cu132",
+                "device": "cpu",
+            },
         },
         compatible_serving_runtimes=[
             {

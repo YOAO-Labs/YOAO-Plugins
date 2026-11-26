@@ -112,10 +112,35 @@ def _artifact_entry(role: str, path: Path) -> TrainArtifactV1:
     )
 
 
+def _sanitize_failure_message(exc: BaseException, fallback: str) -> str:
+    raw = str(exc) or fallback
+    cleaned = "".join(" " if ord(ch) < 32 or ord(ch) == 127 else ch for ch in raw)
+    collapsed = " ".join(cleaned.split())
+    return collapsed[:2048].strip() or fallback
+
+
+def _load_dataset_identity(spec_path: Path | None) -> dict[str, Any]:
+    if spec_path is None:
+        return {}
+    sidecar = spec_path.parent / "dataset-identity.json"
+    if not sidecar.is_file():
+        return {}
+    loaded = json.loads(sidecar.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise InputMismatchError("dataset-identity.json must be a JSON object")
+    return loaded
+
+
 class LibreYOLOAttemptTrainer:
     """Executes one isolated LibreYOLO 1.6.0 detection training attempt."""
 
-    def run(self, spec: TrainSpecV1, output: Path) -> TrainReceiptV1:
+    def run(
+        self,
+        spec: TrainSpecV1,
+        output: Path,
+        *,
+        spec_path: Path | None = None,
+    ) -> TrainReceiptV1:
         output.mkdir(parents=True, exist_ok=True)
         emitter = EventEmitter(output / "events.jsonl")
         emitter.phase("preparing")
@@ -130,6 +155,7 @@ class LibreYOLOAttemptTrainer:
         canonical = resolved["canonical"]
         total_epochs = int(canonical["epochs"])
 
+        dataset_identity = _load_dataset_identity(spec_path)
         dataset_dir = Path(spec.dataset_dir)
         manifest, classes = validate_dataset(
             dataset_dir,
@@ -144,6 +170,8 @@ class LibreYOLOAttemptTrainer:
             attempt_id=spec.attempt_id,
             config_digest=spec.config_digest,
             dataset_snapshot_digest=spec.dataset_snapshot_digest,
+            dataset_id=dataset_identity.get("dataset_id"),
+            dataset_sha256=dataset_identity.get("dataset_sha256"),
         )
         native_yaml = write_native_dataset_yaml(dataset_dir, output, classes)
 
@@ -360,19 +388,19 @@ def execute_train(spec_path: Path, output_dir: Path) -> int:
     try:
         raw = json.loads(spec_path.read_text(encoding="utf-8"))
         spec = TrainSpecV1.model_validate(raw)
-        LibreYOLOAttemptTrainer().run(spec, output_dir)
+        LibreYOLOAttemptTrainer().run(spec, output_dir, spec_path=spec_path)
         return 0
     except KeyboardInterrupt as exc:
         receipt = TrainReceiptV1(
             protocol_version=TRAINER_PROTOCOL_VERSION,
             status="cancelled",
-            failure_message=(str(exc).strip() or "Training cancelled")[:2048],
+            failure_message=_sanitize_failure_message(exc, "Training cancelled"),
         )
         _write_terminal_receipt(output_dir, receipt)
         return 130
     except Exception as exc:
         code = classify_failure(exc)
-        message = (str(exc).strip() or type(exc).__name__)[:2048]
+        message = _sanitize_failure_message(exc, type(exc).__name__)
         receipt = TrainReceiptV1(
             protocol_version=TRAINER_PROTOCOL_VERSION,
             status="failed",

@@ -246,6 +246,8 @@ def validate_dataset(
             or not label_path.is_file()
             or image_path.is_symlink()
             or label_path.is_symlink()
+            or not image_path.resolve().is_relative_to(root)
+            or not label_path.resolve().is_relative_to(root)
             or digest_file(image_path) != sample.get("sha256")
             or digest_file(label_path) != sample.get("label_sha256")
         ):

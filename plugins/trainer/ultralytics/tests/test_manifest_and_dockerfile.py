@@ -72,6 +72,7 @@ def test_dockerfile_label_matches_manifest_and_enforces_runtime_invariants() -> 
     assert "HOME=/tmp" in dockerfile
     assert "YOLO_AUTOINSTALL=false" in dockerfile
     assert "chmod -R a+rX" in dockerfile
+    assert "USER 10001:10001" in dockerfile
     assert "ultralytics.__version__ == '8.4.183'" in dockerfile
     assert 'ENTRYPOINT ["yoao-trainer-ultralytics"]' in dockerfile
 

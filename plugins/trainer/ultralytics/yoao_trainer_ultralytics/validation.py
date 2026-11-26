@@ -444,6 +444,10 @@ def validate_config(
                 origins["close_mosaic"] = "dependency:epochs"
 
         for key in sorted(user_values.keys() & inactive.keys()):
+            if allow_effective_passthrough and normalized(user_values[key]) == normalized(
+                effective[key]
+            ):
+                continue
             issues.append(
                 ValidationIssueV1(
                     code="inactive_parameter",

@@ -89,6 +89,22 @@ def test_describe_cli_emits_valid_capabilities_and_exact_assets(capsys) -> None:
     assert compat.training_runtime == {
         "framework": "libreyolo",
         "framework_version": "1.6.0",
+        "task": "detect",
+        "model_families": ["libreyolo9", "yolo9"],
+        "serving_model_family": "yolo9",
+        "model_sizes": {
+            "libreyolo9t": "t",
+            "libreyolo9s": "s",
+            "libreyolo9m": "m",
+            "libreyolo9c": "c",
+        },
+        "runtime_qualification": {
+            "revision": 1,
+            "libreyolo": "1.6.0",
+            "torch": "2.14.1+cu132",
+            "torchvision": "0.29.1+cu132",
+            "device": "cpu",
+        },
     }
     assert compat.compatible_serving_runtimes == [
         {

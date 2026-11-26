@@ -55,12 +55,8 @@ PREVIEW_LIMITS: dict[str, int] = {
 PREVIEW_POLICY: dict[str, Any] = {
     "revision": PREVIEW_REVISION,
     "purpose": PREVIEW_PURPOSE,
-    "frameworks": [FRAMEWORK_ID],
-    "task": LEGACY_DETECTION,
-    "model_family": "yolo11",
     "pool_selection": "sha256-seed-task-v1",
     "buffer_policy": "native-sequential-pool-load-v1",
-    "native_detection_defaults": {"copy_paste": 0.0},
     "limits": PREVIEW_LIMITS,
 }
 PREVIEW_POLICY_DIGEST = canonical_digest(PREVIEW_POLICY)

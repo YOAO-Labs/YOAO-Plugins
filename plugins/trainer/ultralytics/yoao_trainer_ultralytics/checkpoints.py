@@ -168,14 +168,16 @@ class UltralyticsCheckpoints:
                 "best_sha256": hashlib.sha256(best_bytes).hexdigest(),
             }
         staging = self.output / "checkpoint-staging.pt"
-        with staging.open("wb") as stream:
-            self._save(full, stream)
-            stream.flush()
-            os.fsync(stream.fileno())
-        self.checkpoint = immutable_copy(
-            staging, self.output / f"checkpoint-{epoch:04d}.pt"
-        )
-        staging.unlink(missing_ok=True)
+        try:
+            with staging.open("wb") as stream:
+                self._save(full, stream)
+                stream.flush()
+                os.fsync(stream.fileno())
+            self.checkpoint = immutable_copy(
+                staging, self.output / f"checkpoint-{epoch:04d}.pt"
+            )
+        finally:
+            staging.unlink(missing_ok=True)
         self.checkpoint.update(role="checkpoint", epoch=epoch)
         atomic_json(self.output / "checkpoint.json", self.checkpoint)
         if previous and previous["name"] != self.checkpoint["name"]:

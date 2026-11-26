@@ -607,6 +607,7 @@ def validate_dataset(
     task: str,
     dataset_contract: str,
     expected_classes_digest: str,
+    expected_snapshot_digest: str | None = None,
 ) -> tuple[dict[str, Any], list[str], Path]:
     """Validate frozen dataset directory, returning (manifest, classes, data_yaml)."""
     root = dataset_dir.resolve()
@@ -641,6 +642,16 @@ def validate_dataset(
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     validate_source_lineage(manifest)
+
+    if (
+        expected_snapshot_digest is not None
+        and manifest.get("content_digest") is not None
+        and manifest.get("content_digest") != expected_snapshot_digest
+    ):
+        raise DatasetContractError(
+            "snapshot_digest_mismatch",
+            "Frozen manifest content_digest differs from TrainSpecV1.dataset_snapshot_digest",
+        )
 
     if manifest.get("classes") != classes:
         raise DatasetContractError(

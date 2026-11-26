@@ -298,13 +298,21 @@ def _infer_class_count(spec: PreviewSpecV1, input_dir: Path) -> int:
     return max(max_cls + 1, 1)
 
 
+def _sanitize_failure_message(exc: BaseException) -> str:
+    raw = str(exc) or type(exc).__name__
+    cleaned = "".join(" " if ord(ch) < 32 or ord(ch) == 127 else ch for ch in raw)
+    collapsed = " ".join(cleaned.split())
+    return (collapsed[:2048].strip() or type(exc).__name__)
+
+
 def _resolve_preview_native_values(spec: PreviewSpecV1) -> dict[str, Any]:
     values = dict(spec.native_values)
     if not values:
         values = {
             **spec.parameters,
-            **PREVIEW_POLICY["native_detection_defaults"],
+            "copy_paste": 0.0,
         }
+    values.pop("evaluate_train", None)
     values.update({"device": "cpu", "workers": 0, "task": "detect"})
     values.setdefault("copy_paste", 0.0)
     values.setdefault("imgsz", int(spec.parameters.get("imgsz", 640)))
@@ -411,9 +419,19 @@ def run_preview(
             model = YOLO(str(candidate), task="detect")
             stride = max(int(model.model.stride.max()), 32)
 
-    args = get_cfg(DEFAULT_CFG, native_vals)
-    observed = {key: getattr(args, key) for key in native_vals if hasattr(args, key)}
-    for key, val in native_vals.items():
+    default_keys = (
+        set(DEFAULT_CFG.keys())
+        if isinstance(DEFAULT_CFG, dict)
+        else set(vars(DEFAULT_CFG).keys())
+    )
+    cfg_overrides = (
+        {key: val for key, val in native_vals.items() if key in default_keys}
+        if len(default_keys) >= 20
+        else dict(native_vals)
+    )
+    args = get_cfg(DEFAULT_CFG, cfg_overrides)
+    observed = {key: getattr(args, key) for key in cfg_overrides if hasattr(args, key)}
+    for key, val in cfg_overrides.items():
         if key in observed and observed[key] != val:
             raise NativeConfigurationMismatch(
                 f"Native preview parameter observation mismatch for {key!r}"
@@ -501,7 +519,13 @@ def run_preview(
                 raise InputMismatchError("Native preview output violates bounds")
             filename = f"preview-{index}.png"
             out_path = output_dir / filename
-            Image.fromarray(image).save(out_path, format="PNG", compress_level=3)
+            tmp_path = output_dir / f".tmp-{filename}"
+            try:
+                Image.fromarray(image).save(tmp_path, format="PNG", compress_level=3)
+                os.replace(tmp_path, out_path)
+            except BaseException:
+                tmp_path.unlink(missing_ok=True)
+                raise
             size_bytes = out_path.stat().st_size
             if size_bytes > PREVIEW_MAX_OUTPUT_BYTES:
                 raise InputMismatchError("Native preview PNG exceeds byte bound")
@@ -560,7 +584,7 @@ def run_preview(
         details={
             "policy": PREVIEW_POLICY,
             "mosaic_closed": mosaic_closed_flag,
-            "native_parameters": observed,
+            "native_parameters": dict(spec.native_values) if spec.native_values else observed,
             "transform_parameters": transform_parameters,
         },
     )
@@ -591,7 +615,7 @@ def run_preview_cli(
         return 0
     except Exception as exc:
         code = exc.failure_code if isinstance(exc, TrainerError) else "preview_failed"
-        message = str(exc).strip() or type(exc).__name__
+        message = _sanitize_failure_message(exc)
         cuda_init = False
         import sys
 
@@ -609,7 +633,7 @@ def run_preview_cli(
             cuda_initialized=cuda_init,
             outputs=[],
             failure_code=code,
-            failure_message=message[:2048],
+            failure_message=message,
         )
         atomic_write_json(output_dir / "report.json", failed_report)
         return 1

@@ -35,6 +35,10 @@ RUN python -m pip wheel --no-deps --no-build-isolation -w /tmp/wheels /tmp/ultra
     && cp /tmp/ultralytics-trainer/manifest.json /app/manifest.json \
     && python -c "import torch, torchvision, ultralytics, yoao_plugin_sdk, yoao_trainer_ultralytics; assert torch.__version__ == '2.14.1+cu132'; assert torchvision.__version__ == '0.29.1+cu132'; assert ultralytics.__version__ == '8.4.183'" \
     && rm -rf /tmp/ultralytics-trainer /tmp/wheels /tmp/requirements.lock \
+    && groupadd --gid 10001 yoao \
+    && useradd --uid 10001 --gid 10001 --home-dir /tmp --no-create-home --shell /usr/sbin/nologin yoao \
     && chmod -R a+rX /opt/trainer-venv /app
+
+USER 10001:10001
 
 ENTRYPOINT ["yoao-trainer-ultralytics"]

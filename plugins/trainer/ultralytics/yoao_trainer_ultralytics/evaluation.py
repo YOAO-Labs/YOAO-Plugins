@@ -246,6 +246,12 @@ def describe_evaluators() -> dict[str, dict[str, Any]]:
             "framework_version": FRAMEWORK_VERSION,
             "task": "detection",
             "implementation": "ultralytics.models.yolo.detect.val.DetectionValidator",
+            "metrics": [
+                "metrics/mAP50-95",
+                "metrics/mAP50",
+                "metrics/precision",
+                "metrics/recall",
+            ],
             "runtime_available": runtime_available,
             "source_sha256": _source_sha(detect_sources),
         },

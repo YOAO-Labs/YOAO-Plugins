@@ -31,19 +31,24 @@ COPY plugins/trainer/libreyolo/requirements.lock /tmp/requirements.lock
 RUN python -m pip install --require-hashes --no-deps -r /tmp/requirements.lock \
     && rm -f /tmp/requirements.lock
 
-ARG SDK_WHEEL=/first-party-inputs/yoao_plugin_sdk-0.1.0-py3-none-any.whl
-ARG SDK_SHA256=ee2686f428c93220d052d0f2ff5e28dd1bd008a8115576222ca3de2fb366eccf
+ARG PLUGIN_SDK_WHEEL=/first-party-inputs/yoao_plugin_sdk-0.1.0-py3-none-any.whl
+ARG PLUGIN_SDK_SHA256=ee2686f428c93220d052d0f2ff5e28dd1bd008a8115576222ca3de2fb366eccf
 RUN --mount=type=bind,from=first-party-inputs,target=/first-party-inputs \
-    test -n "$SDK_WHEEL" && test -n "$SDK_SHA256" \
-    && printf '%s  %s\n' "$SDK_SHA256" "$SDK_WHEEL" | sha256sum -c - \
-    && python -m pip install --no-deps "$SDK_WHEEL"
+    test -n "$PLUGIN_SDK_WHEEL" && test -n "$PLUGIN_SDK_SHA256" \
+    && printf '%s  %s\n' "$PLUGIN_SDK_SHA256" "$PLUGIN_SDK_WHEEL" | sha256sum -c - \
+    && python -m pip install --no-deps "$PLUGIN_SDK_WHEEL"
 
 COPY plugins/trainer/libreyolo/ /tmp/libreyolo-trainer/
 RUN python -m pip wheel --no-deps --no-build-isolation -w /tmp/wheels /tmp/libreyolo-trainer \
     && python -m pip install --no-deps /tmp/wheels/yoao_trainer_libreyolo-*.whl \
+    && cp /tmp/libreyolo-trainer/manifest.json /app/manifest.json \
     && python -c "import importlib.util, torch, torchvision, libreyolo; assert torch.__version__ == '2.14.1+cu132'; assert torchvision.__version__ == '0.29.1+cu132'; assert libreyolo.__version__ == '1.6.0'; assert importlib.util.find_spec('ultralytics') is None" \
     && yoao-trainer-libreyolo describe > /dev/null \
     && rm -rf /tmp/libreyolo-trainer /tmp/wheels \
+    && groupadd --gid 10001 yoao \
+    && useradd --uid 10001 --gid 10001 --home-dir /tmp --no-create-home --shell /usr/sbin/nologin yoao \
     && chmod -R a+rX /opt/libreyolo-trainer-venv /app
+
+USER 10001:10001
 
 ENTRYPOINT ["yoao-trainer-libreyolo"]
