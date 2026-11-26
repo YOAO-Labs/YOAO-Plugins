@@ -1,0 +1,36 @@
+{
+  "files": [
+    {
+      "file": "yoao_backend_runtime-0.1.0-py3-none-any.whl",
+      "sha256": "96b10ea815c56eec1fe5fa747101226a283ea06781ca6649f92ac54c72d439f2"
+    },
+    {
+      "file": "yoao_inference_contract-0.1.0-py3-none-any.whl",
+      "sha256": "fdfa90533c548c63b713200675464c07f533e698c70f749a774add21fdea2904"
+    },
+    {
+      "file": "yoao_inference_plugin_sdk-0.1.0-py3-none-any.whl",
+      "sha256": "36bab6bf863d648b21f643fcb027b53f8c38fc7349d6123c4d20bbddf50096a3"
+    },
+    {
+      "file": "yoao_lifecycle_contract-0.1.0-py3-none-any.whl",
+      "sha256": "d8047859a72cb22c83c187bb81ed5e49d67c78df2f8f5a9b5852b226ebb5c7ed"
+    },
+    {
+      "file": "yoao_mask_utils-0.1.0-py3-none-any.whl",
+      "sha256": "a424d1f5ddc9287de93c27352eb4807b3d5cc1407800263c64282b1f42f8ee93"
+    },
+    {
+      "file": "yoao_protocol_v2-0.2.0-py3-none-any.whl",
+      "sha256": "128281a63d363fa0b597d89f0636d824615a737378e5954ae642c19dd26b87d7"
+    },
+    {
+      "file": "yoao_task_contract-0.1.0-py3-none-any.whl",
+      "sha256": "fa625a5b6b100c41f1dd478f471b67950ab8857ac5fa6e0baa083974fc1ecdb3"
+    },
+    {
+      "file": "yoao_training_contract-0.1.0-py3-none-any.whl",
+      "sha256": "e6dbe37e5ed6528f31ceed04720abc4467aff115973261dc023209e1b50795d8"
+    }
+  ]
+}
