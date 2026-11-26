@@ -1,0 +1,574 @@
+{
+  "ultralytics": {
+    "version": "8.4.183",
+    "source": "https://github.com/ultralytics/ultralytics/blob/v8.4.183/ultralytics/cfg/default.yaml",
+    "source_sha256": "13b58f3804fef762813cb78baa2a95dd5b3c5741723ebfdea6c7a99a54d314b1",
+    "fields": {
+      "task": {
+        "default": "detect",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      },
+      "mode": {
+        "default": "train",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      },
+      "model": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "data": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "epochs": {
+        "default": 100,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "time": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "patience": {
+        "default": 100,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "batch": {
+        "default": 16,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "imgsz": {
+        "default": 640,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "save": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "save_period": {
+        "default": -1,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "cache": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "device": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "workers": {
+        "default": 8,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "project": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "name": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "exist_ok": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "pretrained": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "cls_remap": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "optimizer": {
+        "default": "auto",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      },
+      "verbose": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "seed": {
+        "default": 0,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "deterministic": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "single_cls": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "rect": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "cos_lr": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "close_mosaic": {
+        "default": 10,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "resume": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "amp": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "fraction": {
+        "default": 1.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "profile": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "freeze": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "multi_scale": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "compile": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "channels_last": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "overlap_mask": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "mask_ratio": {
+        "default": 4,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "dropout": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "val": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "split": {
+        "default": "val",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      },
+      "save_json": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "conf": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "iou": {
+        "default": 0.7,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "max_det": {
+        "default": 300,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "quantize": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "dnn": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "plots": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "nms": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "source": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "vid_stride": {
+        "default": 1,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "stream_buffer": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "visualize": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "augment": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "agnostic_nms": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "classes": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "retina_masks": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "embed": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "show": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "save_frames": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "save_txt": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "save_conf": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "save_crop": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "show_labels": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "show_conf": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "show_boxes": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "line_width": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "format": {
+        "default": "torchscript",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      },
+      "optimize": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "dynamic": {
+        "default": false,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "simplify": {
+        "default": true,
+        "native_type": "bool",
+        "defined_in": "default.yaml"
+      },
+      "opset": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "workspace": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "lr0": {
+        "default": 0.01,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "lrf": {
+        "default": 0.01,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "momentum": {
+        "default": 0.937,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "weight_decay": {
+        "default": 0.0005,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "warmup_epochs": {
+        "default": 3.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "warmup_momentum": {
+        "default": 0.8,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "warmup_bias_lr": {
+        "default": 0.1,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "distill_model": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "dis": {
+        "default": 6.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "box": {
+        "default": 7.5,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "cls": {
+        "default": 0.5,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "cls_pw": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "dfl": {
+        "default": 1.5,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "pose": {
+        "default": 12.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "kobj": {
+        "default": 1.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "rle": {
+        "default": 1.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "angle": {
+        "default": 1.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "dlog": {
+        "default": 1.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "dgrad": {
+        "default": 0.5,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "dlam": {
+        "default": 1.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "nbs": {
+        "default": 64,
+        "native_type": "int",
+        "defined_in": "default.yaml"
+      },
+      "hsv_h": {
+        "default": 0.015,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "hsv_s": {
+        "default": 0.7,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "hsv_v": {
+        "default": 0.4,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "degrees": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "translate": {
+        "default": 0.1,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "scale": {
+        "default": 0.5,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "shear": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "perspective": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "flipud": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "fliplr": {
+        "default": 0.5,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "bgr": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "mosaic": {
+        "default": 1.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "mixup": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "cutmix": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "copy_paste": {
+        "default": 0.0,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "copy_paste_mode": {
+        "default": "flip",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      },
+      "auto_augment": {
+        "default": "randaugment",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      },
+      "erasing": {
+        "default": 0.4,
+        "native_type": "float",
+        "defined_in": "default.yaml"
+      },
+      "cfg": {
+        "default": null,
+        "native_type": "NoneType",
+        "defined_in": "default.yaml"
+      },
+      "tracker": {
+        "default": "tracktrack.yaml",
+        "native_type": "str",
+        "defined_in": "default.yaml"
+      }
+    }
+  }
+}

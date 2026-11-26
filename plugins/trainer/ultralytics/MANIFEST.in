@@ -1,0 +1,3 @@
+include manifest.json Dockerfile Dockerfile.dockerignore requirements.lock export_requirements.py LICENSE AGPL-3.0.txt
+include yoao_trainer_ultralytics/native_inventory_current.json yoao_trainer_ultralytics/pretrained-assets.json
+include tests/__init__.py tests/conftest.py

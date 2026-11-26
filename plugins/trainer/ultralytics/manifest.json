@@ -1,0 +1,29 @@
+{
+  "manifest_schema": "yoao-extension-manifest/v1",
+  "extension_point": "trainer",
+  "plugin_id": "yoao.trainer.ultralytics",
+  "version": "1.0.0",
+  "display_name": "Ultralytics YOLO Trainer",
+  "description": "Official Ultralytics YOLO 8.4.183 detection and instance segmentation trainer plugin for YOAO.",
+  "homepage": "https://github.com/YOAO-Labs/YOAO-Plugins",
+  "publisher": "YOAO Official",
+  "license": "AGPL-3.0-only",
+  "protocol_version": "yoao-trainer/v1",
+  "entrypoint": [
+    "yoao-trainer-ultralytics"
+  ],
+  "capabilities": [
+    "train",
+    "evaluate",
+    "preview",
+    "export_weights"
+  ],
+  "resource": {
+    "memory_mb": 8192
+  },
+  "extension": {
+    "framework_id": "ultralytics",
+    "framework_version": "8.4.183",
+    "requires_gpu": true
+  }
+}

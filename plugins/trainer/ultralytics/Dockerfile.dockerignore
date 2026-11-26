@@ -1,0 +1,15 @@
+*
+!plugins/
+plugins/*
+!plugins/trainer/
+plugins/trainer/*
+!plugins/trainer/ultralytics/
+plugins/trainer/ultralytics/.venv/
+plugins/trainer/ultralytics/build/
+plugins/trainer/ultralytics/dist/
+plugins/trainer/ultralytics/*.egg-info/
+plugins/trainer/ultralytics/**/__pycache__/
+plugins/trainer/ultralytics/.pytest_cache/
+plugins/trainer/ultralytics/**/*.pyc
+plugins/trainer/ultralytics/**/*.pt
+plugins/trainer/ultralytics/**/*.onnx
