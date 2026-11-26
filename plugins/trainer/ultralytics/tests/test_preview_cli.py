@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import resource
 import signal
@@ -20,6 +21,7 @@ from yoao_plugin_sdk.trainer import (
 )
 
 from yoao_trainer_ultralytics import InputMismatchError, NativeRuntimeMismatch
+from yoao_trainer_ultralytics.cli import main as cli_main
 from yoao_trainer_ultralytics.policies import PREVIEW_LIMITS, PREVIEW_POLICY_DIGEST
 from yoao_trainer_ultralytics.preview import (
     closed_mosaic,
@@ -301,3 +303,89 @@ def test_preview_cli_produces_pngs_and_report_and_blocks_cuda(
     bad_rep = PreviewReportV1.model_validate_json((bad_out / "report.json").read_text(encoding="utf-8"))
     assert bad_rep.status == "failed"
     assert bad_rep.failure_code == "input_mismatch"
+
+
+def _stub_preview_rlimits(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        resource, "getrlimit", lambda name: (resource.RLIM_INFINITY, resource.RLIM_INFINITY)
+    )
+    monkeypatch.setattr(resource, "setrlimit", lambda name, val: None)
+    monkeypatch.setattr(signal, "alarm", lambda sec: 0)
+    if hasattr(os, "sched_getaffinity"):
+        monkeypatch.setattr(os, "sched_getaffinity", lambda pid: {0})
+    if hasattr(os, "sched_setaffinity"):
+        monkeypatch.setattr(os, "sched_setaffinity", lambda pid, cpus: None)
+
+
+def test_cli_main_preview_happy_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
+    monkeypatch.setenv("TRAINING_MODELS_DIR", str(tmp_path / "empty_models"))
+    _stub_preview_rlimits(monkeypatch)
+    _install_fake_preview_runtime(monkeypatch, cuda_initialized=False)
+
+    _, spec_path = _make_preview_spec(tmp_path / "in", count=2, epoch=1)
+    out_dir = tmp_path / "out"
+
+    rc = cli_main(["preview", "--spec", str(spec_path), "--output", str(out_dir)])
+    assert rc == 0
+    report = PreviewReportV1.model_validate_json((out_dir / "report.json").read_text(encoding="utf-8"))
+    assert report.status == "succeeded"
+    assert report.cuda_initialized is False
+    assert report.policy_digest == PREVIEW_POLICY_DIGEST
+    assert len(report.outputs) == 2
+    for idx, out in enumerate(report.outputs):
+        png = out_dir / f"preview-{idx}.png"
+        assert png.is_file()
+        assert out.sha256 == digest_file(png)
+
+
+def test_cli_main_preview_rejects_oversized_spec_before_reading(tmp_path: Path) -> None:
+    oversized_spec = tmp_path / "oversized-spec.json"
+    with oversized_spec.open("wb") as fh:
+        fh.write(b"\xff\xfe{not-valid-json")
+        fh.truncate(PREVIEW_LIMITS["report_bytes"] + 1)
+    out_dir = tmp_path / "oversized_out"
+
+    rc = cli_main(["preview", "--spec", str(oversized_spec), "--output", str(out_dir)])
+    assert rc == 1
+    report = PreviewReportV1.model_validate_json((out_dir / "report.json").read_text(encoding="utf-8"))
+    assert report.status == "failed"
+    assert report.failure_code == "input_mismatch"
+    assert report.policy_digest == PREVIEW_POLICY_DIGEST
+    assert report.cuda_initialized is False
+
+
+def test_cli_main_preview_reports_malformed_json_with_policy_digest(tmp_path: Path) -> None:
+    malformed_spec = tmp_path / "malformed-spec.json"
+    malformed_spec.write_text("{not-valid-json", encoding="utf-8")
+    out_dir = tmp_path / "malformed_out"
+
+    rc = cli_main(["preview", "--spec", str(malformed_spec), "--output", str(out_dir)])
+    assert rc == 1
+    report = PreviewReportV1.model_validate_json((out_dir / "report.json").read_text(encoding="utf-8"))
+    assert report.status == "failed"
+    assert report.failure_code == "preview_failed"
+    assert report.policy_digest == PREVIEW_POLICY_DIGEST
+    assert report.cuda_initialized is False
+
+
+def test_cli_main_preview_blocks_initialized_cuda(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "")
+    monkeypatch.setenv("TRAINING_MODELS_DIR", str(tmp_path / "empty_models"))
+    _stub_preview_rlimits(monkeypatch)
+    _install_fake_preview_runtime(monkeypatch, cuda_initialized=True)
+
+    _, spec_path = _make_preview_spec(tmp_path / "in", count=1, epoch=1)
+    out_dir = tmp_path / "cuda_out"
+
+    rc = cli_main(["preview", "--spec", str(spec_path), "--output", str(out_dir)])
+    assert rc == 1
+    report = PreviewReportV1.model_validate_json((out_dir / "report.json").read_text(encoding="utf-8"))
+    assert report.status == "failed"
+    assert report.cuda_initialized is True
+    assert report.failure_code == "runtime_mismatch"
+    assert report.policy_digest == PREVIEW_POLICY_DIGEST

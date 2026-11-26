@@ -15,11 +15,12 @@ from yoao_plugin_sdk.trainer import (
     TrainReceiptV1,
     TrainSpecV1,
     ValidateConfigResultV1,
+    build_trainer_parser,
     optional_package_version,
     run_trainer_cli,
 )
 
-from . import FRAMEWORK_ID, FRAMEWORK_VERSION, InputMismatchError
+from . import FRAMEWORK_ID, FRAMEWORK_VERSION
 from .catalog import (
     SUPPORTED_DATASET_CONTRACTS,
     SUPPORTED_TASKS,
@@ -28,8 +29,11 @@ from .catalog import (
     trainer_architectures,
 )
 from .evaluation import describe_evaluators
-from .policies import PREVIEW_LIMITS, policy_digests
+from .policies import policy_digests
 from .validation import validate_config
+
+_CLI_PROG = "yoao-trainer-ultralytics"
+_CLI_DESCRIPTION = "Official Ultralytics YOLO 8.4.183 trainer plugin (yoao-trainer/v1)."
 
 
 def collect_runtime_versions() -> dict[str, str]:
@@ -87,22 +91,33 @@ class UltralyticsTrainerPlugin:
     ) -> PreviewReportV1:
         from .preview import run_preview
 
-        if (
-            spec_path is not None
-            and spec_path.stat().st_size > PREVIEW_LIMITS["report_bytes"]
-        ):
-            raise InputMismatchError("Preview spec exceeds byte bound")
         input_dir = spec_path.parent if spec_path is not None else output_dir
         return run_preview(spec, input_dir, output_dir)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    arg_list = list(argv) if argv is not None else None
+    parser = build_trainer_parser(
+        prog=_CLI_PROG,
+        description=_CLI_DESCRIPTION,
+        supports_preview=True,
+    )
+    try:
+        args = parser.parse_args(arg_list)
+    except SystemExit as exc:
+        return int(exc.code) if isinstance(exc.code, int) else 1
+
+    if args.command == "preview":
+        from .preview import run_preview_cli
+
+        return run_preview_cli(args.spec, args.output)
+
     return run_trainer_cli(
         UltralyticsTrainerPlugin(),
-        prog="yoao-trainer-ultralytics",
-        description="Official Ultralytics YOLO 8.4.183 trainer plugin (yoao-trainer/v1).",
+        prog=_CLI_PROG,
+        description=_CLI_DESCRIPTION,
         supports_preview=True,
-        argv=argv,
+        argv=arg_list,
     )
 
 
